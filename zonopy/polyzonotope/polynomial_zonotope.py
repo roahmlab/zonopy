@@ -103,12 +103,22 @@ class polyZonotope:
         Overloaded '@' operator for the multiplication of a matrix or an interval matrix with a polyZonotope
 
         '''
-        # TODO: Need to define intervals
+        # TODO: Need to define intervals for matrix
 
         # if other is a matrix
         if type(other) == np.ndarray or type(other) == torch.tensor:
             if type(other) == np.ndarray:
                 other = torch.from_numpy(other)
+            
+            self.c = other@self.c
+
+            if self.G.numel() != 0:
+                self.G = other@self.G
+
+            if self.Grest.numel() != 0:
+                self.Grest = other@self.Grest
+
+            
 
 
     
