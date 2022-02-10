@@ -83,7 +83,7 @@ class polyZonotope:
         if type(other) == np.ndarray or type(other) == torch.tensor:
             if type(other) == np.ndarray:
                 other = torch.from_numpy(other)
-            assert other.shape == self.c.shape:
+            assert other.shape == self.c.shape
             self.c + other
         
         # if other is a zonotope
