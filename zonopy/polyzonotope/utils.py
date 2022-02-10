@@ -1,3 +1,4 @@
-def removeRedundantExponents():
+def removeRedundantExponents(expMat,G):
 
-    
+    return expMat,G
+

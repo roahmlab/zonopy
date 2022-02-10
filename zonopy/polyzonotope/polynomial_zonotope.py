@@ -53,8 +53,8 @@ class polyZonotope:
 
 
         self.c = c
-        self.G = G.reshape(self.dimension,-1)
-        self.Grest = Grest.reshape(self.dimension,-1)
+        self.G = G.reshape(self.dimension if self.dimension != 0 else 1,-1)
+        self.Grest = Grest.reshape(self.dimension if self.dimension != 0 else 1,-1)
 
         if expMat == None and id == None:
             self.expMat = torch.eye(G.shape[1])
@@ -109,7 +109,7 @@ class polyZonotope:
         if type(other) == np.ndarray or type(other) == torch.tensor:
             if type(other) == np.ndarray:
                 other = torch.from_numpy(other)
-            self.c = other@self.c
+
 
     
 
