@@ -11,9 +11,7 @@ import matplotlib.patches as patches
 
 class Zonotope:
     def __init__(self,Z):
-        #
-        #
-        #
+        
         self.Z = Z
         self.center = self.Z[:,0]
         self.generators = self.Z[:,1:]
