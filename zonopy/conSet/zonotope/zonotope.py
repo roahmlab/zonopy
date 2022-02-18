@@ -159,7 +159,7 @@ class zonotope:
                 if len(non_zero_idx) == 0:
                     raise ValueError('no generator for slice index')
                 else:
-                    raise ValueError('more than one generator for slice index')
+                    raise ValueError('more than one generators for slice index')
             slice_idx[i] = non_zero_idx
 
         slice_c = c[slice_dim];
