@@ -1,9 +1,10 @@
-#%%
-# TODO:
-# 1. represent zonotope in polytope
-# 2. represent zonotope in polygon 3D
-# 3. plot 3D
+"""
+Define class for zonotope
+Reference: CORA
+Writer: Yongseok Kwon
+"""
 
+#%%
 import torch 
 from numpy import argwhere as np_argwhere 
 # NOTE: recent version (1.10.XX) of torch doesn't provide argwhere function, but upcomming version (1.11.XX) will include this.
@@ -52,7 +53,7 @@ class zonotope:
         return <polyZonotope>
         '''   
         if type(other) == torch.Tensor:
-            Z = self.Z
+            Z = torch.clone(self.Z)
             assert other.shape == Z[:,0].shape, f'array dimension does not match: should be {Z[:,0].shape}, but {other.shape}.'
             Z[:,0] += other
                 
@@ -69,32 +70,12 @@ class zonotope:
 
         return zonotope(Z)
     
-    #__radd__ == __add__
-
-    def  __sub__(self,other):
-        '''
-        Overloaded '-' operator for Minkowski substaction
-        self: <zonotope>
-        other: <torch.tensor> OR <zonotope>
-        return <zonotope>
-        '''   
-        if type(other) == torch.Tensor:
-            Z = self.Z
-            assert other.shape == Z[:,0].shape, f'array dimension does not match: should be {Z[:,0].shape}, but {other.shape}.'
-            Z[:,0] -= other
-                
-        elif type(other) == zonotope: # Minkowski sum
-            assert self.dim != other.dim, f'zonotope dimension does not match: {self.dim} and {other.dim}.'
-            
-            Z = torch.zeros(self.dim,1+self.n_generators+other.n_generators)
-            Z[:,0] = self.center - other.center
-            Z[:,1:1+self.n_generators] = self.generators
-            Z[:,1+self.n_generators:] = other.generators
-            
-        else:
-            raise ValueError(f'the other object is neither a zonotope nor an array: {type(other)}.')
-
-        return zonotope(Z)
+    def __radd__(self,other):
+        return self.__add__(other)
+    def __sub__(self,other):
+        return self.__add__(-other)
+    def __rsub__(self,other):
+        return -self.__sub__(other)
     
     def __pos__(self):
         '''
@@ -128,6 +109,12 @@ class zonotope:
         other = other.to(dtype=torch.float64)
         Z = other @ self.Z
         return zonotope(Z)
+
+    def __matmul__(self,other):
+        assert type(other) == torch.Tensor, f'the other object should be torch tensor, but {type(other)}.'
+        other = other.to(dtype=torch.float64)
+        Z = self.Z @ other
+        return zonotope(Z)        
 
     def slice(self,slice_dim,slice_pt):
         '''
@@ -244,14 +231,13 @@ class zonotope:
 
         return <zonotope>
         '''
-        G = self.generators 
-        non_zero_idxs = torch.any(G!=0,axis=0).to(dtype=int)
+        non_zero_idxs = torch.any(self.generators!=0,axis=0).to(dtype=int)
         Z_new = torch.zeros(self.dim,sum(non_zero_idxs)+1)
         j=0
-        for i in range(G.shape[1]):
+        for i in range(self.generators.shape[1]):
             if non_zero_idxs[i]:
                 j += 1
-                Z_new[:,j] = G[:,i]
+                Z_new[:,j] = self.generators[:,i]
         Z_new[:,0] = self.center
         return zonotope(Z_new)
 
@@ -289,6 +275,8 @@ if __name__ == '__main__':
         
     Z = torch.tensor([[0, 1, 0,1],[0, 0, -1,1],[0,0,0,1]])
     z = zonotope(Z)
+    print(torch.eye(3)@z)
+    print(torch.tensor([1,2,3])-z)
     print(z.Z)
     print(z.slice(2,1).Z)
     print(z)
