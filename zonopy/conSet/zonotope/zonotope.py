@@ -6,8 +6,6 @@ Writer: Yongseok Kwon
 
 #%%
 import torch 
-from numpy import argwhere as np_argwhere 
-# NOTE: recent version (1.10.XX) of torch doesn't provide argwhere function, but upcomming version (1.11.XX) will include this.
 from utils import delete_column
 
 import numpy as np
@@ -156,8 +154,7 @@ class zonotope:
 
         slice_idx = torch.zeros(N,dtype=int)
         for i in range(N):
-            non_zero_idx = np_argwhere(G[slice_dim[i],:] != 0)[0]
-            # NOTE: recent version (1.10.XX) of torch doesn't provide argwhere function, but upcomming version (1.11.XX) will include this.
+            non_zero_idx = (G[slice_dim[i],:] != 0).nonzero()[0]
             if len(non_zero_idx) != 1:
                 if len(non_zero_idx) == 0:
                     raise ValueError('no generator for slice index')
