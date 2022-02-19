@@ -49,6 +49,9 @@ options.reductionInterval = inf;
 options.reductionTechnique = 'girard';
 options.alg = 'lin';
 
+% for numerical compactness
+epsilon = 1e-6; 
+
 for j = 1:n_JRS
     % break JRS computation into two steps...
     tic;
@@ -61,7 +64,7 @@ for j = 1:n_JRS
     % this is described by eqs. (3) and (8)
     params.x0 = [1; 0; c_kvi(j); c_kai; c_kvi(j); 0]; % start at q_i = 0, so cos(q_i) = 1 and sin(q_i) = 0
     % use two generators, one for K^a_i and one for K^v_i (eq. 8)
-    params.R0 = zonotope([params.x0, [0; 0; 0; delta_kai; 0; 0], [0; 0; delta_kvi; 0; delta_kvi; 0]]);
+    params.R0 = zonotope([params.x0, [0; 0; 0; delta_kai; 0; 0], [0; 0; delta_kvi; 0; delta_kvi+epsilon; 0]]);
 
     % create system for reachability analysis (1 dummy input)
     % CORA 2018:
