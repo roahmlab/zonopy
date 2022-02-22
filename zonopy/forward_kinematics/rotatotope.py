@@ -44,12 +44,12 @@ def gen_rotatotope(polyZono,rot_axis):
     cosq = polyZono.G[cos_dim]
     sinq = polyZono.G[sin_dim]
     n_dgens = len(cosq) 
-    G = (sinq*w_hat.repeat(n_dgens,1,1).permute(1,2,0)-cosq*(w_hat@w_hat).repeate(n_dgens,1,1).permute(1,2,0)).permute(2,0,1)
+    G = (sinq*w_hat.repeat(n_dgens,1,1).permute(1,2,0)-cosq*(w_hat@w_hat).repeat(n_dgens,1,1).permute(1,2,0)).permute(2,0,1)
 
     cosq = polyZono.Grest[cos_dim]
     sinq = polyZono.Grest[sin_dim]
     n_igens = len(cosq) 
-    Grest = (sinq*w_hat.repeat(n_igens,1,1).permute(1,2,0)-cosq*(w_hat@w_hat).repeate(n_igens,1,1).permute(1,2,0)).permute(2,0,1)
+    Grest = (sinq*w_hat.repeat(n_igens,1,1).permute(1,2,0)-cosq*(w_hat@w_hat).repeat(n_igens,1,1).permute(1,2,0)).permute(2,0,1)
 
 
     # NOTE: delete zero colums?

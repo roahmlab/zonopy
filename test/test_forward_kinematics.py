@@ -20,5 +20,5 @@ for t in range(n_time_steps):
     Z = EE[(0,t)].to_zonotope()
     Z.plot2d(ax,facecolor='none')
 
-plt.axis([-1,1,-1,1])
+plt.axis([-2,2,-2,2])
 plt.show()
