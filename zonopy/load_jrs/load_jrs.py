@@ -44,10 +44,10 @@ def load_JRS(qpos,qvel):
     for i in range(len(qvel)):
         closest_idx = torch.argmin(abs(qvel[i]-jrs_key))
         jrs_filename = jrs_path+'JRS_mat_'+format(jrs_key[closest_idx],'.3f')+'.mat'
-        jrs_mat_load = loadmat(jrs_filename)
-        jrs_mat_load = torch.tensor(jrs_mat_load['JRS_mat'])
-
-        n_time_steps = len(jrs_mat_load) # 100
+        jrs_mats_load = loadmat(jrs_filename)
+        jrs_mat_load = torch.tensor(jrs_mats_load['JRS_mat'][i])[0]
+        print(len(jrs_mats_load['JRS_mat']))
+        n_time_steps = len(jrs_mats_load['JRS_mat']) # 100
 
 
         for jrs_idx in range(n_time_steps):
@@ -55,7 +55,7 @@ def load_JRS(qpos,qvel):
             s_qpos = torch.sin(qpos[i])
             Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]])
             A = torch.block_diag(Rot_qpos,torch.eye(4))
-            JRS_zono_i = zonotope(jrs_mat_load[jrs_idx])
+            JRS_zono_i = zonotope(jrs_mat_load)
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qvel[i])
             JRS_poly[(i,jrs_idx)] = JRS_zono_i.to_polyZonotope(ka_dim)
             # NOTE: fail safe
@@ -69,4 +69,11 @@ def load_JRS(qpos,qvel):
     return JRS_poly
 
 if __name__ == '__main__':
-    load_JRS(torch.tensor([1]),torch.tensor([0.01]))
+    import matplotlib.pyplot as plt
+    
+    JRS = load_JRS(torch.tensor([1]),torch.tensor([0.01]))
+    fig = plt.figure()    
+    ax = fig.gca() 
+    for t in range(100):
+        Z = JRS[(0,t)].to_zonotope()
+        Z.plot2d(ax)
