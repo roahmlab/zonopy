@@ -142,7 +142,11 @@ class matPolyZonotope():
             if self.Grest.numel() != 0 and other.G.numel() !=0:
                 Grest_G = G_mul_g(self.Grest,other.G)
                 Grest = torch.hstack((Grest,Grest_G))
-
+            print('-'*30)
+            print(c.shape)
+            print(G.shape)
+            print(Grest.shape)
+            #import pdb; pdb.set_trace()
             return polyZonotope(c,G,Grest,expMat,id)
         else:
             raise ValueError('the other object should be torch tensor or polynomial zonotope.')
@@ -155,4 +159,4 @@ def G_mul_g(G,g,dim=None):
     if dim is None:
         dim = G.shape[0]
     G_g = G.permute(2,0,1) @ g
-    return G_g.permute(1,0,2).reshape(dim,-1)
+    return G_g.permute(1,2,0).reshape(dim,-1)
