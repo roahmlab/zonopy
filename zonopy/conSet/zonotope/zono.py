@@ -5,7 +5,8 @@ Writer: Yongseok Kwon
 """
 
 #%%
-import torch 
+import torch
+from conSet.polynomial_zonotope.poly_zono import polyZonotope 
 from utils import delete_column
 
 import numpy as np
@@ -16,20 +17,24 @@ class zonotope:
     zono: <zonotope>, <torch.float64>
 
     Z: <torch.Tensor> center vector and generator matrix Z = [c,G]
-    , shape: [nx, N+1]
-    
+    , shape [nx, N+1] OR [nx], where N = 0
+    -> shape [nx, N+1]
     center: <torch.Tensor> center vector
-    , shape: [nx,1] 
+    , shape [nx,1] 
     generators: <torch.Tensor> generator matrix
-    , shape: [nx, N]
+    , shape [nx, N]
     
     
-    Eq. (coeff. a1,a2,...,aN ~ [0,1])
+    Eq. (coeff. a1,a2,...,aN \in [0,1])
     G = [g1,g2,...,gN]
     zono = c + a1*g1 + a2*g2 + ... + aN*gN
     '''
     def __init__(self,Z):
         assert type(Z) == torch.Tensor, f'The input matrix should be torch tensor, but {type(Z)}.'
+        if len(Z.shape) == 1:
+            Z = Z.reshape(-1,1)
+        assert len(Z.shape) == 2, f'The dimension of Z input should be either 1 or 2, but {len(Z.shape)}.'
+
         Z = Z.to(dtype=torch.float64)
         self.Z = Z
         self.center = self.Z[:,0]
@@ -67,14 +72,13 @@ class zonotope:
             raise ValueError(f'the other object is neither a zonotope nor a torch tensor: {type(other)}.')
 
         return zonotope(Z)
-    
-    def __radd__(self,other):
-        return self.__add__(other)
+
+    __radd__ = __add__
     def __sub__(self,other):
         return self.__add__(-other)
     def __rsub__(self,other):
         return -self.__sub__(other)
-    
+    # TODO: __iadd__
     def __pos__(self):
         '''
         Overloaded unary '+' operator for positive
@@ -255,16 +259,37 @@ class zonotope:
         '''
         
         import matplotlib.patches as patches
-        # dim = 2 or 3
-        # Define fig = plt.figure() priori
-        # and  Take ax = fig.gca() as input 
         dim = 2
         z = self.project(torch.arange(dim))
         p = z.polygon2d()
 
         ax.add_patch(patches.Polygon(p.T,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=2,))
 
+    def to_polyZonotope(self,dim=None):
+        '''
+        convert zonotope to polynomial zonotope
+        self: <zonotope>
+        dim: <int>, dimension to take as sliceable
+        # TODO: allow dim to be None
+        return <polyZonotope>
+        '''
+        if dim is None:
+            return polyZonotope(self.center,Grest = self.generators)
+        assert type(dim) == int
+        assert dim < self.dim
 
+        g_row_dim =self.generators[dim,:]
+        idx = (g_row_dim!=0).nonzero().reshape(-1)
+        if idx.numel() != 1:
+            if idx.numel() == 0:
+                raise ValueError('no sliceable generator for the dimension.')
+            else:
+                raise ValueError('more than one no sliceable generators for the dimesion.')        
+        c = self.c
+        G = self.generators[:,idx]
+        Grest = delete_column(self.generators,idx)
+
+        return polyZonotope(c,G,Grest)
 
 
 if __name__ == '__main__':
@@ -273,7 +298,7 @@ if __name__ == '__main__':
     Z = torch.tensor([[0, 1, 0,1],[0, 0, -1,1],[0,0,0,1]])
     z = zonotope(Z)
     print(torch.eye(3)@z)
-    print(torch.tensor([1,2,3])-z)
+    print(z-torch.tensor([1,2,3]))
     print(z.Z)
     print(z.slice(2,1).Z)
     print(z)
