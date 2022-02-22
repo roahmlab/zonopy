@@ -4,7 +4,7 @@ Reference: CORA
 Writer: Yongseok Kwon
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
-from zonopy.conSet.zonotope.zono import zonotope
+
 from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
 import torch
 import numpy as np
@@ -212,6 +212,7 @@ class polyZonotope:
         return A@self
 
     def to_zonotope(self):
+        from zonopy.conSet.zonotope.zono import zonotope
         Z = torch.hstack((self.c.reshape(-1,1),self.G))
         Z = torch.hstack((Z,self.Grest))
         return zonotope(Z)
