@@ -3,7 +3,7 @@ import zonopy
 import matplotlib.pyplot as plt
 from zonopy.forward_kinematics.FK import forward_kinematics
 qpos =  torch.tensor([0,0])
-qvel =  torch.tensor([1.2,0.3])
+qvel =  torch.tensor([1.2,1.2])
 joint_axes = [torch.tensor([0,0,1])]*2
 P = [torch.tensor([1,0,0])]*2
 EE = forward_kinematics(qpos,qvel,joint_axes,P)
