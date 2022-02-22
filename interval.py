@@ -72,6 +72,9 @@ class interval:
     def dim(self):
         return self.inf.dim()
 
+    def t(self):
+        return interval(self.inf.t(), self.sup.t())
+
     '''
 
 
