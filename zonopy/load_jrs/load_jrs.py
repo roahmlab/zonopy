@@ -71,10 +71,12 @@ def load_JRS(qpos,qvel):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
-    JRS = load_JRS(torch.tensor([1]),torch.tensor([0.01]))
-    
+    JRS = load_JRS(torch.tensor([1]),torch.tensor([0.2]))
+    fig = plt.figure()    
+    ax = fig.gca() 
     for t in range(100):
-        fig = plt.figure()    
-        ax = fig.gca() 
-        JRS[(0,t)].to_zonotope().plot2d(ax)
-        plt.show()
+        Z = JRS[(0,t)].to_zonotope()
+        Z.plot2d(ax)
+
+    plt.axis([0.35,0.55,0.84,0.93])
+    plt.show()
