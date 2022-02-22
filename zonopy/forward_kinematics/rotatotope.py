@@ -5,7 +5,7 @@ vel_dim = 2
 acc_dim = 3
 k_dim = 3
 
-
+from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
 def get_transforms_from_jrs(JRS_poly,joint_axes):
     '''
     JRS_poly
