@@ -15,10 +15,10 @@ n_time_steps = max_key[1]+1
 fig = plt.figure()    
 ax = fig.gca() 
 
-
-for t in range(n_time_steps):
-    Z = EE[(0,t)].to_zonotope()
-    Z.plot2d(ax,facecolor='none')
+for i in range(n_joints):
+    for t in range(n_time_steps):
+        Z = EE[(0,t)].to_zonotope()
+        Z.plot2d(ax,facecolor='none')
 
 plt.axis([-2,2,-2,2])
 plt.show()
