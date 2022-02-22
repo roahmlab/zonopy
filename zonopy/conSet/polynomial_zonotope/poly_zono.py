@@ -4,6 +4,8 @@ Reference: CORA
 Writer: Yongseok Kwon
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
+from zonopy.conSet.zonotope.zono import zonotope
+from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
 import torch
 import numpy as np
 
@@ -208,6 +210,11 @@ class polyZonotope:
             A = matPolyZonotope(C=C,G=G,expMat=other.expMat,id=other.id)
         
         return A@self
+
+    def to_zonotope(self):
+        Z = torch.hstack((self.c.reshape(-1,1),self.G))
+        Z = torch.hstack((Z,self.Grest))
+        return zonotope(Z)
 
 if __name__ == '__main__':
     c1 = torch.tensor([1,2])
