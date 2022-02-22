@@ -3,8 +3,7 @@ Define class for matrix polynomial zonotope
 Reference: Patrick Holme's matPolyZonotope
 Writer: Yongseok Kwon
 """
-from curses.ascii import EM
-from utils import removeRedundantExponents, mergeExpMatrix
+from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
 from poly_zono import polyZonotope
 import torch
 EMPTY_TENSOR = torch.tensor([])

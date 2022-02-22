@@ -7,7 +7,7 @@ Writer: Yongseok Kwon
 #%%
 import torch
 #from zonopy import polyZonotope 
-from utils import delete_column
+from zonopy.conSet.zonotope.utils import delete_column
 
 import numpy as np
 

@@ -3,7 +3,7 @@ Define class for polynomial zonotope
 Reference: CORA
 Writer: Yongseok Kwon
 """
-from utils import removeRedundantExponents, mergeExpMatrix
+from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
 import torch
 import numpy as np
 
