@@ -1,1 +1,1 @@
-from conSet import zonotope, polyZonotope, matPolyZonotope
+from zonopy.conSet import zonotope, polyZonotope, matPolyZonotope
