@@ -117,42 +117,42 @@ class matPolyZonotope():
                 G = torch.hstack((G,C_G))
                 expMat = torch.hstack((expMat,expMat2))
             if self.G.numel() != 0:
-                G_c = self.G.permute(2,0,1) @ other.c
-                G_c = G_c.permute(1,0)
+                G_c = G_mul_c(self.G,other.c)
                 G = torch.hstack((G,G_c))
                 expMat = torch.hstack((expMat,expMat1))
             if self.G.numel() != 0 and other.G.numel() != 0:
-                G_G = self.G.permute(2,0,1) @ other.G
-                G_G = G_G.permute(1,0,2).reshape(self.n_rows,-1)
-                # NOTE
+                G_G = G_mul_g(self.G,other.G,self.n_rows)
                 G = torch.hstack((G,G_G))
                 for i in range(self.G.shape[-1]):
-                    expMat = torch.hstack((expMat, expMat1[:,i]+expMat2))
+                    expMat = torch.hstack((expMat, expMat1[:,i].reshape(-1,1)+expMat2))
             
             # deal with independent generators
             if other.Grest.numel() != 0:
                 C_Grest = self.C @ other.Grest
                 Grest = torch.hstack((Grest,C_Grest))
             if self.Grest.numel() != 0:
-                Grest_c = self.Grest.permute(2,0,1) @ other.c
-                Grest_c = Grest_c.permute(1,0)
+                Grest_c = G_mul_c(self.Grest,other.c)
                 Grest = torch.hstack((Grest,Grest_c))
             if self.Grest.numel() != 0 and other.Grest.numel() != 0:
-                Grest_Grest = self.Grest @ other.Grest
-                Grest_Grest
-                # NOTE
+                Grest_Grest = G_mul_g(self.Grest,other.Grest)
                 Grest = torch.hstack((Grest,Grest_Grest))
             if self.G.numel() !=0 and other.Grest.numel() !=0:
-                G_Grest = self.G @ other.Grest
-                # NOTE
+                G_Grest = G_mul_g(self.G,other.Grest)
                 Grest = torch.hstack((Grest,G_Grest))
             if self.Grest.numel() != 0 and other.G.numel() !=0:
-                Grest_G = self.Grest @ other.G
-                # NOTE
+                Grest_G = G_mul_g(self.Grest,other.G)
                 Grest = torch.hstack((Grest,Grest_G))
 
             return polyZonotope(c,G,Grest,expMat,id)
         else:
             raise ValueError('the other object should be torch tensor or polynomial zonotope.')
 
-
+def G_mul_c(G,c):
+    G_c = G.permute(2,0,1) @ c
+    return G_c.permute(1,0)
+    
+def G_mul_g(G,g,dim=None):
+    if dim is None:
+        dim = G.shape[0]
+    G_g = G.permute(2,0,1) @ g
+    return G_g.permute(1,0,2).reshape(dim,-1)
