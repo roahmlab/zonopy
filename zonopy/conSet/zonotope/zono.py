@@ -131,16 +131,15 @@ class zonotope:
 
         return <zonotope>
         '''
-        if type(slice_dim) != torch.Tensor:
-            if type(slice_dim) == list or type(slice_dim) == tuple or type(slice_dim) == np.ndarray:
-                slice_dim = torch.tensor(slice_dim)
-            else:
-                slice_dim = torch.tensor([slice_dim])
-        if type(slice_pt) != torch.Tensor:
-            if type(slice_dim) == list or type(slice_dim) == tuple or type(slice_dim) == np.ndarray:
-                slice_pt = torch.tensor(slice_pt)
-            else:
-                slice_pt = torch.tensor([slice_pt])
+        if type(slice_dim) == list or type(slice_dim) == tuple or type(slice_dim) == np.ndarray:
+            slice_dim = torch.tensor(slice_dim)
+        elif type(slice_dim) != torch.Tensor or (type(slice_dim) == torch.Tensor and len(slice_dim.shape)==0):
+            slice_dim = torch.tensor([slice_dim])
+
+        if type(slice_dim) == list or type(slice_dim) == tuple or type(slice_dim) == np.ndarray:
+            slice_pt = torch.tensor(slice_pt)
+        elif type(slice_pt) != torch.Tensor or (type(slice_pt) == torch.Tensor and len(slice_pt.shape)==0):
+            slice_pt = torch.tensor([slice_pt])
         
         assert len(slice_dim.shape) ==1, 'slicing dimension should be 1-dim component.'
         assert len(slice_pt.shape) ==1, 'slicing point should be 1-dim component.'
@@ -285,7 +284,7 @@ class zonotope:
                 raise ValueError('no sliceable generator for the dimension.')
             else:
                 raise ValueError('more than one no sliceable generators for the dimesion.')        
-        c = self.c
+        c = self.center
         G = self.generators[:,idx]
         Grest = delete_column(self.generators,idx)
 

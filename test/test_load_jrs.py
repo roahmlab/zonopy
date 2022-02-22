@@ -15,6 +15,6 @@ ax = fig.gca()
 
 
 for t in range(n_time_steps):
-    Z = JRS_poly[(t,0)].to_zonotope()
+    Z = JRS_poly[(0,t)].to_zonotope()
     Z.plot2d(ax)
 
