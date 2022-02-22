@@ -54,6 +54,15 @@ class interval:
         sup = self.sup[pos]
         return interval(inf, sup)
 
+    def __setitem__(self, pos, value):
+        # set one interval
+        if isinstance(value, interval):
+            self.inf[pos] = value.inf
+            self.sup[pos] = value.sup
+        else:
+            self.inf[pos] = value
+            self.sup[pos] = value
+
     def __len__(self):
         return len(self.inf)
 
@@ -212,7 +221,7 @@ def cross_interval(vec, intv):
 
 if __name__ == '__main__':
     print("testing the functionality...")
-    print("--- class construction test...---")
+    print("--- class construction test... ---")
     inf = torch.Tensor([1])
     sup = torch.Tensor([2])
     intv = interval(inf, sup)
@@ -226,14 +235,14 @@ if __name__ == '__main__':
     print(f"intv[0] = {intv1[0]}")
 
 
-    print("--- basic operation test...---")
+    print("--- basic operation test... ---")
     intv1 = interval(torch.Tensor([-4]), torch.Tensor([2]))
     intv2 = interval(torch.Tensor([-12]), torch.Tensor([0]))
     print(f"intv1 + intv2 = {intv1 + intv2}")
     print(f"intv1 - intv2 = {intv1 - intv2}")
     print(f"intv1 * intv2 = {intv1 * intv2}")
 
-    print("--- cross test...---")
+    print("--- cross test... ---")
     intv1 = interval(torch.Tensor([0.9,1.9,2.9]), torch.Tensor([1.1,2.1,3.1]))
     intv2 = interval(torch.Tensor([0.9,4.9,-0.1]), torch.Tensor([1.1,5.1,0.1]))
     print(f"intv1 x intv2 = {cross_interval(intv1, intv2)}")
