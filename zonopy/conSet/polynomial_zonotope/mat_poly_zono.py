@@ -4,7 +4,7 @@ Reference: Patrick Holme's matPolyZonotope
 Writer: Yongseok Kwon
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
-from poly_zono import polyZonotope
+from zonopy import polyZonotope
 import torch
 EMPTY_TENSOR = torch.tensor([])
 
