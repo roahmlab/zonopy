@@ -24,5 +24,8 @@ for i in range(n_joints):
         Z = EE[(i,t)].to_zonotope()
         Z.plot2d(ax,facecolor='none')
 
+plt.title('FRS of link zonotope')
+plt.xlabel('x')
+plt.ylabel('y')
 plt.axis([-2,2,-2,2])
 plt.show()
