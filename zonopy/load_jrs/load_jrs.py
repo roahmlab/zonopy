@@ -72,8 +72,9 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
     JRS = load_JRS(torch.tensor([1]),torch.tensor([0.01]))
-    fig = plt.figure()    
-    ax = fig.gca() 
+    
     for t in range(100):
+        fig = plt.figure()    
+        ax = fig.gca() 
         JRS[(0,t)].to_zonotope().plot2d(ax)
-    plt.show()
+        plt.show()
