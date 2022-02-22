@@ -14,8 +14,8 @@ def get_transforms_from_jrs(JRS_poly,joint_axes):
     assert type(joint_axes) == list
 
     max_key = max(JRS_poly.keys())
-    n_time_steps = max_key[0]+1
-    n_joints = max_key[1]+1
+    n_joints = max_key[0]+1
+    n_time_steps = max_key[1]+1
     assert len(joint_axes) == n_joints, f'The number of rotational axes ({len(joint_axes)}) should be the same as the number of joints ({n_joints}).'
 
     rotato = {}

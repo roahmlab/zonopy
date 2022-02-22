@@ -74,4 +74,14 @@ def load_JRS(qpos,qvel):
                 JRS_poly[(i,jrs_idx)].G[acc_dim] = delta_breaking
     return JRS_poly
 
-#if __name__ == '__main__':
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    
+    JRS = load_JRS(torch.tensor([1]),torch.tensor([0.2]))
+    fig = plt.figure()    
+    ax = fig.gca() 
+    for t in range(100):
+        JRS[(0,t)].to_zonotope().plot2d(ax,facecolor='none')
+        
+    plt.axis([0.35,0.55,0.84,0.93])
+    plt.show()
