@@ -5,7 +5,7 @@ Writer: Yongseok Kwon
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
 
-from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
+
 import torch
 import numpy as np
 
@@ -193,6 +193,7 @@ class polyZonotope:
         '''
         
         '''
+        from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
         if type(other) == torch.Tensor:
             A = torch.tensor([[0,-other[2],other[1]],[other[2],0,-other[1]],[-other[1],other[0],0]])
         else:
