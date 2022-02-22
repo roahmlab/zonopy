@@ -1,1 +1,10 @@
 check velocities of JRS has a hole
+
+
+__matmul__
+slice: slice all k-dep gens
+slice_to_pt: slice fully-k-sliceable gens
+reduce: based on reduceGirard.m in CORA
+stack: __add__
+generate_constraint (we may not need this)
+
