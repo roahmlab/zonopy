@@ -44,7 +44,7 @@ class matPolyZonotope():
         if G.numel() != 0 and (self.n_rows != G.shape[0] or self.n_cols != G.shape[1]):
             raise ValueError(f'Matrix dimension mismatch between center ([{self.n_rows}, {self.n_cols}]) and dependent generator matrix ([{G.shape[0]}, {G.shape[1]}]).')
         if Grest.numel() != 0 and (self.n_rows != Grest.shape[0] or self.n_cols != Grest.shape[1]):
-            raise ValueError(f'Matrix dimension mismatch between center ([{self.n_rows}, {self.n_cols}]) and dependent generator matrix ([{Grest.shape[0]}, {Grest.shape[1]}]).')
+            raise ValueError(f'Matrix dimension mismatch between center ([{self.n_rows}, {self.n_cols}]) and independent generator matrix ([{Grest.shape[0]}, {Grest.shape[1]}]).')
         
         self.C = C
         self.G = G.reshape(self.n_rows,self.n_cols,-1 if G.numel() != 0 else 0)
@@ -82,7 +82,7 @@ class matPolyZonotope():
         if type(other) == torch.Tensor:
             assert len(other.shape) == 1, 'The other object should be 1-D tensor.'  
             assert other.shape[0] == self.n_cols
-
+            
             c = self.C @ other
             G = self.G.permute(2,0,1) @ other
             G = G.permute(1,0)   

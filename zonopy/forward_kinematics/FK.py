@@ -21,10 +21,10 @@ def forward_kinematics(qpos,qvel,joint_axes,P):
     EE = {}
     for t in range(n_time_steps):
         for i in range(n_joints):
-            EE[(i,t)] = torch.zeros(3,1)
+            EE_temp = torch.zeros(3,dtype=torch.float32)
             for j in reversed(range(i+1)):
-                EE[(i,t)] = rotato(j,t)@(EE[(i,t)]+P[j])
-
+                EE_temp = rotato[(j,t)]@(EE_temp+P[j])
+            EE[(i,t)] = EE_temp
     return EE
 
 

@@ -40,7 +40,15 @@ def removeRedundantExponents(ExpMat,G):
     '''
     # True for non-zero generators
     # NOTE: need to fix or maybe G should be zero tensor for empty
-    idxD = torch.any(G,0)
+    dim_G = len(G.shape)
+    permute_order = [dim_G-1] + list(range(dim_G-1))
+    reverse_order = list(range(1,dim_G))+[0]
+    G = G.permute(permute_order)
+    
+    idxD = G
+    for _ in range(len(G.shape)-1):    
+        idxD = torch.any(idxD,-1)
+    
     ExpMat = ExpMat.to(dtype=int)
 
     # skip if all non-zero OR G is already empty 
@@ -50,7 +58,7 @@ def removeRedundantExponents(ExpMat,G):
             # NOTE: might be better to assign None
             
             ExpMatNew =  torch.tensor([],dtype=int).reshape(ExpMat.shape[0],0)
-            Gnew = torch.tensor([]).reshape(G.shape[0],0)
+            Gnew = torch.tensor([]).reshape(list(G.shape[1:])+[0])
             '''
             ExpMatNew = torch.zeros(ExpMat.shape[0],1)
             Gnew = torch.zeros(G.shape[0],1)
@@ -58,7 +66,7 @@ def removeRedundantExponents(ExpMat,G):
             return ExpMatNew, Gnew
         else:
             # keep non-zero genertors
-            G = G[:,idxD]
+            G = G[idxD]
             ExpMat = ExpMat[:,idxD]
 
     # add hash value of the exponent vector to the exponent matrix
@@ -68,7 +76,7 @@ def removeRedundantExponents(ExpMat,G):
     # sort the exponents vectors according to the hash value
     ind = argsortrows(rankMat)
     ExpMatTemp = ExpMat[:,ind]
-    Gtemp = G[:,ind]
+    Gtemp = G[ind]
     
     # initialization
     counterNew = 0
@@ -77,19 +85,19 @@ def removeRedundantExponents(ExpMat,G):
     
     # first entry
     ExpMatNew[:,counterNew] = ExpMat[:,0]
-    Gnew[:,counterNew] = G[:,0]
+    Gnew[counterNew] = G[0]
 
     # loop over all exponent vectors
     for counter in range(1,ExpMatTemp.shape[1]):
         if all(ExpMatNew[:,counterNew] == ExpMatTemp[:,counter]):
-            Gnew[:,counterNew] += Gtemp[:,counter]
+            Gnew[counterNew] += Gtemp[counter]
         else:
             counterNew += 1
-            Gnew[:,counterNew] = Gtemp[:,counter]
+            Gnew[counterNew] = Gtemp[counter]
             ExpMatNew[:,counterNew] = ExpMatTemp[:,counter]
 
     ExpMatNew = ExpMatNew[:,:counterNew+1]
-    Gnew = Gnew[:,:counterNew+1]
+    Gnew = Gnew[:counterNew+1].permute(reverse_order)
     return ExpMatNew, Gnew
 
 def mergeExpMatrix(id1, id2, expMat1, expMat2):

@@ -35,7 +35,7 @@ class zonotope:
             Z = Z.reshape(-1,1)
         assert len(Z.shape) == 2, f'The dimension of Z input should be either 1 or 2, but {len(Z.shape)}.'
 
-        Z = Z.to(dtype=torch.float64)
+        Z = Z.to(dtype=torch.float32)
         self.Z = Z
         self.center = self.Z[:,0]
         self.generators = self.Z[:,1:]
@@ -108,13 +108,13 @@ class zonotope:
         return <zonotope>
         '''   
         assert type(other) == torch.Tensor, f'the other object should be torch tensor, but {type(other)}.'
-        other = other.to(dtype=torch.float64)
+        other = other.to(dtype=torch.float32)
         Z = other @ self.Z
         return zonotope(Z)
 
     def __matmul__(self,other):
         assert type(other) == torch.Tensor, f'the other object should be torch tensor, but {type(other)}.'
-        other = other.to(dtype=torch.float64)
+        other = other.to(dtype=torch.float32)
         Z = self.Z @ other
         return zonotope(Z)        
 
@@ -147,7 +147,7 @@ class zonotope:
         assert torch.all(slice_dim.to(dtype=int)==slice_dim), 'slicing dimension should be integer'
 
         slice_dim = slice_dim.to(dtype=int)
-        slice_pt = slice_pt.to(dtype=torch.float64)
+        slice_pt = slice_pt.to(dtype=torch.float32)
 
         N = len(slice_dim)
         
@@ -167,7 +167,7 @@ class zonotope:
 
         slice_c = c[slice_dim];
 
-        slice_G = torch.zeros(N,N,dtype=torch.float64)
+        slice_G = torch.zeros(N,N,dtype=torch.float32)
         for i in range(N):
             slice_G[i] = G[slice_dim[i],slice_idx]
         
@@ -222,7 +222,7 @@ class zonotope:
         full_vertices[:,n+1:] = -vertices_half[:,1:] + vertices_half[:,0].reshape(dim,1) + vertices_half[:,-1].reshape(dim,1) #flipped
         
         full_vertices += c.reshape(dim,1)
-        return full_vertices.to(dtype=torch.float64)
+        return full_vertices.to(dtype=torch.float32)
 
     def deleteZerosGenerators(self):
         '''

@@ -91,7 +91,7 @@ class polyZonotope:
         # TODO: allow to add bw polyZonotope and zonotope
 
         # if other is a vector
-        if type(other) == np.ndarray or type(other) == torch.tensor:
+        if type(other) == np.ndarray or type(other) == torch.Tensor:
             if type(other) == np.ndarray:
                 other = torch.from_numpy(other)
             assert other.shape == self.c.shape
