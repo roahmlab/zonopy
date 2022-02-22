@@ -75,7 +75,8 @@ if __name__ == '__main__':
     fig = plt.figure()    
     ax = fig.gca() 
     for t in range(100):
-        JRS[(0,t)].to_zonotope().plot2d(ax)
+        if t == 50:
+            JRS[(0,t)].to_zonotope().plot2d(ax)
         
     plt.axis([0.35,0.55,0.84,0.93])
     plt.show()
