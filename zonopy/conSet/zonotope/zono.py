@@ -6,7 +6,7 @@ Writer: Yongseok Kwon
 
 #%%
 import torch
-from conSet.polynomial_zonotope.poly_zono import polyZonotope 
+from zonopy import polyZonotope 
 from utils import delete_column
 
 import numpy as np
