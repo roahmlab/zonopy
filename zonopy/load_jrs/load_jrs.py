@@ -1,6 +1,6 @@
 
 import torch
-from .. import zonotope
+from zonopy import zonotope
 from mat4py import loadmat
 
 T_fail_safe = 0.5
@@ -67,3 +67,6 @@ def load_JRS(qpos,qvel):
                 JRS_poly[(i,jrs_idx)].c[acc_dim] = c_breaking
                 JRS_poly[(i,jrs_idx)].G[acc_dim] = delta_breaking
     return JRS_poly
+
+if __name__ == '__main__':
+    load_JRS(torch.tensor([1]),torch.tensor([0.01]))
