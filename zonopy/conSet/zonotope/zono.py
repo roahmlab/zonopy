@@ -262,7 +262,7 @@ class zonotope:
         z = self.project(torch.arange(dim))
         p = z.polygon2d()
 
-        ax.add_patch(patches.Polygon(p.T,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=2,))
+        ax.add_patch(patches.Polygon(p.T,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=.5,))
 
     def to_polyZonotope(self,dim=None):
         '''
