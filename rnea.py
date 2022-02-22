@@ -116,14 +116,14 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
         # orientation of Frame {i} with respect to Frame {i-1}
         dim = torch.where(joint_axes[:,i] !=0)
 
-        if dim == (0,)
-            R(:,:,i) = rx(joint_pos[i])
-        elif dim == (1,)
-            R(:,:,i) = ry(joint_pos[i])
-        elif dim= == (2,)
-            R(:,:,i) = rz(joint_pos[i])
+        if dim == (0,):
+            R[:,:,i] = rx(joint_pos[i])
+        elif dim == (1,):
+            R[:,:,i] = ry(joint_pos[i])
+        elif dim == (2,):
+            R[:,:,i] = rz(joint_pos[i])
         else:
-            assert(False, "not matching any of the axis")
+            assert False, "not matching any of the axis" 
 
         R_t[:,:,i] = R[:,:,i].t() # line 7
  
@@ -198,13 +198,13 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 
             # (6.46) angular acceleration
             wdot[:,i] = matmul(R_t[:,:,i], w0dot) # line 15
-                        + cross(matmul(R_t[:,:,i], w0_aux), joint_vel[i] * z[:,i])
-                        + joint_acc[i] * z(:,i)
+            + cross(matmul(R_t[:,:,i], w0_aux), joint_vel[i] * z[:,i])
+            + joint_acc[i] * z[:,i]
                     
             # (6.47) linear acceleration        
             linear_acc[:,i] = matmul(R_t[:,:,i], linear_acc0)
-                                + cross(w0dot, P[:,i]) ... # line 16 (TYPO IN PAPER)
-                                + cross(w0, cross(w0, P[:,i]))
+            + cross(w0dot, P[:,i])  # line 16 (TYPO IN PAPER)
+            + cross(w0, cross(w0, P[:,i]))
                             
         else:
             # (6.45) angular velocity
@@ -217,20 +217,20 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 
             # (6.46) angular acceleration
             wdot[:,i] = R_t[:,:,i] * wdot[:,i-1]  # line 15
-                                + cross(matmul(R_t[:,:,i], w_aux[:,i-1]), joint_vel[i]*z[:,i])
-                                + joint_acc[i] * z[:,i]
+            + cross(matmul(R_t[:,:,i], w_aux[:,i-1]), joint_vel[i]*z[:,i])
+            + joint_acc[i] * z[:,i]
         
                             
             # (6.47) linear acceleration
             linear_acc[:,i] = matmul(R_t[:,:,i], linear_acc[:,i-1])
-                                    + cross(wdot[:,i-1], P[:,i]) # line 16 (TYPO IN PAPER)
-                                    + cross(w[:,i-1], cross(w_aux[:,i-1],P[:,i]))
+            + cross(wdot[:,i-1], P[:,i]) # line 16 (TYPO IN PAPER)
+            + cross(w[:,i-1], cross(w_aux[:,i-1],P[:,i]))
  
 
         # (6.48) linear acceleration of CoM auxilliary
         linear_acc_com[:,i] = linear_acc[:,i] # line 23 (modified for standard RNEA)
-                        + cross(wdot[:,i],com[:,i]) .... 
-                        + cross(w[:,i], cross(w_aux[:,i],com[:,i]))                
+        + cross(wdot[:,i],com[:,i]) 
+        + cross(w[:,i], cross(w_aux[:,i],com[:,i]))                
 
         # (6.49) calculate forces
         F[:,i] = mass[:,i] * linear_acc_com[:,i] # line 27
@@ -238,7 +238,7 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
         # (6.50) calculate torques
         # TODO: I{i}
         N[:,i] = matmul(I[i], wdot[:,i]) # calculated in line 29
-                 + cross(w_aux[:,i], matmul(I[i], w[:,i]))
+        + cross(w_aux[:,i], matmul(I[i], w[:,i]))
 
 
     ''' RNEA reverse recursion '''
@@ -248,13 +248,24 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 
         # (6.52)
         n[:,i] = N[:,i]
-               + matmul(R[:,:,i+1], n[:,i+1]) # line 29
-               + cross(com[:,i], F[:,i]) # P(:,i) might not be right
-               + cross(P[:,i+1], matmul(R[:,:,i+1], f[:,i+1])) # line 29 (TYPO IN PAPER)
+        + matmul(R[:,:,i+1], n[:,i+1]) # line 29
+        + cross(com[:,i], F[:,i]) # P(:,i) might not be right
+        + cross(P[:,i+1], matmul(R[:,:,i+1], f[:,i+1])) # line 29 (TYPO IN PAPER)
 
     # calculate joint torques
     for i in range(1,num_joints+1):
         # (6.53)
         u[i,1] = n[:,i].t() * z[:,i] # line 31
+
+    return u
+
+if __name__ == '__main__':
+    import json
+    param_file = "fetch_arm_param.json"
+    with open(param_file) as f:
+        param = json.load(f)
+
+    print(param)
+
     
 
