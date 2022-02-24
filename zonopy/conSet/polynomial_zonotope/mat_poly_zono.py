@@ -142,10 +142,12 @@ class matPolyZonotope():
             if self.Grest.numel() != 0 and other.G.numel() !=0:
                 Grest_G = G_mul_g(self.Grest,other.G)
                 Grest = torch.hstack((Grest,Grest_G))
+            '''
             print('-'*30)
             print(c.shape)
             print(G)
             print(Grest.shape)
+            '''
             #import pdb; pdb.set_trace()
             return polyZonotope(c,G,Grest,expMat,id)
         else:
