@@ -151,10 +151,6 @@ class matPolyZonotope():
 
         elif type(other) == matPolyZonotope:
             assert self.n_cols == other.n_rows
-            print(self.expMat)
-            print(self.id)
-            print(other.expMat)
-            print(other.id)
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             dims = [self.n_rows, self.n_cols, other.n_cols]
             G = Grest = expMat = EMPTY_TENSOR

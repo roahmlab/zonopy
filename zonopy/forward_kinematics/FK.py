@@ -24,7 +24,10 @@ def forward_kinematics(qpos,qvel,joint_axes,P):
         for i in range(n_joints):
             P_ee[(i,t)] = polyZonotope(torch.zeros(3,dtype=torch.float32))
             R_ee[(i,t)] = matPolyZonotope(torch.eye(3,dtype=torch.float32))
-            for j in reversed(range(i+1)):
+            for j in range(i+1):
+            
+            #for j in reversed(range(i+1)):
+            
                 #print(i)
                 #print(R_ee[(i,t)])
                 #f i == 1 and j==1:

@@ -129,7 +129,8 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
             ind = [j for j in range(len(id)) if id[j] == id2[i]]
             # if ind is empty
             if not ind:
-                id = torch.hstack((id,torch.tensor(id2[i])))
+                id2_i = id2[i].clone().detach()
+                id = torch.hstack((id,id2_i))
                 ind2[i] = len(id)-1
             else:
                 ind2[i] = ind[0]

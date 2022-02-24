@@ -18,7 +18,8 @@ ax = fig.gca()
 for i in range(n_joints):
     for t in range(n_time_steps):
         Z = EE[(i,t)].to_zonotope()
-        Z.plot2d(ax,facecolor='none')
+        if t%20 == 0 :
+            Z.plot2d(ax,facecolor='none')
 
 plt.title('FRS of end-effector')
 plt.xlabel('x')
