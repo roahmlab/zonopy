@@ -52,9 +52,6 @@ def load_JRS(qpos,qvel):
         jrs_mats_load = jrs_mats_load['JRS_mat']
         n_time_steps = len(jrs_mats_load) # 100
 
-
-
-
         for jrs_idx in range(n_time_steps):
             c_qpos = torch.cos(qpos[i])
             s_qpos = torch.sin(qpos[i])

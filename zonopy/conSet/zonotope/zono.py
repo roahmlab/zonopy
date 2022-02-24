@@ -202,7 +202,7 @@ class zonotope:
         dim = 2
         z = self.deleteZerosGenerators()
         c = z.center
-        G = z.generators
+        G = torch.clone(z.generators)
         n = z.n_generators
         x_max = torch.sum(abs(G[0,:]))
         y_max = torch.sum(abs(G[1,:]))

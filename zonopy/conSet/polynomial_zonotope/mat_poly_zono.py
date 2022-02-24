@@ -144,7 +144,7 @@ class matPolyZonotope():
                 Grest = torch.hstack((Grest,Grest_G))
             print('-'*30)
             print(c.shape)
-            print(G.shape)
+            print(G)
             print(Grest.shape)
             #import pdb; pdb.set_trace()
             return polyZonotope(c,G,Grest,expMat,id)
