@@ -130,7 +130,7 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
             # if ind is empty
             if not ind:
                 id = torch.hstack((id,torch.tensor(id2[i])))
-                ind2[i] = len(id)
+                ind2[i] = len(id)-1
             else:
                 ind2[i] = ind[0]
 

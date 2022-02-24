@@ -71,7 +71,7 @@ class matPolyZonotope():
 
     def __matmul__(self,other):
         '''
-        Overloaded '@' operator for the multiplication of a matrix or an interval matrix with a polyZonotope
+        Overloaded '@' operator for the multiplication of a __ with a matPolyZonotope
         self: <matPolyZonotope>
         other: <torch.tensor> OR <polyZonotope>
         return <polyZonotope>
@@ -84,10 +84,8 @@ class matPolyZonotope():
             assert other.shape[0] == self.n_cols
             
             c = self.C @ other
-            G = self.G.permute(2,0,1) @ other
-            G = G.permute(1,0)   
-            Grest = self.Grest.permute(2,0,1) @ other
-            Grest = Grest.permute(1,0)
+            G = G_mul_c(self.G,other)
+            Grest = G_mul_c(self.Grest,other)
             id = self.id
             expMat = self.expMat 
                 
@@ -150,8 +148,75 @@ class matPolyZonotope():
             '''
             #import pdb; pdb.set_trace()
             return polyZonotope(c,G,Grest,expMat,id)
+
+        elif type(other) == matPolyZonotope:
+            assert self.n_cols == other.n_rows
+            print(self.expMat)
+            print(self.id)
+            print(other.expMat)
+            print(other.id)
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            dims = [self.n_rows, self.n_cols, other.n_cols]
+            G = Grest = expMat = EMPTY_TENSOR
+            C = self.C @ other.C
+            
+            # deal with dependent generators
+            if other.G.numel() != 0:
+                C_G = self.C @ other.G
+                G = torch.cat((G,C_G),dim=-1)
+                expMat = torch.hstack((expMat,expMat2))
+            if self.G.numel() != 0:
+                G_C = G_mul_C(self.G,other.C)
+                G = torch.cat((G,G_C),dim=-1)
+                expMat = torch.hstack((expMat,expMat1))
+            if self.G.numel() != 0 and other.G.numel() != 0:
+                G_G = G_mul_G(self.G,other.G,dims)
+                G = torch.cat((G,G_G),dim=-1)
+                # NOTE:
+                for i in range(self.G.shape[-1]):
+                    expMat = torch.hstack((expMat, expMat1[:,i].reshape(-1,1)+expMat2))
+            
+            # deal with independent generators
+            if other.Grest.numel() != 0:
+                C_Grest = self.C @ other.Grest
+                Grest = torch.cat((Grest,C_Grest),dim=-1)
+            if self.Grest.numel() != 0:
+                Grest_C = G_mul_C(self.Grest,other.C)
+                Grest = torch.cat((Grest,Grest_C),dim=-1)
+            if self.Grest.numel() != 0 and other.Grest.numel() != 0:
+                Grest_Grest = G_mul_G(self.Grest,other.Grest,dims)
+                Grest = torch.cat((Grest,Grest_Grest),dim=-1)
+            if self.G.numel() !=0 and other.Grest.numel() !=0:
+                G_Grest = G_mul_G(self.G,other.Grest,dims)
+                Grest = torch.cat((Grest,G_Grest),dim=-1)
+            if self.Grest.numel() != 0 and other.G.numel() !=0:
+                Grest_G = G_mul_G(self.Grest,other.G,dims)
+                Grest = torch.cat((Grest,Grest_G),dim=-1)
+            
+            return matPolyZonotope(C,G,Grest,expMat,id)
+
+
         else:
             raise ValueError('the other object should be torch tensor or polynomial zonotope.')
+
+    def __rmatmul__(self,other):
+        '''
+        Overloaded '@' operator for the multiplication of a __ with a matPolyZonotope
+        self: <matPolyZonotope>
+        other: <torch.tensor> OR <polyZonotope>
+        return <polyZonotope>
+        
+        other: <matPolyZonotope>
+        return <matPolyZonotope>
+        '''
+        if type(other) == torch.Tensor:
+            assert len(other.shape) == 2, 'The other object should be 2-D tensor.'  
+            assert other.shape[1] == self.n_rows
+                
+            C = other @ self.C
+            G = other @ self.G
+            Grest = other @ self.Grest
+            return matPolyZonotope(C,G,Grest,self.expMat,self.id)
 
 def G_mul_c(G,c):
     G_c = G.permute(2,0,1) @ c
@@ -161,4 +226,14 @@ def G_mul_g(G,g,dim=None):
     if dim is None:
         dim = G.shape[0]
     G_g = G.permute(2,0,1) @ g
-    return G_g.permute(1,2,0).reshape(dim,-1)
+    return G_g.permute(1,0,2).reshape(dim,-1)
+
+def G_mul_C(G,C):
+    G_C = G.permute(2,0,1) @ C
+    return G_C.permute(1,2,0)
+
+def G_mul_G(G1,G2,dims=None):
+    if dims is None:
+        dims = [G1.shape[0],G1.shape[1],G2.shape[1]]
+    G_G = G1.permute(2,0,1).reshape(-1,1,dims[0],dims[1]) @ G2.permute(2,0,1)
+    return G_G.permute(2,3,0,1).reshape(dims[0],dims[2],-1)
