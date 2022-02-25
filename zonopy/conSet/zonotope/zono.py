@@ -46,7 +46,7 @@ class zonotope:
         return f'\ncenter: \n {self.center} \n\n generators: \n {self.generators} \n\n dimension: {self.dim} \n\n number of generators: {self.n_generators}\n'
     
     def __repr__(self):
-        return str(Z).replace('tensor','zonotope')
+        return str(self.Z).replace('tensor','zonotope')
     
     def  __add__(self,other):
         '''
@@ -206,8 +206,8 @@ class zonotope:
         n = z.n_generators
         x_max = torch.sum(abs(G[0,:]))
         y_max = torch.sum(abs(G[1,:]))
-        G[:,G[1,:]<0] = - G[:,G[1,:]<0] # make all y components as positive
-        angles = torch.atan2(G[1,:], G[0,:]) % 2*torch.pi
+        G[:,z.generators[1,:]<0] = - z.generators[:,z.generators[1,:]<0] # make all y components as positive
+        angles = torch.atan2(G[1,:], G[0,:])
         ang_idx = torch.argsort(angles)
         
         vertices_half = torch.zeros(dim,n+1)
@@ -304,13 +304,13 @@ if __name__ == '__main__':
 
     fig = plt.figure()    
     ax = fig.gca() 
-    z.plot2d(ax)
+    #z.plot2d(ax)
 
   
-    Z1 = torch.tensor([[5, 1, 0,1],[5, 0, -1,1]])
+    Z1 = torch.tensor([[0, 1, 0,1,3,4,5,6,7,1,4,4,15,6,1,3],[0, 0, -1,14,5,1,6,7,1,4,33,15,1,2,33,3]])*0.0001
     z1 = zonotope(Z1)
     z1.plot2d(ax)
-    plt.axis([-5,5,-5,5])
+    #plt.axis([-5,5,-5,5])
     plt.show()
 
 # %%
