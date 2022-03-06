@@ -159,6 +159,7 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
     # linear acceleration of frame
     linear_acc = torch.zeros(3, num_joints)
     
+    # use_interval = True
     if not use_interval:
         # linear acceleration of com
         linear_acc_com = torch.zeros(3, num_joints)

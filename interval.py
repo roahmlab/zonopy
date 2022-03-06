@@ -34,9 +34,9 @@ class interval:
 
     def __mul__(self, other):
         if isinstance(other,interval):
-            results = [self.inf * other.inf, self.inf * other.sup, self.sup * other.inf, self.sup * other.sup]
-            new_inf = Tensor([min(results)]).to(self.dtype).to(self.device)
-            new_sup = Tensor([max(results)]).to(self.dtype).to(self.device)
+            results = Tensor([self.inf * other.inf, self.inf * other.sup, self.sup * other.inf, self.sup * other.sup])
+            new_inf = torch.min(results)
+            new_sup = torch.max(results)
 
             return interval(new_inf, new_sup)
         elif (isinstance(other, Tensor) and other.numel() == 1) or isinstance(other,numbers.Number):
@@ -169,8 +169,8 @@ class interval:
     '''
 
 def matmul_interval(mat, intv):
-    assert isinstance(mat, Tensor) or isinstance(mat, interval), "the matrix should be in the type of a torch tensor"
-    assert isinstance(intv, interval), "the intv should be in the type of an interval"
+    assert isinstance(mat, Tensor) or isinstance(mat, interval), "the matrix should be in the type of a torch tensor or an interval"
+    assert isinstance(intv, interval) or isinstance(mat, interval), "the intv or the mat should be in the type of an interval"
     assert mat.dim() == 2, "the dimension of the matrix should be 2"
     assert intv.dim() == 2, "the dimenstion of the interval matrix should be 2"
     assert mat.shape[1] == intv.shape[0], "the dimension of mat and interval should match"
@@ -207,7 +207,7 @@ def matmul_interval(mat, intv):
 
 def cross_interval(vec, intv):
     assert len(vec) == 3, "we are considering only 3d vec"
-    new_inf = torch.zeros(3).to(intv.dtype).to(intv.device)
+    new_inf = torch.zeros_like(vec).to(intv.dtype).to(intv.device)
     new_sup = torch.zeros_like(new_inf)
 
     intvs = []
