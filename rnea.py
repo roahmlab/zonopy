@@ -32,7 +32,7 @@ def ry(th):
     return R
 
 
-def ry(th):
+def rz(th):
     # note: th should be a tensor
     c = torch.cos(th)
     s = torch.sin(th)
@@ -66,13 +66,13 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
     # TODO: convert to Tensor?
 
     # link masses
-    mass = robot_params['mass']
+    mass = Tensor(robot_params['mass'])
 
     # center of mass for each link
-    com = robot_params['com']
+    com = Tensor(robot_params['com'])
 
     # inertia wrt to center of mass frame
-    I = robot_params['I'];
+    I = Tensor(robot_params['I'])
     
     # number of active joints
     num_joints = robot_params['num_joints']
@@ -81,8 +81,8 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
     use_interval = robot_params['use_interval']
     
     # fixed transforms
-    T0 = robot_params['T0'];
-    joint_axes = robot_params['joint_axes']
+    T0 = Tensor(robot_params['T0'])
+    joint_axes = Tensor(robot_params['joint_axes'])
 
 
     ''' set inputs '''
@@ -103,7 +103,7 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
     R = torch.eye(3).repeat(num_joints+1,1,1).permute(1,2,0).contiguous()
 
     # position of the origin of frame i with respect to frame i-1
-    P = torch.zeros(3, num_joints+1);
+    P = torch.zeros(3, num_joints+1)
 
     # orientation of frame i-1 with respect to frame i
     R_t = torch.eye(3).repeat(num_joints,1,1).permute(1,2,0).contiguous()
@@ -149,7 +149,7 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 
     # set gravity
     if use_gravity:
-        linear_acc0[:,0] = -robot_params['gravity']
+        linear_acc0[:,0] = -Tensor(robot_params['gravity'])
 
     # angular velocity/acceleration
     w = torch.zeros(3, num_joints)
@@ -165,7 +165,7 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 
         # link forces/torques
         F = torch.zeros(3, num_joints)
-        N = zeros(3, num_joints)
+        N = torch.zeros(3, num_joints)
         
         # intialize f, n, u
         f = torch.zeros(3, num_joints + 1)
@@ -190,72 +190,58 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
         # PYTHON has zero indexing, soo...
         if i == 0:
             # (6.45) angular velocity
-            # TODO: vector + scalar?
-            w[:,i] = matmul(R_t[:,:,i], w0) + joint_vel[i] * z[:,i] # line 13
+            w[:,i:i+1] = matmul(R_t[:,:,i], w0) + joint_vel[i] * z[:,i:i+1] # line 13
 
             # auxillary angular velocity
-            w_aux[:,i] = matmul(R_t[:,:,i], w0_aux) + joint_vel_aux[i] * z[:,i] # line 13
+            w_aux[:,i:i+1] = matmul(R_t[:,:,i], w0_aux) + joint_vel_aux[i] * z[:,i:i+1] # line 13
 
             # (6.46) angular acceleration
-            wdot[:,i] = matmul(R_t[:,:,i], w0dot) # line 15
-            + cross(matmul(R_t[:,:,i], w0_aux), joint_vel[i] * z[:,i])
-            + joint_acc[i] * z[:,i]
+            wdot[:,i:i+1] = matmul(R_t[:,:,i], w0dot) + cross(matmul(R_t[:,:,i], w0_aux), joint_vel[i] * z[:,i:i+1]) + joint_acc[i] * z[:,i:i+1] # line 15
                     
-            # (6.47) linear acceleration        
-            linear_acc[:,i] = matmul(R_t[:,:,i], linear_acc0)
-            + cross(w0dot, P[:,i])  # line 16 (TYPO IN PAPER)
-            + cross(w0, cross(w0, P[:,i]))
+            # (6.47) linear acceleration       
+            linear_acc[:,i:i+1] = matmul(R_t[:,:,i], linear_acc0) + cross(w0dot, P[:,i:i+1]) + cross(w0, cross(w0, P[:,i:i+1]))  # line 16 (TYPO IN PAPER)
                             
         else:
             # (6.45) angular velocity
-            w[:,i] = matmul(R_t[:,:,i], w[:,i-1]) + joint_vel[i] * z[:,i] # line 13
+            w[:,i:i+1] = matmul(R_t[:,:,i], w[:,i-1:i]) + joint_vel[i] * z[:,i:i+1] # line 13
 
 
             # auxillar angular velocity
-            w_aux[:,i] = R_t[:,:,i] * w_aux[:,i-1] + joint_vel_aux[i] * z[:,i] # line 14
+            w_aux[:,i:i+1] = matmul(R_t[:,:,i], w_aux[:,i-1:i]) + joint_vel_aux[i] * z[:,i:i+1] # line 14
 
 
             # (6.46) angular acceleration
-            wdot[:,i] = R_t[:,:,i] * wdot[:,i-1]  # line 15
-            + cross(matmul(R_t[:,:,i], w_aux[:,i-1]), joint_vel[i]*z[:,i])
-            + joint_acc[i] * z[:,i]
+            wdot[:,i:i+1] = matmul(R_t[:,:,i], wdot[:,i-1:i]) + cross(matmul(R_t[:,:,i], w_aux[:,i-1:i]), joint_vel[i]*z[:,i:i+1]) + joint_acc[i] * z[:,i:i+1]  # line 15
         
                             
             # (6.47) linear acceleration
-            linear_acc[:,i] = matmul(R_t[:,:,i], linear_acc[:,i-1])
-            + cross(wdot[:,i-1], P[:,i]) # line 16 (TYPO IN PAPER)
-            + cross(w[:,i-1], cross(w_aux[:,i-1],P[:,i]))
+            linear_acc[:,i:i+1] = matmul(R_t[:,:,i], linear_acc[:,i-1:i]) + cross(wdot[:,i-1:i], P[:,i:i+1]) + cross(w[:,i-1:i], cross(w_aux[:,i-1:i],P[:,i:i+1])) # line 16 (TYPO IN PAPER)
  
 
         # (6.48) linear acceleration of CoM auxilliary
-        linear_acc_com[:,i] = linear_acc[:,i] # line 23 (modified for standard RNEA)
-        + cross(wdot[:,i],com[:,i]) 
-        + cross(w[:,i], cross(w_aux[:,i],com[:,i]))                
+        linear_acc_com[:,i:i+1] = linear_acc[:,i:i+1] + cross(wdot[:,i:i+1],com[:,i:i+1]) + cross(w[:,i:i+1], cross(w_aux[:,i:i+1],com[:,i:i+1])) # line 23 (modified for standard RNEA)
 
         # (6.49) calculate forces
-        F[:,i] = mass[:,i] * linear_acc_com[:,i] # line 27
+        # WARNING: difference between MATLAB and PYTHON here
+        F[:,i:i+1] = mass[i] * linear_acc_com[:,i:i+1] # line 27
 
         # (6.50) calculate torques
         # TODO: I{i}
-        N[:,i] = matmul(I[i], wdot[:,i]) # calculated in line 29
-        + cross(w_aux[:,i], matmul(I[i], w[:,i]))
+        N[:,i:i+1] = matmul(I[i], wdot[:,i:i+1]) + cross(w_aux[:,i:i+1], matmul(I[i], w[:,i:i+1])) # calculated in line 29
 
 
     ''' RNEA reverse recursion '''
     for i in range(num_joints-1,-1,-1):
         # (6.51)
-        f[:,i] = matmul(R[:,:,i+1], f[:,i+1]) + F[:,i] # line 28
+        f[:,i:i+1] = matmul(R[:,:,i+1], f[:,i+1:i+2]) + F[:,i:i+1] # line 28
 
         # (6.52)
-        n[:,i] = N[:,i]
-        + matmul(R[:,:,i+1], n[:,i+1]) # line 29
-        + cross(com[:,i], F[:,i]) # P(:,i) might not be right
-        + cross(P[:,i+1], matmul(R[:,:,i+1], f[:,i+1])) # line 29 (TYPO IN PAPER)
+        n[:,i:i+1] = N[:,i:i+1] + matmul(R[:,:,i+1], n[:,i+1:i+2]) + cross(com[:,i:i+1], F[:,i:i+1]) + cross(P[:,i+1:i+2], matmul(R[:,:,i+1], f[:,i+1:i+2])) # # line 29,  P(:,i) might not be right, line 29 (TYPO IN PAPER)
 
     # calculate joint torques
-    for i in range(1,num_joints+1):
+    for i in range(num_joints):
         # (6.53)
-        u[i,1] = n[:,i].t() * z[:,i] # line 31
+        u[i,0] = matmul(n[:,i:i+1].t(), z[:,i:i+1]) # line 31
 
     return u
 
@@ -265,7 +251,15 @@ if __name__ == '__main__':
     with open(param_file) as f:
         param = json.load(f)
 
-    print(param)
+    q = torch.ones(6) * 0
+    qd = torch.ones(6) * 0.2
+    qdd = torch.ones(6) * 0.3
+    q_aux_d = torch.ones(6) * 0.1
+    import time
+    start = time.time()
+    print(rnea(q, qd, q_aux_d, qdd, True, param))
+    end = time.time()
+    print(f"took {end - start} seconds to compute")
 
     
 
