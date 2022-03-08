@@ -1,6 +1,7 @@
 import torch
 from torch import Tensor
 from interval import interval, matmul_interval, cross_interval
+from get_params import get_robot_params, get_interval_params
 
 def rx(th):
     # note: th should be a tensor
@@ -63,13 +64,22 @@ def matmul(A,B):
 
 def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
     '''Robot parameters'''
-    # TODO: convert to Tensor?
+    # use interval arithmetic
+    use_interval = robot_params['use_interval']
 
-    # link masses
-    mass = Tensor(robot_params['mass'])
+    if not use_interval:
+        # link masses
+        mass = Tensor(robot_params['mass'])
 
-    # center of mass for each link
-    com = Tensor(robot_params['com'])
+        # center of mass for each link
+        com = Tensor(robot_params['com'])
+    else:
+        # link masses
+        mass = robot_params['mass']
+
+        # center of mass for each link
+        com = robot_params['com']
+
 
     # inertia wrt to center of mass frame
     I = Tensor(robot_params['I'])
@@ -77,8 +87,7 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
     # number of active joints
     num_joints = robot_params['num_joints']
     
-    # use interval arithmetic
-    use_interval = robot_params['use_interval']
+    
     
     # fixed transforms
     T0 = Tensor(robot_params['T0'])
@@ -159,7 +168,6 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
     # linear acceleration of frame
     linear_acc = torch.zeros(3, num_joints)
     
-    # use_interval = True
     if not use_interval:
         # linear acceleration of com
         linear_acc_com = torch.zeros(3, num_joints)
@@ -249,8 +257,8 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 if __name__ == '__main__':
     import json
     param_file = "fetch_arm_param.json"
-    with open(param_file) as f:
-        param = json.load(f)
+    #param = get_robot_params(param_file)
+    param = get_interval_params(param_file)
 
     q = torch.ones(6) * 0
     qd = torch.ones(6) * 0.2

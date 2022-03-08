@@ -19,10 +19,12 @@ class interval:
     def __add__(self, other):
         if isinstance(other, interval):
             return interval(self.inf + other.inf, self.sup + other.sup)
-        elif isinstance(other, Tensor) and other.numel() == 1:
-            return interval(self.sup + other, other.interval + other)
+        elif isinstance(other, Tensor) or isinstance(other, numbers.Number):
+            return interval(self.inf + other, self.sup + other)
         else:
             assert False, "such addition is not implemented yet"
+
+    __radd__ = __add__
 
     def __sub__(self, other):
         if isinstance(other, interval):
@@ -33,17 +35,34 @@ class interval:
             assert False, "such substraction is not implemented yet"
 
     def __mul__(self, other):
-        if isinstance(other,interval):
-            results = Tensor([self.inf * other.inf, self.inf * other.sup, self.sup * other.inf, self.sup * other.sup])
-            new_inf = torch.min(results)
-            new_sup = torch.max(results)
-
-            return interval(new_inf, new_sup)
-        elif (isinstance(other, Tensor) and other.numel() == 1) or isinstance(other,numbers.Number):
+        if (isinstance(other, Tensor) and other.numel() == 1) or isinstance(other, numbers.Number):
             if other >= 0:
                 return interval(other * self.inf, other * self.sup)
             else:
                 return interval(other * self.sup, other * self.inf)
+
+        if self.numel() == 1 and isinstance(other, interval):
+            candidates = other.inf.repeat(4,1).reshape((4,) + other.shape)
+            candidates[0] = self.inf * other.inf
+            candidates[1] = self.inf * other.sup
+            candidates[2] = self.sup * other.inf
+            candidates[3] = self.sup * other.sup
+
+            new_inf = torch.min(candidates,dim=0).values
+            new_sup = torch.max(candidates,dim=0).values
+            return interval(new_inf, new_sup)
+
+        elif isinstance(other, interval) and other.numel() == 1:
+            candidates = self.inf.repeat(4,1).reshape((4,) + self.shape)
+            candidates[0] = self.inf * other.inf
+            candidates[1] = self.inf * other.sup
+            candidates[2] = self.sup * other.inf
+            candidates[3] = self.sup * other.sup
+
+            new_inf = torch.min(candidates,dim=0).values.reshape(self.shape)
+            new_sup = torch.max(candidates,dim=0).values.reshape(self.shape)
+            return interval(new_inf, new_sup)
+
         else:
             assert False, "such multiplication is not implemented yet"
 
@@ -74,6 +93,9 @@ class interval:
 
     def t(self):
         return interval(self.inf.t(), self.sup.t())
+
+    def numel(self):
+        return self.inf.numel()
 
     '''
 
@@ -188,26 +210,17 @@ def matmul_interval(mat, intv):
                 new_inf[i,j] += new_intv.inf.item()
                 new_sup[i,j] += new_intv.sup.item()
 
-    '''
-    # to acclerate the matrix case (perhaps)
-    for i in range(I):
-        negative_indices = mat[i] > 0
-        inf_mat = intv.inf.clone()
-        sup_mat = intv.sup.clone()
-        inf_mat[:,negative_indices] = intv.sup[:,negative_indices]
-        sup_mat[:,negative_indices] = intv.inf[:,negative_indices]
-
-        for j in range(J):
-            new_inf[i,j] = torch.dot(mat[i], inf_mat[j,:])
-            new_sup[i,j] = torch.dot(mat[i], sup_mat[j,:])
-    '''
-
     return interval(new_inf, new_sup)
 
 
 def cross_interval(vec, intv):
     assert len(vec) == 3, "we are considering only 3d vec"
-    new_inf = torch.zeros_like(vec).to(intv.dtype).to(intv.device)
+    if isinstance(vec, Tensor):
+        new_inf = torch.zeros_like(vec).to(intv.dtype).to(intv.device)
+    elif isinstance(vec, interval):
+        new_inf = torch.zeros_like(vec.inf).to(intv.dtype).to(intv.device)
+    else:
+        assert False, "such cross not supported"
     new_sup = torch.zeros_like(new_inf)
 
     intvs = []
