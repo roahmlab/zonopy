@@ -73,6 +73,9 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 
         # center of mass for each link
         com = Tensor(robot_params['com'])
+
+        # inertia wrt to center of mass frame
+        I = Tensor(robot_params['I'])
     else:
         # link masses
         mass = robot_params['mass']
@@ -80,14 +83,14 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
         # center of mass for each link
         com = robot_params['com']
 
+        # inertia wrt to center of mass frame
+        I = robot_params['I']
+        for intv in I:
+            print(intv)
 
-    # inertia wrt to center of mass frame
-    I = Tensor(robot_params['I'])
     
     # number of active joints
     num_joints = robot_params['num_joints']
-    
-    
     
     # fixed transforms
     T0 = Tensor(robot_params['T0'])
@@ -235,7 +238,6 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
         F[:,i:i+1] = mass[i] * linear_acc_com[:,i:i+1] # line 27
 
         # (6.50) calculate torques
-        # TODO: I{i}
         N[:,i:i+1] = matmul(I[i], wdot[:,i:i+1]) + cross(w_aux[:,i:i+1], matmul(I[i], w[:,i:i+1])) # calculated in line 29
 
 
@@ -257,8 +259,18 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 if __name__ == '__main__':
     import json
     param_file = "fetch_arm_param.json"
-    #param = get_robot_params(param_file)
+    param = get_robot_params(param_file)
     param = get_interval_params(param_file)
+
+    '''
+    if param['use_interval']:
+        I = Tensor([[0.00417,0.00443],[-0.00010,-0.00010],[0.00097,0.00103],
+            [-0.00010,-0.00010], [0.00844,0.00896], [-0.00010,-0.00010],
+            [0.00097,0.00103], [-0.00010,-0.00010], [0.00844,0.00896]])
+        inf = I[:,0].reshape(3,3)
+        sup = I[:,1].reshape(3,3)
+        param['I'] = interval(inf,sup)
+    '''
 
     q = torch.ones(6) * 0
     qd = torch.ones(6) * 0.2

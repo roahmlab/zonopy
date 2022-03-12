@@ -214,7 +214,7 @@ def matmul_interval(mat, intv):
 
 
 def cross_interval(vec, intv):
-    assert len(vec) == 3, "we are considering only 3d vec"
+    assert vec.numel() == 3, "we are considering only 3d vec"
     if isinstance(vec, Tensor):
         new_inf = torch.zeros_like(vec).to(intv.dtype).to(intv.device)
     elif isinstance(vec, interval):
