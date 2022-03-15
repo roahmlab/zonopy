@@ -86,8 +86,8 @@ def get_interval_params(param_file):
 
         for j in range(3):
             for k in range(3):
-                a = min(lo_I[j,k], hi_I[j,k])
-                b = max(lo_I[j,k], hi_I[j,k])
+                a = min(lo_I[j,k], hi_I[j,k]).clone()
+                b = max(lo_I[j,k], hi_I[j,k]).clone()
 
                 lo_I[j,k] = a
                 hi_I[j,k] = b
@@ -101,3 +101,7 @@ def get_interval_params(param_file):
     param['I'] = I
     param['use_interval'] = True
     return param
+
+if __name__ == '__main__':
+    param_file = "fetch_arm_param.json"
+    param = get_interval_params(param_file)

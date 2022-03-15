@@ -30,7 +30,7 @@ class interval:
         if isinstance(other, interval):
             return interval(self.inf - other.sup, self.sup - other.inf)
         elif isinstance(other, Tensor) and other.numel() == 1:
-            return interval(self.sup - other, other.interval - other)
+            return interval(self.inf - other, self.sup - other)
         else:
             assert False, "such substraction is not implemented yet"
 
@@ -59,8 +59,8 @@ class interval:
             candidates[2] = self.sup * other.inf
             candidates[3] = self.sup * other.sup
 
-            new_inf = torch.min(candidates,dim=0).values.reshape(self.shape)
-            new_sup = torch.max(candidates,dim=0).values.reshape(self.shape)
+            new_inf = torch.min(candidates,dim=0).values
+            new_sup = torch.max(candidates,dim=0).values
             return interval(new_inf, new_sup)
 
         else:

@@ -85,8 +85,6 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
 
         # inertia wrt to center of mass frame
         I = robot_params['I']
-        for intv in I:
-            print(intv)
 
     
     # number of active joints
@@ -144,7 +142,6 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
         
         # orientation of joint i axis of rotation with respect to Frame {i}
         z[:,i] = joint_axes[:,i]
-    
  
     # get transform to end-effector
     if robot_params['num_bodies'] > robot_params['num_joints']:
@@ -211,7 +208,7 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
             wdot[:,i:i+1] = matmul(R_t[:,:,i], w0dot) + cross(matmul(R_t[:,:,i], w0_aux), joint_vel[i] * z[:,i:i+1]) + joint_acc[i] * z[:,i:i+1] # line 15
                     
             # (6.47) linear acceleration       
-            linear_acc[:,i:i+1] = matmul(R_t[:,:,i], linear_acc0) + cross(w0dot, P[:,i:i+1]) + cross(w0, cross(w0, P[:,i:i+1]))  # line 16 (TYPO IN PAPER)
+            linear_acc[:,i:i+1] = matmul(R_t[:,:,i], (linear_acc0 + cross(w0dot, P[:,i:i+1]) + cross(w0, cross(w0, P[:,i:i+1]))))  # line 16 (TYPO IN PAPER)
                             
         else:
             # (6.45) angular velocity
@@ -227,18 +224,18 @@ def rnea(q, qd, q_aux_d, qdd, use_gravity, robot_params):
         
                             
             # (6.47) linear acceleration
-            linear_acc[:,i:i+1] = matmul(R_t[:,:,i], linear_acc[:,i-1:i]) + cross(wdot[:,i-1:i], P[:,i:i+1]) + cross(w[:,i-1:i], cross(w_aux[:,i-1:i],P[:,i:i+1])) # line 16 (TYPO IN PAPER)
- 
+            linear_acc[:,i:i+1] = matmul(R_t[:,:,i], (linear_acc[:,i-1:i] + cross(wdot[:,i-1:i], P[:,i:i+1]) + cross(w[:,i-1:i], cross(w_aux[:,i-1:i],P[:,i:i+1])))) # line 16 (TYPO IN PAPER)
 
         # (6.48) linear acceleration of CoM auxilliary
         linear_acc_com[:,i:i+1] = linear_acc[:,i:i+1] + cross(wdot[:,i:i+1],com[:,i:i+1]) + cross(w[:,i:i+1], cross(w_aux[:,i:i+1],com[:,i:i+1])) # line 23 (modified for standard RNEA)
-
         # (6.49) calculate forces
         # WARNING: difference between MATLAB and PYTHON here
         F[:,i:i+1] = mass[i] * linear_acc_com[:,i:i+1] # line 27
 
         # (6.50) calculate torques
         N[:,i:i+1] = matmul(I[i], wdot[:,i:i+1]) + cross(w_aux[:,i:i+1], matmul(I[i], w[:,i:i+1])) # calculated in line 29
+        #print(N)
+        # print(I[i])
 
 
     ''' RNEA reverse recursion '''
@@ -272,10 +269,21 @@ if __name__ == '__main__':
         param['I'] = interval(inf,sup)
     '''
 
-    q = torch.ones(6) * 0
+    '''
+    q = torch.ones(6) * 0.2
     qd = torch.ones(6) * 0.2
     qdd = torch.ones(6) * 0.3
     q_aux_d = torch.ones(6) * 0.1
+    '''
+    with open('sample_input.json', 'r') as f:
+        data = json.load(f)
+        d = data[0]
+
+        q = Tensor(d['q'])
+        qd = Tensor(d['qd'])
+        qdd = Tensor(d['qdd'])
+        q_aux_d = Tensor(d['q_aux_d'])
+
     import time
     start = time.time()
     print(rnea(q, qd, q_aux_d, qdd, True, param))
