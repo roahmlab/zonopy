@@ -7,8 +7,13 @@ function [dyn_zero_to_t_plan, dyn_t_plan_to_t_total] = generate_parameterized_dy
 %   then, we define trajectories with a failsafe
 %   (braking) maneuver from the peak speed over t \in [t_plan, t_total].
 
-if ~exist('./jrs_dynamics', 'dir')
-   mkdir('./jrs_dynamics')
+
+currentFile = mfilename('fullpath');
+gen_jrs_path = fileparts(currentFile);
+save_path = fullfile(gen_jrs_path,'jrs_dynamics');
+
+if ~exist(save_path, 'dir')
+   mkdir(save_path)
 end
 
 syms cqi sqi dqi kai kvi t real;
@@ -25,7 +30,7 @@ dkvi = 0;
 dt = 1;
 
 dx = [dcqi; dsqi; ddqi; dkai; dkvi; dt];
-dyn_zero_to_t_plan = matlabFunction(dx, 'File', './jrs_dynamics/dyn_zero_to_t_plan', 'vars', {x, udummy});
+dyn_zero_to_t_plan = matlabFunction(dx, 'File', fullfile(save_path,'dyn_zero_to_t_plan'), 'vars', {x, udummy});
 
 % now we specify braking dynamics on t \in [t_plan, t_total]
 t_to_stop = t_total - t_plan;
@@ -38,6 +43,6 @@ dsqi = cqi*dqi;
 % dqi = q_i_dot;
 
 dx = [dcqi; dsqi; ddqi; dkai; dkvi; dt];
-dyn_t_plan_to_t_total = matlabFunction(dx, 'File', './jrs_dynamics/dyn_t_plan_to_t_total', 'vars', {x, udummy});
+dyn_t_plan_to_t_total = matlabFunction(dx, 'File', fullfile(save_path,'dyn_t_plan_to_t_total'), 'vars', {x, udummy});
 
 end

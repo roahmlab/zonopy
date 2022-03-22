@@ -18,24 +18,16 @@ def forward_kinematics(qpos,qvel,joint_axes,P):
     n_time_steps = max_key[1]+1
     rotato = get_rotato_from_jrs(JRS_poly,joint_axes)
 
-    P_ee = {}
-    R_ee = {}
+    P_motor = {}
+    R_motor = {}
     for t in range(n_time_steps):
         for i in range(n_joints):
-            P_ee[(i,t)] = polyZonotope(torch.zeros(3,dtype=torch.float32))
-            R_ee[(i,t)] = matPolyZonotope(torch.eye(3,dtype=torch.float32))
+            P_motor[(i,t)] = polyZonotope(torch.zeros(3,dtype=torch.float32))
+            R_motor[(i,t)] = matPolyZonotope(torch.eye(3,dtype=torch.float32))
             for j in range(i+1):
-            
-            #for j in reversed(range(i+1)):
-            
-                #print(i)
-                #print(R_ee[(i,t)])
-                #f i == 1 and j==1:
-                    #import pdb; pdb.set_trace()
-                P_ee[(i,t)] = R_ee[(i,t)]@P[j]+P_ee[(i,t)]
-                R_ee[(i,t)] = R_ee[(i,t)]@rotato[(j,t)]
+                P_motor[(i,t)] = R_motor[(i,t)]@P[j]+P_motor[(i,t)]
+                R_motor[(i,t)] = R_motor[(i,t)]@rotato[(j,t)]
 
-                #P_ee[(i,t)] = rotato[(j,t)]@(P_ee[(i,t)]+P[j])
-    return R_ee, P_ee
+    return R_motor, P_motor
 
 

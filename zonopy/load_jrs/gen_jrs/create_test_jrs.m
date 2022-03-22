@@ -20,6 +20,14 @@ dt = 0.01;
 [dyn_zero_to_t_plan, dyn_t_plan_to_t_total] = ...
     generate_parameterized_dynamics(t_plan, t_total);
 
+% get relative path and add path
+currentFile = mfilename('fullpath');
+gen_jrs_path = fileparts(currentFile);
+load_jrs_path = fileparts(gen_jrs_path);
+addpath(fullfile(gen_jrs_path,'jrs_dynamics'));
+save_path = fullfile(load_jrs_path,'jrs_mat_saved');
+
+
 % described in Sec. 5.5: grid K^v_i space into smaller subintervals,
 % compute separate JRSs in each one
 n_JRS = 401; % separate initial velocity space (K^v_i) into 401 smaller intervals
@@ -28,12 +36,12 @@ delta_kvi = (c_kvi(2) - c_kvi(1))/2; % subinterval is c_kvi +- delta_kvi
 c_kai = 0; % acceleration parameter space (K^a_i) for each JRS centered at 0
 
 % create folder to save precomputed JRSs
-if ~exist('../jrs_mat_saved', 'dir')
-    mkdir('../jrs_mat_saved');
+if ~exist(save_path, 'dir')
+    mkdir(save_path);
 end
 
 % save vector of initial velocity subinterval centers
-save('../jrs_mat_saved/c_kvi.mat', 'c_kvi');
+save(fullfile(save_path,'c_kvi.mat'), 'c_kvi');
 
 % set options for reachability analysis:
 options.timeStep = dt;
@@ -100,7 +108,7 @@ for j = 1:n_JRS
 
     % save this JRS
     current_c_kvi = c_kvi(j);
-    filename = sprintf('../jrs_mat_saved/JRS_mat_%0.3f.mat', current_c_kvi);
+    filename = fullfile(save_path,sprintf('JRS_mat_%0.3f.mat', current_c_kvi));
     
     % convert JRS zonotope to JRS matrix for the sake of python loading
     n_timestep = size(JRS,1);

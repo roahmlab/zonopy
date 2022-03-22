@@ -6,6 +6,7 @@ acc_dim = 3
 k_dim = 3
 
 from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
+from zonopy.conSet.polynomial_zonotope.quat_poly_zono import quatPolyZonotope
 def get_rotato_from_jrs(JRS_poly,joint_axes):
     '''
     JRS_poly
@@ -54,3 +55,48 @@ def gen_rotatotope(polyZono,rot_axis):
 
     # NOTE: delete zero colums?
     return matPolyZonotope(C,G,Grest,polyZono.expMat,polyZono.id)
+
+
+def get_quatato_from_jrs(qJRS_poly,joint_axes):
+    '''
+    JRS_poly
+    joint_axes = <list>
+    '''
+    assert type(joint_axes) == list
+
+    max_key = max(qJRS_poly.keys())
+    n_joints = max_key[0]+1
+    n_time_steps = max_key[1]+1
+    assert len(joint_axes) == n_joints, f'The number of rotational axes ({len(joint_axes)}) should be the same as the number of joints ({n_joints}).'
+
+    quatato = {}
+    for i in range(n_joints):
+        for t in range(n_time_steps):
+            quatato[(i,t)] = gen_quatatotope(qJRS_poly[(i,t)],joint_axes[i])
+
+    return quatato
+
+def gen_quatatotope(polyZono,rot_axis):
+    '''
+    polyZono: <polyZonotope>
+    rot_axis: <torch.Tensor>
+    '''
+    rot_axis = rot_axis.to(dtype=torch.float32)
+    # normalize
+    w = rot_axis/torch.norm(rot_axis)
+
+    cosq = polyZono.c[cos_dim]
+    sinq = polyZono.c[sin_dim]
+    C = torch.hstack((cosq,sinq*w))
+    
+    cosq = polyZono.G[cos_dim]
+    sinq = polyZono.G[sin_dim]
+    G = torch.vstack((cosq.reshape(1,-1),torch.outer(w,sinq)))
+
+    cosq = polyZono.Grest[cos_dim]
+    sinq = polyZono.Grest[sin_dim]
+    Grest = torch.vstack((cosq.reshape(1,-1),torch.outer(w,sinq)))
+
+
+    # NOTE: delete zero colums?
+    return quatPolyZonotope(C,G,Grest,polyZono.expMat,polyZono.id)

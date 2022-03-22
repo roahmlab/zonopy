@@ -4,8 +4,7 @@ def delete_column(Mat,idx_del):
     '''
     Mat: <torch.Tensor>
     ,shape [M,N]
-    idx: <torch.Tensor>, <torch.int64> OR <int>
-    -> <torch.Tensor>, <torch.int64>
+    idx_del: <torch.Tensor>, <torch.int64> or <torch.int32> OR <int>
     , shape [n]
     
     return <torch.Tensor>

@@ -5,6 +5,7 @@ Writer: Yongseok Kwon
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
 from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
+from zonopy.conSet.utils import G_mul_c, G_mul_g, C_mul_G, G_mul_C, G_mul_G
 import torch
 EMPTY_TENSOR = torch.tensor([])
 
@@ -45,7 +46,9 @@ class matPolyZonotope():
             raise ValueError(f'Matrix dimension mismatch between center ([{self.n_rows}, {self.n_cols}]) and dependent generator matrix ([{G.shape[0]}, {G.shape[1]}]).')
         if Grest.numel() != 0 and (self.n_rows != Grest.shape[0] or self.n_cols != Grest.shape[1]):
             raise ValueError(f'Matrix dimension mismatch between center ([{self.n_rows}, {self.n_cols}]) and independent generator matrix ([{Grest.shape[0]}, {Grest.shape[1]}]).')
-        
+        if expMat is not None and expMat.numel() == 0:
+            expMat = None
+
         self.C = C
         self.G = G.reshape(self.n_rows,self.n_cols,-1 if G.numel() != 0 else 0)
         self.Grest = Grest.reshape(self.n_rows,self.n_cols,-1 if G.numel() != 0 else 0)
@@ -66,6 +69,9 @@ class matPolyZonotope():
                 self.id = id.to(dtype=int)  
             else:
                 self.id = torch.arange(expMat.shape[0])
+        elif id.numel() == 0:
+            self.expMat = torch.eye(0,dtype=int)
+            self.id = id
         else:
             raise ValueError('Identifiers can only be defined as long as the exponent matrix is defined.')
 
@@ -103,7 +109,10 @@ class matPolyZonotope():
         
         elif type(other) == polyZonotope:
             assert self.n_cols == other.dimension
-            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            #id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            id = torch.hstack((self.id,other.id+self.id.numel()))
+            expMat1 = torch.vstack((self.expMat,torch.zeros(other.expMat.shape[0],self.expMat.shape[1])))
+            expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat))
             # NOTE: expMat shape?
             G = Grest = expMat = EMPTY_TENSOR
             
@@ -123,7 +132,6 @@ class matPolyZonotope():
                 G = torch.hstack((G,G_G))
                 for i in range(self.G.shape[-1]):
                     expMat = torch.hstack((expMat, expMat1[:,i].reshape(-1,1)+expMat2))
-            
             # deal with independent generators
             if other.Grest.numel() != 0:
                 C_Grest = self.C @ other.Grest
@@ -140,25 +148,23 @@ class matPolyZonotope():
             if self.Grest.numel() != 0 and other.G.numel() !=0:
                 Grest_G = G_mul_g(self.Grest,other.G)
                 Grest = torch.hstack((Grest,Grest_G))
-            '''
-            print('-'*30)
-            print(c.shape)
-            print(G)
-            print(Grest.shape)
-            '''
-            #import pdb; pdb.set_trace()
+
             return polyZonotope(c,G,Grest,expMat,id)
 
         elif type(other) == matPolyZonotope:
             assert self.n_cols == other.n_rows
-            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            #id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            id = torch.hstack((self.id,other.id+self.id.numel()))
+            expMat1 = torch.vstack((self.expMat,torch.zeros(other.expMat.shape[0],self.expMat.shape[1])))
+            expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat))
+            
             dims = [self.n_rows, self.n_cols, other.n_cols]
             G = Grest = expMat = EMPTY_TENSOR
             C = self.C @ other.C
             
             # deal with dependent generators
             if other.G.numel() != 0:
-                C_G = self.C @ other.G
+                C_G = C_mul_G(self.C, other.G,dims)
                 G = torch.cat((G,C_G),dim=-1)
                 expMat = torch.hstack((expMat,expMat2))
             if self.G.numel() != 0:
@@ -174,7 +180,7 @@ class matPolyZonotope():
             
             # deal with independent generators
             if other.Grest.numel() != 0:
-                C_Grest = self.C @ other.Grest
+                C_Grest = C_mul_G(self.C, other.Grest,dims)
                 Grest = torch.cat((Grest,C_Grest),dim=-1)
             if self.Grest.numel() != 0:
                 Grest_C = G_mul_C(self.Grest,other.C)
@@ -214,22 +220,31 @@ class matPolyZonotope():
             Grest = other @ self.Grest
             return matPolyZonotope(C,G,Grest,self.expMat,self.id)
 
-def G_mul_c(G,c):
-    G_c = G.permute(2,0,1) @ c
-    return G_c.permute(1,0)
+    def to_matZonotope(self):
+        from zonopy.conSet.zonotope.mat_zono import matZonotope
+        Z = torch.cat((self.C.reshape(self.n_rows,self.n_cols,1),self.G),-1)
+        Z = torch.cat((Z,self.Grest),-1)
+        return matZonotope(Z)
+
+if __name__ == '__main__':
     
-def G_mul_g(G,g,dim=None):
-    if dim is None:
-        dim = G.shape[0]
-    G_g = G.permute(2,0,1) @ g
-    return G_g.permute(1,0,2).reshape(dim,-1)
+    C1 = torch.rand(3,3,dtype=torch.float)
+    C2 = torch.rand(3,3,dtype=torch.float)
+    G1 = torch.rand(3,3,4,dtype=torch.float)
+    G2 = torch.rand(3,3,2,dtype=torch.float)
+    Grest1 = torch.rand(3,3,2,dtype=torch.float)
+    Grest2 = torch.rand(3,3,3,dtype=torch.float)
+    mp1 = matPolyZonotope(C1,G1,Grest1)
+    mp2 = matPolyZonotope(C2,G2,Grest2)
 
-def G_mul_C(G,C):
-    G_C = G.permute(2,0,1) @ C
-    return G_C.permute(1,2,0)
-
-def G_mul_G(G1,G2,dims=None):
-    if dims is None:
-        dims = [G1.shape[0],G1.shape[1],G2.shape[1]]
-    G_G = G1.permute(2,0,1).reshape(-1,1,dims[0],dims[1]) @ G2.permute(2,0,1)
-    return G_G.permute(2,3,0,1).reshape(dims[0],dims[2],-1)
+    cen = torch.rand(3,dtype=torch.float)
+    gen = torch.rand(3,4,dtype=torch.float)
+    grest = torch.rand(3,2,dtype=torch.float)
+    pz = polyZonotope(cen,gen,grest)
+    
+    result1 = mp1@mp2@pz
+    result2 = mp1@(mp2@pz)
+    #import pdb; pdb.set_trace()
+    import zonopy as zp
+    flag = zp.close(result1.to_zonotope(),result2.to_zonotope())
+    print(flag)
