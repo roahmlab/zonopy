@@ -5,7 +5,7 @@ import torch
 import os
 import copy
 
-from zp import polyZonotope, matPolyZonotope
+from zonopy import polyZonotope, matPolyZonotope
 dirname = os.path.dirname(__file__)
 ROBOTS_PATH = os.path.join(dirname,'assets/robots')
 
@@ -44,7 +44,6 @@ def import_robot(urdf_file,gravity=True):
         if has_root[i]:
             base = link_map[joints[i].parent]
     robot = rigidBodyTree(robot_urdf.links,joints,base)
-    import pdb; pdb.set_trace()
     return robot
 
 def load_sinlge_robot_arm_params(urdf_file,gravity=True):
@@ -175,7 +174,7 @@ def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='sin
     G = []
     mass = []
     com = []
-    for i in range(n_joints+1):
+    for i in range(1,n_joints+1):
         # scale link masses
         lo_robot[i].mass *= lo_mass_scale
         hi_robot[i].mass *= hi_mass_scale
@@ -198,20 +197,42 @@ def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='sin
         # scale inertia
         lo_robot[i].inertia *= lo_mass_scale
         hi_robot[i].inertia *= hi_mass_scale
+        #import pdb; pdb.set_trace()
 
         lo_I = parellel_axis(lo_robot[i].inertia, lo_robot[i].mass, lo_robot[i].com_rot, lo_robot[i].com)
         hi_I = parellel_axis(hi_robot[i].inertia, hi_robot[i].mass, hi_robot[i].com_rot, hi_robot[i].com)
         lo_I, hi_I = torch.min(lo_I,hi_I), torch.max(lo_I,hi_I)
         
         C = (lo_I+hi_I)/2*torch.eye(3)
-        G
-        
+        G = torch.tensor([])
+        for j in range(3):
+            for k in range(3):
+                G_temp = torch.zeros(3,3,1)
+                G_temp[k,j,0] = G_temp[j,k,0] = (hi_I-lo_I)[j,k]/2
+                G = torch.cat((G,G_temp),dim=2)
+        # NOTE: update ID
+        I.append(matPolyZonotope(C,G))
 
-    return true_params, nominal_params, interval_params, lo_robot,hi_robot
+    poly_zono_params['mass'] = mass
+    poly_zono_params['com'] = com
+    poly_zono_params['I'] = I
+    # NOTE: G? spatial inertia?
+    # NOTE: save ID params
+
+    # True params
+    for i in range(n_joints):
+        if use_random:
+            true_mass_scale = lo_mass_scale + (hi_mass_scale-lo_mass_scale)*torch.rand(1)
+        else:
+            true_mass_scale = 1.01
+        true_params['mass'][i] *= true_mass_scale
+        true_params['I'][i] *= true_mass_scale
+
+    return true_params, nominal_params, poly_zono_params, lo_robot,hi_robot
 
 
 if __name__ == '__main__':
     #import_robot('fetch')
 
-    load_sinlge_robot_arm_params('fetch')
-
+    tr,no,po,_,_ = load_poly_zono_params('fetch')
+    import pdb;pdb.set_trace()

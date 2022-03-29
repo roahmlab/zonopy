@@ -24,5 +24,5 @@ def Rp_to_Trans(R,p):
 
 def parellel_axis(Ii, mass, R, p):
     skew = Tensor([[0,-p[2],p[1]],[p[2],0,-p[0]],[-p[1],p[0],0]])
-    Io = R@Ii@R.T + mass@(skew@skew.T)
-    return Io.tolist()
+    Io = R@Ii@R.T + mass*(skew@skew.T)
+    return Io

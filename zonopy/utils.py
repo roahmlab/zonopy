@@ -98,36 +98,58 @@ def cross(zono1,zono2):
     '''
     
     '''
-    assert type(zono2) == polyZonotope and zono2.dimension == 3
-
-    if type(zono1) == torch.Tensor:
-        assert len(zono1.shape) == 1 and zono1.shape[0] == 3
-        zono1_skew_sym = torch.tensor([[0,-zono1[2],zono1[1]],[zono1[2],0,-zono1[1]],[-zono1[1],zono1[0],0]])
-        dtype = zono2.dtype
-        itype = zono2.itype
-        device = zono2.device
+    if isinstance(zono2,torch.Tensor):
+        assert len(zono2.shape) == 1 and zono2.shape[0] == 3
+        if isinstance(zono1,torch.Tensor):
+            assert len(zono1.shape) == 1 and zono1.shape[0] == 3
+            return torch.cross(zono1,zono2)
+        elif isinstance(zono1,polyZonotope):
+            assert zono1.dimension ==3
+            return cross(-zono2,zono1)
 
     elif type(zono2) == polyZonotope:
-        c = zono1.c
-        G = zono1.G
-        Grest = zono1.Grest
+        assert zono2.dimension == 3
+        if type(zono1) == torch.Tensor:
+            assert len(zono1.shape) == 1 and zono1.shape[0] == 3
+            zono1_skew_sym = torch.tensor([[0,-zono1[2],zono1[1]],[zono1[2],0,-zono1[1]],[-zono1[1],zono1[0],0]])
+            dtype = zono2.dtype
+            itype = zono2.itype
+            device = zono2.device
 
-        dtype = zono1.dtype
-        itype = zono1.itype
-        device = zono1.device
-        
-        Z = torch.hstack((c.reshape(-1,1),G,Grest))
-        Z_skew = torch.zeros(3,3,Z.shape[1])
-        
-        num_c_G = 1+zono1.G.shape[1]
-        
-        for j in range(Z.shape[1]):
-            z = Z[:,j]
-            Z_skew[:,:,j] = torch.tensor([[0,-z[2],z[1]],[z[2],0,-z[1]],[-z[1],z[0],0]])
+        elif type(zono1) == polyZonotope:
+            assert zono1.dimension ==3
+            c = zono1.c
+            G = zono1.G
+            Grest = zono1.Grest
 
-        zono1_skew_sym = matPolyZonotope(Z_skew[:,:,0],Z_skew[:,:,1:num_c_G],Z_skew[:,:,num_c_G:],dtype,itype,device)
+            dtype = zono1.dtype
+            itype = zono1.itype
+            device = zono1.device
+            
+            Z = torch.hstack((c.reshape(-1,1),G,Grest))
+            Z_skew = torch.zeros(3,3,Z.shape[1])
+            
+            num_c_G = 1+zono1.G.shape[1]
+            
+            for j in range(Z.shape[1]):
+                z = Z[:,j]
+                Z_skew[:,:,j] = torch.tensor([[0,-z[2],z[1]],[z[2],0,-z[1]],[-z[1],z[0],0]])
+            
+            zono1_skew_sym = matPolyZonotope(Z_skew[:,:,0],Z_skew[:,:,1:num_c_G],Z_skew[:,:,num_c_G:],zono1.expMat,zono1.id)
+
+        return zono1_skew_sym@zono2    
     
-    return zono1_skew_sym@zono2    
+
+def dot(zono1,zono2):
+    if isinstance(zono1,torch.Tensor):
+        if isinstance(zono2,polyZonotope):
+            assert len(zono1.shape) == 1 and zono1.shape[0] == zono2.dimension
+            zono1 = zono1.to(dtype=zono2.dtype)
+
+            c = (zono1@zono2.c).reshape(1)
+            G = (zono1@zono2.G).reshape(1,-1)
+            Grest = (zono1@zono2.Grest).reshape(1,-1)
+            return polyZonotope(c,G,Grest,zono2.expMat,zono2.id,zono2.dtype,zono2.itype,zono2.device)
 
 if __name__ == '__main__':
     A = torch.arange(10,dtype=float).reshape(2,5)
