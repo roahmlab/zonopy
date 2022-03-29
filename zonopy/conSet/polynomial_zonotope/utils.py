@@ -30,7 +30,7 @@ def argsortrows(Mat):
 
 def removeRedundantExponents(ExpMat,G):
     '''
-    add up all generators that belong to terms with idential exponents
+    add up all generators that belong to terms with identical exponents
     
     ExpMat: <torch.tensor> matrix containing the exponent vectors
     G: <torch.tensor> generator matrix
@@ -59,9 +59,8 @@ def removeRedundantExponents(ExpMat,G):
         # if all generators are zero
         if all(~idxD):
             # NOTE: might be better to assign None
-            
-            ExpMatNew =  torch.tensor([],dtype=itype,device=device).reshape(ExpMat.shape[0],0)
             Gnew = torch.tensor([],dtype=dtype,device=device).reshape(list(G.shape[1:])+[0])
+            ExpMatNew = torch.eye(0,dtype=itype,device=device)
             '''
             ExpMatNew = torch.zeros(ExpMat.shape[0],1)
             Gnew = torch.zeros(G.shape[0],1)
@@ -105,7 +104,7 @@ def removeRedundantExponents(ExpMat,G):
 
 def mergeExpMatrix(id1, id2, expMat1, expMat2):
     '''
-    Merge the ID-vectors of two polyZonotope and adapt the exponent matrice accordingly
+    Merge the ID-vectors of two polyZonotope and adapt the  matrice accordingly
     id1: <>,
     id2:
     expMat1: <>
@@ -213,24 +212,9 @@ def check_decimals(tensor):
 '''
 if __name__ == '__main__':
     
-    expMat1 = torch.tensor([[1,2,1,1],[3,1,5,3]])
-    id1 = torch.arange(2)
-    expMat2 = torch.tensor([[1,2,0,2],[4,1,2,0]])
-    id2 = torch.arange(2)
-    id,expMat1, expMat2 = mergeExpMatrix(id1, id2, expMat1, expMat2)
-    #print(expMat1)
-    #print(expMat2)
-    
-    G1, G2 = torch.eye(4), torch.eye(4)
-    G = torch.hstack((G1,G2))
-    ExpMat = torch.hstack((expMat1,expMat2))
+    expMat = torch.tensor([[1]])
+    G = torch.tensor([[0],[0],[0]])
 
-    ExpMat = torch.tensor([[1,2,3,1,0,0,0,0,0],[0,2,1,4,0,1,1,0,0],[0,0,4,1,0,0,1,0,3]])
-    G = torch.arange(18).reshape(2,9)
-    G[:,1] = torch.zeros(2)
-    print(ExpMat)
+    expMat, G = removeRedundantExponents(expMat,G)
     print(G)
-    ExpMatNew, Gnew = removeRedundantExponents(ExpMat,G)
-    print(ExpMatNew)
-    print(Gnew)
-    
+    print(expMat)

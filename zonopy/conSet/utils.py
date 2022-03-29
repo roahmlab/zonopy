@@ -1,5 +1,50 @@
 import torch
 
+def delete_column(Mat,idx_del):
+    '''
+    Mat: <torch.Tensor>
+    ,shape [M,N]
+    idx_del: <torch.Tensor>, <torch.int64> OR <int>
+    , shape [n]
+    
+    return <torch.Tensor>
+    , shape [M,N-n]
+    # NOTE: may want to assert dtype latter
+    '''
+    N = Mat.shape[1]
+    n= idx_del.numel()
+    if type(idx_del) == int:
+        idx_del = torch.tensor([idx_del],dtype=int)
+    assert len(Mat.shape) == 2 and len(idx_del.shape) == 1
+    assert n==0 or max(idx_del) < N
+    
+    idx_del,_ = torch.sort(idx_del)
+    Mat_new = torch.zeros(Mat.shape[0],N-n)
+    j = 0
+    k = 0
+    for i in range(N):
+        if j < n and i == idx_del[j]:
+            j +=1
+        else:        
+            Mat_new[:,i-j] = Mat[:,i]
+    return Mat_new
+    '''
+    if idx_del.numel() >= 1:
+        Mat_rec = Mat[:,[i for i in range(N) if i != idx_del[0]]]
+        idx_del_rec = idx_del[1:]
+        Mat = delete_column(Mat_rec,idx_del_rec)
+
+    return Mat
+    '''
+    '''
+    idx_remain = torch.zeros(N,dtype=bool)
+    idx_full = torch.arange(N)
+
+    for i in range(N):
+        idx_remain[i] = all(idx_full[i] != idx_del)
+    
+    return Mat[:,idx_remain]
+    '''
 # mat mul tools
 def G_mul_c(G,c):
     G_c = G.permute(2,0,1) @ c
@@ -28,11 +73,10 @@ def G_mul_G(G1,G2,dims=None):
     return G_G.permute(2,3,0,1).reshape(dims[0],dims[2],-1)
 
 if __name__ == '__main__':
-    G = (torch.arange(24,dtype=float)+1).reshape(2,3,4)
-    c = torch.arange(3,dtype=float)+1
-    g = (torch.arange(15,dtype=float)+1).reshape(3,5)
-    Gc = G_mul_c(G,c)
-    Gg = G_mul_g(G,g)
+    M = torch.tensor([[1,2,3,4],[5,1,6,1]])
+    i = torch.tensor([0,1])
+    M_new = delete_column(M,i)
+    print(M_new)
     #import pdb; pdb.set_trace()
     
     

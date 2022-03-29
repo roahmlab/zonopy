@@ -1,28 +1,34 @@
+from numpy import setdiff1d
+from zonopy.conSet.utils import delete_column
+
 import torch
 
-def delete_column(Mat,idx_del):
+def pickedGenerators(Z,order):
     '''
-    Mat: <torch.Tensor>
-    ,shape [M,N]
-    idx_del: <torch.Tensor>, <torch.int64> or <torch.int32> OR <int>
-    , shape [n]
-    
-    return <torch.Tensor>
-    , shape [M,N-n]
-    # NOTE: may want to assert dtype latter
+    selects generators to be reduced
     '''
-    N = Mat.shape[1]
-    if type(idx_del) == int:
-        idx_del = torch.tensor([idx_del])
+    Z = Z.deleteZerosGenerators()
+    c = Z.center
+    G = Z.generators
+    Gunred = torch.tensor([]).reshape(Z.dimension,0)
+    Gred = torch.tensor([]).reshape(Z.dimension,0)
+    if G.numel() != 0:
+        d, nrOfGens = G.shape
+        # only reduce if zonotope order is greater than the desired order
+        if nrOfGens > d*order:
+            
+            # compute metric of generators
+            h = torch.linalg.vector_norm(G,1,0) - torch.linalg.vector_norm(G,torch.inf,0)
 
-    assert len(Mat.shape) == 2
-    assert len(idx_del.shape) == 1
-    assert idx_del.numel()==0 or max(idx_del) < N
+            # number of generators that are not reduced
+            nUnreduced = int(d*(order-1))
+            nReduced = nrOfGens - nUnreduced 
+            # pick generators with smallest h values to be reduced
+            ind = torch.argsort(h)[:nReduced]
+            Gred = G[:,ind]
+            # unreduced generators
+            Gunred = delete_column(G,ind)
+        else:
+            Gunred = G
 
-    idx_remain = torch.zeros(N,dtype=bool)
-    idx_full = torch.arange(N)
-
-    for i in range(N):
-        idx_remain[i] = all(idx_full[i] != idx_del)
-
-    return Mat[:,idx_remain]
+    return c, Gunred, Gred

@@ -9,8 +9,8 @@ import torch
 import matplotlib.patches as patches
 from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_DEVICE
 from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope 
-from zonopy.conSet.zonotope.utils import delete_column
-
+from zonopy.conSet.utils import delete_column
+from zonopy.conSet.zonotope.utils import pickedGenerators
 class zonotope:
     '''
     zono: <zonotope>, <torch.float64>
@@ -37,7 +37,7 @@ class zonotope:
             Z = torch.tensor(Z)
         assert type(Z) == torch.Tensor, f'The input matrix should be either torch tensor or list, but {type(Z)}.'
         if len(Z.shape) == 1:
-            Z = Z.reshape(-1,1)
+            Z = Z.reshape(1,-1)
         if dtype == float:
             dtype = torch.double
         assert dtype == torch.float or dtype == torch.double, f'dtype should be either torch.float (torch.float32) or torch.double (torch.float64), but {dtype}.'
@@ -48,12 +48,14 @@ class zonotope:
         self.Z = Z.to(dtype=dtype,device=device)
         self.center = self.Z[:,0]
         self.generators = self.Z[:,1:]
-        self.dim = self.Z.shape[0]
-        self.n_generators = self.Z.shape[1] - 1
-    
+        self.dimension = self.Z.shape[0]
+    @property
+    def n_generators(self):
+        return self.generators.shape[1]
+
     def __str__(self):
         zono_str = f"""center: \n{self.center.to(dtype=torch.float,device='cpu')} \n\nnumber of generators: {self.n_generators} 
-            \ngenerators: \n{self.generators.to(dtype=torch.float,device='cpu')} \n\ndimension: {self.dim}\ndtype: {self.dtype} \ndevice: {self.device}"""
+            \ngenerators: \n{self.generators.to(dtype=torch.float,device='cpu')} \n\ndimension: {self.dimension}\ndtype: {self.dtype} \ndevice: {self.device}"""
         del_dict = {'tensor':' ','    ':' ','(':'',')':''}
         for del_el in del_dict.keys():
             zono_str = zono_str.replace(del_el,del_dict[del_el])
@@ -75,7 +77,7 @@ class zonotope:
             Z[:,0] += other
                 
         elif type(other) == zonotope: 
-            assert self.dim == other.dim, f'zonotope dimension does not match: {self.dim} and {other.dim}.'
+            assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
             Z = torch.hstack([self.center + other.center,self.generators,other.generators])
 
         else:
@@ -233,14 +235,8 @@ class zonotope:
 
         return <zonotope>
         '''
-        non_zero_idxs = torch.any(self.generators!=0,axis=0).to(dtype=int)
-        Z_new = torch.zeros(self.dim,sum(non_zero_idxs)+1,dtype=self.dtype,device=self.device)
-        j=0
-        for i in range(self.n_generators):
-            if non_zero_idxs[i]:
-                j += 1
-                Z_new[:,j] = self.generators[:,i]
-        Z_new[:,0] = self.center
+        non_zero_idxs = torch.any(self.generators!=0,axis=0)
+        Z_new = self.Z[:,[i for i in range(self.n_generators+1) if i==0 or non_zero_idxs[i-1]]]
         return zonotope(Z_new,dtype=self.dtype,device=self.device)
 
     def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2):
@@ -276,21 +272,29 @@ class zonotope:
         if dim is None:
             return polyZonotope(self.center,Grest = self.generators)
         assert type(dim) == int
-        assert dim <= self.dim
+        assert dim <= self.dimension
 
         g_row_dim =self.generators[dim,:]
         idx = (g_row_dim!=0).nonzero().reshape(-1)
-        if idx.numel() != 1:
-            if idx.numel() == 0:
-                raise ValueError('no sliceable generator for the dimension.')
-            else:
-                raise ValueError('more than one no sliceable generators for the dimesion.')        
+        
+        assert idx.numel() != 0, 'no sliceable generator for the dimension.'
+        assert idx.numel() == 1,'more than one no sliceable generators for the dimesion.'        
+        
         c = self.center
         G = self.generators[:,idx]
         Grest = delete_column(self.generators,idx)
 
         return polyZonotope(c,G,Grest)
 
+    def reduce(self,order,option='girard'):
+        if option == 'girard':
+            center, Gunred, Gred = pickedGenerators(self,order)
+            d = torch.sum(abs(Gred),1)
+            Gbox = torch.diag(d)
+            ZRed = torch.hstack((center.reshape(-1,1),Gunred,Gbox))
+            return zonotope(ZRed,self.dtype,self.device)
+        else:
+            assert False, 'Invalid reduction method'
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt

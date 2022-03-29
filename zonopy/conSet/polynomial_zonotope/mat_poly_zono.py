@@ -4,7 +4,7 @@ Reference: Patrick Holme's matPolyZonotope
 Writer: Yongseok Kwon
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
-from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
+from zonopy.conSet import polyZonotope 
 from zonopy.conSet.utils import G_mul_c, G_mul_g, C_mul_G, G_mul_C, G_mul_G
 import torch
 EMPTY_TENSOR = torch.tensor([])
@@ -51,7 +51,7 @@ class matPolyZonotope():
 
         self.C = C
         self.G = G.reshape(self.n_rows,self.n_cols,-1 if G.numel() != 0 else 0)
-        self.Grest = Grest.reshape(self.n_rows,self.n_cols,-1 if G.numel() != 0 else 0)
+        self.Grest = Grest.reshape(self.n_rows,self.n_cols,-1 if Grest.numel() != 0 else 0)
 
         if expMat == None and id == None:
             self.expMat = torch.eye(self.G.shape[-1],dtype=int) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
@@ -63,7 +63,9 @@ class matPolyZonotope():
             expMat,G = removeRedundantExponents(expMat,G)
             self.G =G
             self.expMat =expMat
-            if id != None:
+            if self.G.numel()==0:
+                self.id = torch.arange(expMat.shape[0],dtype=int)
+            elif id != None:
                 if id.shape[0] != expMat.shape[0]:
                     raise ValueError(f'Invalid vector of identifiers. Dimension of exponents matrix is {expMat.shape}')
                 self.id = id.to(dtype=int)  
@@ -74,6 +76,18 @@ class matPolyZonotope():
             self.id = id
         else:
             raise ValueError('Identifiers can only be defined as long as the exponent matrix is defined.')
+    @property
+    def n_generators(self):
+        return self.G.shape[-1] + self.Grest.shape[-1]
+    @property
+    def n_dep_gens(self):
+        return self.G.shape[-1]
+    @property
+    def n_indep_gens(self):
+        return self.Grest.shape[-1]
+    @property
+    def T(self):
+        return matPolyZonotope(self.C.T,self.G.permute(1,0,2),self.Grest.permute(1,0,2),self.expMat,self.id)
 
     def __matmul__(self,other):
         '''
@@ -94,7 +108,6 @@ class matPolyZonotope():
             Grest = G_mul_c(self.Grest,other)
             id = self.id
             expMat = self.expMat 
-                
             return polyZonotope(c,G,Grest,expMat,id)
         
         # NOTE: this is 'OVERAPPROXIMATED' multiplication for keeping 'fully-k-sliceables'
@@ -149,7 +162,7 @@ class matPolyZonotope():
                 Grest_G = G_mul_g(self.Grest,other.G)
                 Grest = torch.hstack((Grest,Grest_G))
 
-            return polyZonotope(c,G,Grest,expMat,id)
+            return polyZonotope(c,G,Grest,expMat.to(dtype=int),id)
 
         elif type(other) == matPolyZonotope:
             assert self.n_cols == other.n_rows

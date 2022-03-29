@@ -39,7 +39,9 @@ class matZonotope():
         self.Z = Z
         self.center = self.Z[:,:,0]
         self.generators = self.Z[:,:,1:]
-        self.n_generators = self.Z.shape[-1] - 1
+    @property
+    def n_generators(self):
+        return self.generators.shape[-1]
 
     def __matmul__(self,other):
         '''
@@ -58,7 +60,7 @@ class matZonotope():
             return zonotope(z)
     
         elif type(other) == zonotope:
-            assert self.n_cols == other.dim
+            assert self.n_cols == other.dimension
             z = G_mul_g(self.Z,other.Z)
             return zonotope(z)
 
