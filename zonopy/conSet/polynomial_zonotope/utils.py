@@ -1,3 +1,8 @@
+"""
+Utilities for polynomial zonotope and matrix polynomial zonotope
+Author: Yongseok Kwon
+Reference: CORA
+"""
 import torch
 from queue import PriorityQueue
 from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_ITYPE, DEFAULT_DEVICE
@@ -59,8 +64,8 @@ def removeRedundantExponents(ExpMat,G):
         # if all generators are zero
         if all(~idxD):
             # NOTE: might be better to assign None
-            Gnew = torch.tensor([],dtype=dtype,device=device).reshape(list(G.shape[1:])+[0])
-            ExpMatNew = torch.eye(0,dtype=itype,device=device)
+            Gnew = torch.tensor([],dtype=dtype,device=device).reshape(G.shape[1:]+(0,))
+            ExpMatNew = torch.tensor([],dtype=itype,device=device).reshape(ExpMat.shape[:1]+(0,))
             '''
             ExpMatNew = torch.zeros(ExpMat.shape[0],1)
             Gnew = torch.zeros(G.shape[0],1)
@@ -82,8 +87,8 @@ def removeRedundantExponents(ExpMat,G):
     
     # initialization
     counterNew = 0
-    ExpMatNew = torch.zeros(ExpMat.shape,dtype=itype,device=device)
-    Gnew = torch.zeros(G.shape,dtype=dtype,device=device)
+    ExpMatNew = torch.zeros_like(ExpMat)
+    Gnew = torch.zeros_like(G)
     
     # first entry
     ExpMatNew[:,counterNew] = ExpMatTemp[:,0]

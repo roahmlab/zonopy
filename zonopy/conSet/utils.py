@@ -1,3 +1,8 @@
+"""
+Utilities of computation for continuous set
+Author: Yongseok Kwon
+Reference:
+"""
 import torch
 
 def delete_column(Mat,idx_del):

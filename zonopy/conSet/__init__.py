@@ -1,3 +1,7 @@
+"""
+Continuous set representation
+Author: Yongseok Kwon
+"""
 import torch
 DEFAULT_DTYPE = torch.float
 DEFAULT_ITYPE = torch.int

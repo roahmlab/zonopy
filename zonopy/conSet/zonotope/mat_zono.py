@@ -1,13 +1,14 @@
 """
 Define class for matrix zonotope
-Reference: CORA
-Writer: Yongseok Kwon
+Author: Yongseok Kwon
+Reference:
 """
+from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_DEVICE
 from zonopy.conSet.zonotope.zono import zonotope
 from zonopy.conSet.utils import G_mul_c, G_mul_g, G_mul_C, G_mul_G
 import torch
-EMPTY_TENSOR = torch.tensor([])
 
+EMPTY_TENSOR = torch.tensor([])
 class matZonotope():
     '''
     matZono: <matZonotope>, <torch.float64>
@@ -25,23 +26,58 @@ class matZonotope():
     G = [G1,G2,...,GN]
     zono = C + a1*G1 + a2*G2 + ... + aN*GN
     '''
-    def __init__(self,Z):
-
-        assert type(Z) == torch.Tensor, f'The input matrix should be torch tensor, but {type(Z)}.'
+    def __init__(self,Z=EMPTY_TENSOR,dtype=DEFAULT_DTYPE,device=DEFAULT_DEVICE):
+        if isinstance(Z,list):
+            Z = torch.tensor(Z)
+        assert isinstance(Z,torch.Tensor), f'The input matrix should be torch tensor, but {type(Z)}.'
 
         assert len(Z.shape) == 2 or len(Z.shape) == 3, f'The dimension of Z input should be either 2 or 3, but {len(Z.shape)}.'
-        self.n_rows = Z.shape[0]
-        self.n_cols = Z.shape[1]
         if len(Z.shape) == 2:
-            Z = Z.reshape(self.n_rows,self.n_cols,1)
-        
-        Z = Z.to(dtype=torch.float32)
-        self.Z = Z
-        self.center = self.Z[:,:,0]
-        self.generators = self.Z[:,:,1:]
+            Z = Z.reshape(Z.shape[0],Z.shape[1],1)
+
+        self.__dtype = dtype
+        self.__device = device  
+        self.Z = Z.to(dtype=dtype,device=device)
+        self.__center = self.Z[:,:,0]
+        self.__generators = self.Z[:,:,1:]
+    @property
+    def dtype(self):
+        return self.__dtype
+    @property
+    def device(self):
+        return self.__device    
+    @property
+    def center(self):
+        return self.__center
+    @center.setter
+    def center(self,value):
+        self.Z[:,:,0] = self.__center  = value
+    @property
+    def generators(self):
+        return self.__generators
+    @generators.setter
+    def generators(self,value):
+        self.Z = torch.cat((self.__center.reshape(self.n_rows,self.n_cols,1),value),dim=-1)
+        self.__generators = value
+    @property
+    def n_rows(self):
+        return self.Z.shape[0]
+    @property
+    def n_cols(self):
+        return self.Z.shape[1]
     @property
     def n_generators(self):
-        return self.generators.shape[-1]
+        return self.__generators.shape[-1]
+    @property
+    def T(self):
+        return matZonotope(self.Z.permute(1,0,2),self.__dtype,self.__device)
+
+    def to(self,dtype=None,device=None):
+        if dtype is None:
+            dtype = self.dtype
+        if device is None:
+            device = self.device
+        return matZonotope(self.Z,dtype,device)
 
     def __matmul__(self,other):
         '''
@@ -53,25 +89,25 @@ class matZonotope():
         other: <matZonotope>
         return <matZonotope>
         '''
-        if type(other) == torch.Tensor:
+        if isinstance(other, torch.Tensor):
             assert len(other.shape) == 1, 'The other object should be 1-D tensor.'  
             assert other.shape[0] == self.n_cols
             z = G_mul_c(self.Z,other)    
-            return zonotope(z)
+            return zonotope(z,self.device,self.dtype)
     
-        elif type(other) == zonotope:
+        elif isinstance(other,zonotope):
             assert self.n_cols == other.dimension
             z = G_mul_g(self.Z,other.Z)
-            return zonotope(z)
+            return zonotope(z,self.device,self.dtype)
 
-        elif type(other) == matZonotope:
+        elif isinstance(other,matZonotope):
             assert self.n_cols == other.n_rows
             dims = [self.n_rows, self.n_cols, other.n_cols]
             Z = G_mul_G(self.Z,other.Z,dims)
-            return matZonotope(Z)
+            return matZonotope(Z,self.device,self.dtype)
 
         else:
-            raise ValueError('the other object should be torch tensor or polynomial zonotope.')
+            assert False, 'Invalid object for matrix multiplication with matrix zonotope.'
 
     def __rmatmul__(self,other):
         '''
@@ -83,11 +119,14 @@ class matZonotope():
         other: <matZonotope>
         return <matZonotope>
         '''
-        if type(other) == torch.Tensor:
+        if isinstance(other, torch.Tensor):
             assert len(other.shape) == 2, 'The other object should be 2-D tensor.'  
             assert other.shape[1] == self.n_rows    
             Z = other @ self.Z
-            return matZonotope(Z)
+            return matZonotope(Z,self.device,self.dtype)
+        else:
+            assert False, 'Invalid object for reversed matrix multiplication with matrix zonotope.'
+
 
     def deleteZerosGenerators(self):
         '''
@@ -104,4 +143,4 @@ class matZonotope():
                 j += 1
                 Z_new[:,:,j] = self.generators[:,:,i]
         Z_new[:,:,0] = self.center
-        return matZonotope(Z_new)
+        return matZonotope(Z_new,self.device,self.dtype)

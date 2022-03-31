@@ -1,41 +1,74 @@
+'''
+Define interval
+Author: Qingyi Chen
+Reference: CORA
+'''
+
 import torch
-import math
-import numbers
+from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_DEVICE
 from torch import Tensor
 
+EMPTY_TENSOR = torch.tensor([])
 class interval:
-    def __init__(self, inf, sup):
-        assert isinstance(inf, Tensor) and isinstance(sup, Tensor), "input is expected to be a pytorch tensor"
+    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR,dtype=DEFAULT_DTYPE,device=DEFAULT_DEVICE):
+        if isinstance(inf,list):
+            inf = torch.tensor(inf)
+        if isinstance(sup,list):
+            sup = torch.tensor(sup)
+        if inf.numel()==0 and sup.numel()!=0:
+            inf = sup
+        if inf.numel()!=0 and sup.numel()==0:
+            sup = inf
+        assert isinstance(inf, torch.Tensor) and isinstance(sup, torch.Tensor), "The inputs should be either torch tensor or list."
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
-        assert torch.all(inf <= sup), "inf should be <= sup entry-wise"
-        assert inf.dtype == sup.dtype, "inf and sup should have the same dtype"
-        assert inf.device == sup.device, "inf and sup should be on the same device"
-        self.inf = inf.clone()
-        self.sup = sup.clone()
-        self.dtype = inf.dtype
-        self.device = inf.device
-        self.shape  = self.inf.shape
+        assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
+        self.inf = inf.to(dtype=dtype,device=device)
+        self.sup = sup.to(dtype=dtype,device=device)
+        self.__dtype = dtype
+        self.__device = device
+    # NOTE: private inf sup
+
+
+    @property
+    def dtype(self):
+        return self.__dtype
+    @property
+    def device(self):
+        return self.__device
+    @property
+    def shape(self):
+        return list(self.inf.shape)
     def __add__(self, other):
         if isinstance(other, interval):
+            inf, sup = self.inf+other.inf, self.sup+other.sup
             return interval(self.inf + other.inf, self.sup + other.sup)
-        elif isinstance(other, Tensor) or isinstance(other, numbers.Number):
-            return interval(self.inf + other, self.sup + other)
+        elif isinstance(other, torch.Tensor) or isinstance(other, (int,float)):
+            inf, sup = self.inf+other, self.sup+other
         else:
-            assert False, "such addition is not implemented yet"
-
+            assert False, f'the other object should be interval or numberic: {type(other)}.'
+        return interval(inf,sup,self.__dtype,self.__device)
     __radd__ = __add__
-
-    def __sub__(self, other):
-        if isinstance(other, interval):
-            return interval(self.inf - other.sup, self.sup - other.inf)
-        elif isinstance(other, Tensor) and other.numel() == 1:
-            return interval(self.inf - other, self.sup - other)
-        else:
-            assert False, "such substraction is not implemented yet"
+    def __sub__(self,other):
+        return self.__add__(-other)
+    def __rsub__(self,other):
+        return -self.__sub__(other)
+    def __iadd__(self,other): 
+        return self+other
+    def __isub__(self,other):
+        return self-other
+    def __pos__(self):
+        return self    
+    def __neg__(self):
+        '''
+        Overloaded unary '-' operator for negation
+        self: <interval>
+        return <interval>
+        '''   
+        return interval(-self.sup,-self.inf,self.__dtype,self.__device)
 
     def __mul__(self, other):
-        if (isinstance(other, Tensor) and other.numel() == 1) or isinstance(other, numbers.Number):
+        if isinstance(other, torch.Tensor) or isinstance(other,(int,float)):
             if other >= 0:
                 return interval(other * self.inf, other * self.sup)
             else:

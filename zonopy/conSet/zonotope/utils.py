@@ -1,3 +1,9 @@
+"""
+Utilities for zonotope and matrix zonotope
+Author: Yongseok Kwon
+Reference: CORA
+"""
+
 from numpy import setdiff1d
 from zonopy.conSet.utils import delete_column
 
