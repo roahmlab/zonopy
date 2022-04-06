@@ -1,3 +1,9 @@
+"""
+Load parameters from URDF file and parse data to continuous set to represent uncertainties
+Author: Yongseok Kwon
+Reference: MATLAB robotics toolbox, Jonathan Michaux and Patrick Holmes's implementation
+"""
+
 from zonopy.load_urdf.urdf_parser_py.urdf import URDF
 from zonopy.load_urdf.tree import rigidBodyTree
 from zonopy.load_urdf.utils import parellel_axis
@@ -113,7 +119,7 @@ def load_sinlge_robot_arm_params(urdf_file,gravity=True):
     return params, robot
 
 
-def load_inerval_params(urdf_file,use_random=True,gravity=True,robot_type='single_arm'):
+def load_inerval_params(urdf_file,mass_range=[0.97,1.03],com_range=[1,1],use_random=True,gravity=True,robot_type='single_arm'):
     if robot_type == 'single_arm':
         true_params,true_robot = load_sinlge_robot_arm_params(urdf_file,gravity)
         hi_robot, lo_robot = copy.deepcopy(true_robot), copy.deepcopy(true_robot)
@@ -122,8 +128,8 @@ def load_inerval_params(urdf_file,use_random=True,gravity=True,robot_type='singl
         assert False, 'Invalid robot type.'
     
     n_joints = interval_params['n_joints']
-    lo_mass_scale, hi_mass_scale = 0.97, 1.03
-    lo_com_scale, hi_com_scale = 1,1
+    lo_mass_scale, hi_mass_scale = mass_range
+    lo_com_scale, hi_com_scale = com_range
     lo_mass, hi_mass = torch.zeros(n_joints), torch.zeros(n_joints)
     lo_com, hi_com = torch.zeros(n_joints,3), torch.zeros(n_joints,3)
 
@@ -154,7 +160,7 @@ def load_inerval_params(urdf_file,use_random=True,gravity=True,robot_type='singl
 
 
 
-def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='single_arm'):
+def load_poly_zono_params(urdf_file,mass_range=[0.97,1.03],com_range=[1,1],use_random=True,gravity=True,robot_type='single_arm'):
     if robot_type == 'single_arm':
         true_params,true_robot = load_sinlge_robot_arm_params(urdf_file,gravity)
         hi_robot, lo_robot = copy.deepcopy(true_robot), copy.deepcopy(true_robot)
@@ -163,10 +169,10 @@ def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='sin
         assert False, 'Invalid robot type.'
     
     n_joints = poly_zono_params['n_joints']
-    poly_zono_params['type'] = polyZonotope
+    poly_zono_params['type'] = 'polyZonotope'
     
-    lo_mass_scale, hi_mass_scale = 0.97, 1.03
-    lo_com_scale, hi_com_scale = 1,1
+    lo_mass_scale, hi_mass_scale = mass_range
+    lo_com_scale, hi_com_scale = com_range
     lo_mass, hi_mass = torch.zeros(n_joints), torch.zeros(n_joints)
     lo_com, hi_com = torch.zeros(n_joints,3), torch.zeros(n_joints,3)
 
@@ -181,7 +187,6 @@ def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='sin
         lo_mass, hi_mass = lo_robot[i].mass, hi_robot[i].mass
         C = (lo_mass+hi_mass)/2*torch.eye(3)
         G = (hi_mass-lo_mass)/2*torch.eye(3)
-        # NOTE: update ID
         mass.append(matPolyZonotope(C,G))
 
         # scale center of mass
@@ -191,17 +196,12 @@ def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='sin
     
         c = (lo_com+hi_com)/2
         g = torch.diag((hi_com-lo_com)/2)
-        # NOTE: update ID
         com.append(polyZonotope(c,g))
 
         # scale inertia
         lo_robot[i].inertia *= lo_mass_scale
         hi_robot[i].inertia *= hi_mass_scale
-        #import pdb; pdb.set_trace()
-
-        lo_I = parellel_axis(lo_robot[i].inertia, lo_robot[i].mass, lo_robot[i].com_rot, lo_robot[i].com)
-        hi_I = parellel_axis(hi_robot[i].inertia, hi_robot[i].mass, hi_robot[i].com_rot, hi_robot[i].com)
-        lo_I, hi_I = torch.min(lo_I,hi_I), torch.max(lo_I,hi_I)
+        lo_I, hi_I = torch.min(lo_robot[i].inertia,hi_robot[i].inertia), torch.max(lo_robot[i].inertia,hi_robot[i].inertia)
         
         C = (lo_I+hi_I)/2*torch.eye(3)
         G = torch.tensor([])
@@ -210,15 +210,13 @@ def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='sin
                 G_temp = torch.zeros(3,3,1)
                 G_temp[k,j,0] = G_temp[j,k,0] = (hi_I-lo_I)[j,k]/2
                 G = torch.cat((G,G_temp),dim=2)
-        # NOTE: update ID
         I.append(matPolyZonotope(C,G))
 
     poly_zono_params['mass'] = mass
     poly_zono_params['com'] = com
     poly_zono_params['I'] = I
     # NOTE: G? spatial inertia?
-    # NOTE: save ID params
-
+ 
     # True params
     for i in range(n_joints):
         if use_random:
@@ -228,7 +226,7 @@ def load_poly_zono_params(urdf_file,use_random=True,gravity=True,robot_type='sin
         true_params['mass'][i] *= true_mass_scale
         true_params['I'][i] *= true_mass_scale
 
-    return true_params, nominal_params, poly_zono_params, lo_robot,hi_robot
+    return true_params, nominal_params, poly_zono_params
 
 
 if __name__ == '__main__':

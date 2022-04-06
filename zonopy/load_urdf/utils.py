@@ -1,3 +1,8 @@
+"""
+Utilities for parsing URDF data
+Author: Yongseok Kwon
+Reference:
+"""
 from math import cos, sin
 from torch import Tensor
 

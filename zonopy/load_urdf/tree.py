@@ -1,3 +1,9 @@
+"""
+Define class for rigid bodies to represent URDF data
+Author: Yongseok Kwon
+Reference: MATLAB robotics toolbox
+"""
+
 from zonopy.load_urdf.utils import Euler_to_Rot,Rp_to_Trans
 from torch import Tensor
 class rigidBodyTree:
