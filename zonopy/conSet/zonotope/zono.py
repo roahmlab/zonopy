@@ -5,10 +5,11 @@ Reference: CORA
 """
 import torch
 import matplotlib.patches as patches
-from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_DEVICE
+from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope 
+from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.utils import delete_column
-from zonopy.conSet.zonotope.utils import pickedGenerators
+from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
 
 EMPTY_TENSOR = torch.tensor([])
 class zonotope:
@@ -32,7 +33,11 @@ class zonotope:
     G = [g1,g2,...,gN]
     zono = c + a1*g1 + a2*g2 + ... + aN*gN
     '''
-    def __init__(self,Z=EMPTY_TENSOR,dtype=DEFAULT_DTYPE,device=DEFAULT_DEVICE):
+    def __init__(self,Z=EMPTY_TENSOR,dtype=None,device=None):
+        if dtype is None:
+            dtype = DEFAULT_OPTS.DTYPE
+        if device is None:
+            device = DEFAULT_OPTS.DEVICE
         if isinstance(Z,list):
             Z = torch.tensor(Z)
         assert isinstance(Z,torch.Tensor), f'The input matrix should be either torch tensor or list, but {type(Z)}.'
@@ -59,12 +64,13 @@ class zonotope:
         return self.__center
     @center.setter
     def center(self,value):
-        self.Z[:,0] = self.__center = value
+        self.Z[:,0] = self.__center = value.to(dtype=self.__dtype,device=self.__device)
     @property
     def generators(self):
         return self.__generators
     @generators.setter
     def generators(self,value):
+        value = value.to(dtype=self.__dtype,device=self.__device)
         self.Z = torch.hstack((self.__center.reshape(-1,1),value))
         self.__generators = value
     @property
@@ -106,7 +112,7 @@ class zonotope:
                 
         elif isinstance(other, zonotope): 
             assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.hstack([self.center + other.center,self.generators,other.generators])
+            Z = torch.hstack([(self.center + other.center).reshape(-1,1),self.generators,other.generators])
         else:
             assert False, f'the other object is neither a zonotope nor a torch tensor: {type(other)}.'
 
@@ -254,16 +260,114 @@ class zonotope:
         
         full_vertices += c.reshape(dim,1)
         return full_vertices.to(dtype=self.__dtype,device=self.__device)
+    def polytope(self):
+        '''
+        converts a zonotope from a G- to a H- representation
+        P
+        comb
+        isDeg
+        '''
 
-    def deleteZerosGenerators(self):
+        #z = self.deleteZerosGenerators()
+        c = self.center
+        G = torch.clone(self.generators)
+        h = torch.linalg.vector_norm(G,dim=0)
+        h_sort, indicies = torch.sort(h,descending=True)
+        h_zero = h_sort < 1e-6
+        if torch.any(h_zero):
+            first_reduce_idx = torch.nonzero(h_zero)[0,0]
+            Gunred = G[:,indicies[:first_reduce_idx]]
+            # Gred = G[:,indicies[first_reduce_idx:]]
+            # d = torch.sum(abs(Gred),1)
+            # G = torch.hstack((Gunred,torch.diag(d)))
+            G = Gunred
+
+        dim, n_gens = G.shape
+
+        '''
+        if maxcombs is None:
+            comb = co
+        
+        elif n_gens > maxcombs:
+        '''
+        
+        
+                
+                
+        if dim == 1:
+            C = (G/torch.linalg.vector_norm(G,dim=0)).T
+        elif dim == 2:      
+            C = torch.vstack((-G[1,:],G[0,:]))
+            C = (C/torch.linalg.vector_norm(C,dim=0)).T
+        elif dim == 3:
+            # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
+            comb = torch.combinations(torch.arange(n_gens,device=self.__device),r=dim-1)
+            Q = torch.vstack((G[:,comb[:,0]],G[:,comb[:,1]]))
+            C = torch.vstack((Q[1,:]*Q[5,:] - Q[2,:]*Q[4,:],-Q[0,:]*Q[5,:] - Q[2,:]*Q[3,:],Q[0,:]*Q[4,:] - Q[1,:]*Q[3,:]))
+            C = (C/torch.linalg.vector_norm(C,dim=0)).T
+        elif dim >=4 and dim<=7:
+            assert False
+        else:
+            assert False
+        
+        index = torch.sum(torch.isnan(C),dim=1) == 0
+        C = C[index]
+        deltaD = torch.sum(abs(C@G),dim=1)
+        d = (C@c)
+        PA = torch.vstack((C,-C))
+        Pb = torch.hstack((d+deltaD,-d+deltaD))
+
+        return PA, Pb, C
+        '''
+        dim, n_gens = G.shape
+        if torch.matrix_rank(G) >= dim:
+            if dim > 1:
+                comb = torch.combinations(torch.arange(n_gens,device=self.__device),r=dim-1)
+                n_comb = len(comb)
+                C = torch.zeros(n_comb,dim, device=self.__device)
+                for i in range(n_comb):
+                    indices = comb[i,:]
+                    Q = G[:,indices]
+                    v = ndimCross(Q)
+                    C[i,:] = v/torch.linalg.norm(v)
+                # remove None rows dues to rank deficiency
+                index = torch.sum(torch.isnan(C),axis=1) == 0
+                C = C[index,:]
+            else: 
+                C =torch.eye(1,device=self.__device)
+
+            # build d vector and determine delta d
+            deltaD = torch.zeros(len(C),device=self.__device)
+            for iGen in range(n_gens):
+                deltaD += abs(C@G[:,iGen])
+            # compute dPos, dNeg
+            dPos, dNeg = C@c + deltaD, - C@c + deltaD
+            # construct the overall inequality constraints
+            C = torch.hstack((C,-C))
+            d = torch.hstack((dPos,dNeg))
+            # catch the case where the zonotope is not full-dimensional
+            temp = torch.min(torch.sum(abs(C-C[0]),1),torch.sum(abs(C+C[0]),1))
+            if dim > 1 and (C.numel() == 0 or torch.all(temp<1e-12) or torch.all(torch.isnan(C)) or torch.any(torch.max(abs(C),0).values<1e-12)):
+                S,V,_ = torch.linalg.svd(G)
+
+                Z_ = S.T@torch.hstack((c,G))
+
+                ind = V <= 1e-12
+
+                # 1:len(V) 
+
+                
+        return P, comb, isDeg
+        '''
+    def deleteZerosGenerators(self,eps=0):
         '''
         delete zero vector generators
         self: <zonotope>
 
         return <zonotope>
         '''
-        non_zero_idxs = torch.any(self.generators!=0,axis=0)
-        Z_new = self.Z[:,[i for i in range(self.n_generators+1) if i==0 or non_zero_idxs[i-1]]]
+        non_zero_idxs = torch.any(abs(self.generators)>eps,axis=0)
+        Z_new = torch.hstack((self.center.reshape(-1,1),self.generators[:,non_zero_idxs]))
         return zonotope(Z_new,dtype=self.__dtype,device=self.__device)
 
     def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
@@ -287,7 +391,7 @@ class zonotope:
 
         ax.add_patch(patches.Polygon(p.T,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
 
-    def to_polyZonotope(self,dim=None):
+    def to_polyZonotope(self,dim=None,prop='None'):
         '''
         convert zonotope to polynomial zonotope
         self: <zonotope>
@@ -309,7 +413,12 @@ class zonotope:
         G = self.generators[:,idx]
         Grest = delete_column(self.generators,idx)
 
-        return polyZonotope(c,G,Grest,dtype=self.__dtype,device=self.__device)
+        return polyZonotope(c,G,Grest,dtype=self.__dtype,device=self.__device,prop=prop)
+    def to_interval(self):
+        c = self.__center
+        delta = torch.sum(abs(self.Z),dim=1) - abs(c)
+        leftLimit, rightLimit = c -delta, c + delta
+        return interval(leftLimit,rightLimit,self.__dtype,self.__device)
 
     def reduce(self,order,option='girard'):
         if option == 'girard':

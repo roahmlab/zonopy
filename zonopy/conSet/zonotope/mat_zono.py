@@ -3,7 +3,7 @@ Define class for matrix zonotope
 Author: Yongseok Kwon
 Reference:
 """
-from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_DEVICE
+from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.zonotope.zono import zonotope
 from zonopy.conSet.utils import G_mul_c, G_mul_g, G_mul_C, G_mul_G
 import torch
@@ -26,7 +26,11 @@ class matZonotope():
     G = [G1,G2,...,GN]
     zono = C + a1*G1 + a2*G2 + ... + aN*GN
     '''
-    def __init__(self,Z=EMPTY_TENSOR,dtype=DEFAULT_DTYPE,device=DEFAULT_DEVICE):
+    def __init__(self,Z=EMPTY_TENSOR,dtype=None,device=None):
+        if dtype is None:
+            dtype = DEFAULT_OPTS.DTYPE
+        if device is None:
+            device = DEFAULT_OPTS.DEVICE
         if isinstance(Z,list):
             Z = torch.tensor(Z)
         assert isinstance(Z,torch.Tensor), f'The input matrix should be torch tensor, but {type(Z)}.'
@@ -51,12 +55,13 @@ class matZonotope():
         return self.__center
     @center.setter
     def center(self,value):
-        self.Z[:,:,0] = self.__center  = value
+        self.Z[:,:,0] = self.__center  = value.to(dtype=self.__dtype,device=self.__device)
     @property
     def generators(self):
         return self.__generators
     @generators.setter
     def generators(self,value):
+        value = value.to(dtype=self.__dtype,device=self.__device)
         self.Z = torch.cat((self.__center.reshape(self.n_rows,self.n_cols,1),value),dim=-1)
         self.__generators = value
     @property
@@ -128,19 +133,15 @@ class matZonotope():
             assert False, 'Invalid object for reversed matrix multiplication with matrix zonotope.'
 
 
-    def deleteZerosGenerators(self):
+    def deleteZerosGenerators(self,eps=0):
         '''
         delete zero vector generators
         self: <matZonotope>
 
         return <matZonotope>
         '''
-        non_zero_idxs = torch.any(torch.any(self.generators!=0,axis=0),axis=0).to(dtype=int)
+        non_zero_idxs = torch.any(torch.any(abs(self.generators)>eps,axis=0),axis=0).to(dtype=int)
         Z_new = torch.zeros(self.n_rows,self.n_cols,sum(non_zero_idxs)+1)
-        j=0
-        for i in range(self.n_generators):
-            if non_zero_idxs[i]:
-                j += 1
-                Z_new[:,:,j] = self.generators[:,:,i]
         Z_new[:,:,0] = self.center
+        Z_new[:,:,1:] = self.generators[:,:,non_zero_idxs]
         return matZonotope(Z_new,self.device,self.dtype)

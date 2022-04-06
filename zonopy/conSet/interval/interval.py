@@ -1,16 +1,20 @@
 '''
 Define interval
-Author: Qingyi Chen
+Author: Qingyi Chen, Yongseok Kwon
 Reference: CORA
 '''
 
 import torch
-from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_DEVICE
+from zonopy.conSet import DEFAULT_OPTS
 from torch import Tensor
 
 EMPTY_TENSOR = torch.tensor([])
 class interval:
-    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR,dtype=DEFAULT_DTYPE,device=DEFAULT_DEVICE):
+    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR,dtype=None,device=None):
+        if dtype is None:
+            dtype = DEFAULT_OPTS.DTYPE
+        if device is None:
+            device = DEFAULT_OPTS.DEVICE
         if isinstance(inf,list):
             inf = torch.tensor(inf)
         if isinstance(sup,list):
@@ -23,30 +27,55 @@ class interval:
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
         assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
-        self.inf = inf.to(dtype=dtype,device=device)
-        self.sup = sup.to(dtype=dtype,device=device)
+        self.__inf = inf.to(dtype=dtype,device=device)
+        self.__sup = sup.to(dtype=dtype,device=device)
+        self.__shape = tuple(inf.shape)
         self.__dtype = dtype
         self.__device = device
-    # NOTE: private inf sup
+    @property
+    def inf(self):
+        return self.__inf
+    @inf.setter
+    def inf(self,value):
+        assert self.__inf.shape == value.shape
+        self.__inf = value.to(dtype=self.__dtype,device=self.__device)
+    @property
+    def sup(self):
+        return self.__sup
+    @sup.setter
+    def sup(self,value):
+        assert self.__inf.shape == value.shape
+        self.__inf = value.to(dtype=self.__dtype,device=self.__device)
 
-
+    @property
+    def shape(self):
+        return self.__shape
     @property
     def dtype(self):
         return self.__dtype
     @property
     def device(self):
         return self.__device
-    @property
-    def shape(self):
-        return list(self.inf.shape)
+    def __str__(self):
+        intv_str = f"interval of shape {self.shape}.\n inf: {self.__inf}.\n sup: {self.__sup}.\n"
+        del_dict = {'tensor(':'','    ':' ',')':''}
+        for del_el in del_dict.keys():
+            intv_str = intv_str.replace(del_el,del_dict[del_el])
+
+        return intv_str
+    def __repr__(self):
+        intv_repr1 = f"interval(\n{self.__inf}," 
+        intv_repr2 = f"\n{self.__sup}" 
+        intv_repr = intv_repr1.replace('tensor(','   inf(') + intv_repr2.replace('tensor(','   sup(')
+        intv_repr = intv_repr.replace('    ','    ')
+        return intv_repr+")"
     def __add__(self, other):
         if isinstance(other, interval):
-            inf, sup = self.inf+other.inf, self.sup+other.sup
-            return interval(self.inf + other.inf, self.sup + other.sup)
+            inf, sup = self.__inf+other.__inf, self.__sup+other.__sup
         elif isinstance(other, torch.Tensor) or isinstance(other, (int,float)):
-            inf, sup = self.inf+other, self.sup+other
+            inf, sup = self.__inf+other, self.__sup+other
         else:
-            assert False, f'the other object should be interval or numberic: {type(other)}.'
+            assert False, f'the other object should be interval or numberic, but {type(other)}.'
         return interval(inf,sup,self.__dtype,self.__device)
     __radd__ = __add__
     def __sub__(self,other):
@@ -65,21 +94,21 @@ class interval:
         self: <interval>
         return <interval>
         '''   
-        return interval(-self.sup,-self.inf,self.__dtype,self.__device)
+        return interval(-self.__sup,-self.__inf,self.__dtype,self.__device)
 
     def __mul__(self, other):
-        if isinstance(other, torch.Tensor) or isinstance(other,(int,float)):
+        if isinstance(other,(int,float)):
             if other >= 0:
-                return interval(other * self.inf, other * self.sup)
+                return interval(other * self.__inf, other * self.__sup)
             else:
-                return interval(other * self.sup, other * self.inf)
+                return interval(other * self.__sup, other * self.__inf)
 
         if self.numel() == 1 and isinstance(other, interval):
             candidates = other.inf.repeat(4,1).reshape((4,) + other.shape)
-            candidates[0] = self.inf * other.inf
-            candidates[1] = self.inf * other.sup
-            candidates[2] = self.sup * other.inf
-            candidates[3] = self.sup * other.sup
+            candidates[0] = self.__inf * other.__inf
+            candidates[1] = self.__inf * other.__sup
+            candidates[2] = self.__sup * other.__inf
+            candidates[3] = self.__sup * other.__sup
 
             new_inf = torch.min(candidates,dim=0).values
             new_sup = torch.max(candidates,dim=0).values
@@ -87,10 +116,10 @@ class interval:
 
         elif isinstance(other, interval) and other.numel() == 1:
             candidates = self.inf.repeat(4,1).reshape((4,) + self.shape)
-            candidates[0] = self.inf * other.inf
-            candidates[1] = self.inf * other.sup
-            candidates[2] = self.sup * other.inf
-            candidates[3] = self.sup * other.sup
+            candidates[0] = self.__inf * other.__inf
+            candidates[1] = self.__inf * other.__sup
+            candidates[2] = self.__sup * other.__inf
+            candidates[3] = self.__sup * other.__sup
 
             new_inf = torch.min(candidates,dim=0).values
             new_sup = torch.max(candidates,dim=0).values
@@ -102,34 +131,34 @@ class interval:
     __rmul__ = __mul__
 
     def __getitem__(self, pos):
-        inf = self.inf[pos]
-        sup = self.sup[pos]
+        inf = self.__inf[pos]
+        sup = self.__sup[pos]
         return interval(inf, sup)
 
     def __setitem__(self, pos, value):
         # set one interval
         if isinstance(value, interval):
-            self.inf[pos] = value.inf
-            self.sup[pos] = value.sup
+            self.__inf[pos] = value.__inf
+            self.__sup[pos] = value.__sup
         else:
-            self.inf[pos] = value
-            self.sup[pos] = value
+            self.__inf[pos] = value
+            self.__sup[pos] = value
 
     def __len__(self):
-        return len(self.inf)
-
-    def __str__(self):
-        return f"Interval of shape {self.inf.shape}.\n Inf: {self.inf}.\n Sup: {self.sup}.\n"
+        return len(self.__inf)
 
     def dim(self):
-        return self.inf.dim()
+        return self.__inf.dim()
 
     def t(self):
-        return interval(self.inf.t(), self.sup.t())
+        return interval(self.__inf.t(), self.__sup.t())
 
     def numel(self):
-        return self.inf.numel()
-
+        return self.__inf.numel()
+    def center(self):
+        return (self.inf+self.sup)/2
+    def rad(self):
+        return (self.sup-self.inf)/2
     '''
 
 

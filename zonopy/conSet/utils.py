@@ -17,9 +17,9 @@ def delete_column(Mat,idx_del):
     # NOTE: may want to assert dtype latter
     '''
     N = Mat.shape[1]
-    n= idx_del.numel()
-    if type(idx_del) == int:
+    if isinstance(idx_del, int):
         idx_del = torch.tensor([idx_del],dtype=int)
+    n= idx_del.numel()
     assert len(Mat.shape) == 2 and len(idx_del.shape) == 1
     assert n==0 or max(idx_del) < N
     
@@ -34,21 +34,21 @@ def delete_column(Mat,idx_del):
             Mat_new[:,i-j] = Mat[:,i]
     return Mat_new
     '''
-    if idx_del.numel() >= 1:
-        Mat_rec = Mat[:,[i for i in range(N) if i != idx_del[0]]]
-        idx_del_rec = idx_del[1:]
-        Mat = delete_column(Mat_rec,idx_del_rec)
+    NOTE: This might be faster
 
-    return Mat
-    '''
-    '''
-    idx_remain = torch.zeros(N,dtype=bool)
-    idx_full = torch.arange(N)
-
-    for i in range(N):
-        idx_remain[i] = all(idx_full[i] != idx_del)
+    N = Mat.shape[1]
     
-    return Mat[:,idx_remain]
+    if isinstance(idx_del, int):
+        idx_del = {idx_del}
+    elif isinstance(idx_del, torch.Tensor):
+        assert len(idx_del.shape) == 1
+        idx_del = set(idx_del.tolist())
+    n = len(idx_del)
+    assert len(Mat.shape) == 2 and 
+    assert n==0 or max(idx_del) < N
+
+    idx_remain = set(range(N)) - idx_del
+    return Mat[list(idx_remain)]
     '''
 # mat mul tools
 def G_mul_c(G,c):

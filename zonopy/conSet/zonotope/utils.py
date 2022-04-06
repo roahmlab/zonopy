@@ -3,8 +3,6 @@ Utilities for zonotope and matrix zonotope
 Author: Yongseok Kwon
 Reference: CORA
 """
-
-from numpy import setdiff1d
 from zonopy.conSet.utils import delete_column
 
 import torch
@@ -38,3 +36,21 @@ def pickedGenerators(Z,order):
             Gunred = G
 
     return c, Gunred, Gred
+
+
+def ndimCross(Q):
+    '''
+    computes the n-dimensional cross product
+    Q: (n+1) x n
+    '''
+    dim = len(Q)
+    v = torch.zeros(dim,device=Q.device)
+    indices = torch.arange(dim,device=Q.device)
+    for i in range(dim):
+        v[i] = (-1)**i*torch.det(Q[i != indices])
+    return v
+
+if __name__ == '__main__':
+    v = ndimCross(torch.Tensor([[1,2,3],[4,5,1],[6,1,6],[3,4,5]]))
+
+    print(v)

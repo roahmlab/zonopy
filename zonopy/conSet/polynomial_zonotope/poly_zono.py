@@ -3,8 +3,9 @@ Define class for matrix polynomial zonotope
 Author: Yongseok Kwon
 Reference: CORA, Patrick Holme's implementation
 """
+from numpy import poly
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix, pz_repr
-from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_ITYPE, DEFAULT_DEVICE
+from zonopy.conSet import DEFAULT_OPTS, PROPERTY_ID
 from zonopy.conSet.utils import delete_column
 import zonopy as zp
 import torch
@@ -39,11 +40,16 @@ class polyZonotope:
 
     pZ = c + a1*gi1 + a2*gi2 + ... + aN*giN + b1^i11*b2^i21*...*bp^ip1*gd1 + b1^i12*b2^i22*...*bp^ip2*gd2 + ... 
     + b1^i1M*b2^i2M*...*bp^ipM*gdM
-    
+     
     '''
-    def __init__(self,c=EMPTY_TENSOR,G=EMPTY_TENSOR,Grest=EMPTY_TENSOR,expMat=None,id=None,dtype=DEFAULT_DTYPE,itype=DEFAULT_ITYPE,device=DEFAULT_DEVICE):
-        # NOTE: ind might be better to be list
-
+    # NOTE: property for mat pz
+    def __init__(self,c=EMPTY_TENSOR,G=EMPTY_TENSOR,Grest=EMPTY_TENSOR,expMat=None,id=None,dtype=None,itype=None,device=None,prop='None'):
+        if dtype is None:
+            dtype = DEFAULT_OPTS.DTYPE
+        if itype is None:
+            itype = DEFAULT_OPTS.ITYPE
+        if device is None:
+            device = DEFAULT_OPTS.DEVICE
         if type(c) == list:
             c = torch.tensor(c)
         if type(G) == list:
@@ -54,7 +60,7 @@ class polyZonotope:
             dtype = torch.double
         if itype == int:
             itype = torch.long
-
+        assert isinstance(prop,str), 'Property should be string.'
         assert dtype == torch.float or dtype == torch.double, 'dtype should be float'
         assert itype == torch.int or itype == torch.long or itype == torch.short, 'itype should be integer'
         assert isinstance(c,torch.Tensor) and isinstance(G, torch.Tensor) and isinstance(Grest, torch.Tensor), 'The input matrix should be either torch tensor or list.'
@@ -72,7 +78,8 @@ class polyZonotope:
             # NOTE: MERGE redundant for 000?
             expMat = torch.eye(self.G.shape[-1],dtype=itype,device=device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
             self.expMat,self.G = removeRedundantExponents(expMat,self.G)
-            self.id = torch.arange(self.expMat.shape[0],dtype=int,device=device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
+            self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
+            #self.id = torch.arange(self.expMat.shape[0],dtype=int,device=device) 
         elif expMat != None:
             #check correctness of user input
             if isinstance(expMat, list):
@@ -82,14 +89,20 @@ class polyZonotope:
             assert torch.all(expMat >= 0) and expMat.shape[1] == self.G.shape[-1], 'Invalid exponent matrix.'
             expMat = expMat.to(dtype=itype,device=device)            
             self.expMat,self.G = removeRedundantExponents(expMat,self.G)
-            if self.G.numel()==0:
-                self.id = torch.arange(expMat.shape[0],dtype=int,device=device)
-            elif id != None:
+            #if self.G.numel()==0:
+                #self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device)
+                #self.id = torch.arange(self.expMat.shape[0],dtype=int,device=device)
+            if id != None:
                 if isinstance(id, list):
                     id = torch.tensor(id)
+                if id.numel() !=0:
+                    assert prop == 'None', 'Either ID or property should not be defined.'
+                    assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
                 assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
-                assert id.shape[0] == expMat.shape[0], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[0]}, but the number of identifiers is {id.shape[0]}.'
+                assert id.numel() == expMat.shape[0], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[0]}, but the number of identifiers is {id.numel()}.'
                 self.id = id.to(dtype=int,device=device)  
+            else:
+                self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device) 
         elif isinstance(id, torch.Tensor) and id.numel() == 0:
             self.expMat = torch.eye(0,dtype=itype,device=device)
             self.id = id.to(dtype=int,device=device)  
@@ -156,26 +169,34 @@ class polyZonotope:
         # TODO: allow to add bw polyZonotope and zonotope
 
         # if other is a vector
-        if  type(other) == torch.Tensor:
-            assert other.shape == self.c.shape
+        if  isinstance(other,(torch.Tensor,float,int)):
+            assert isinstance(other,(float,int)) or other.shape == self.c.shape or len(other.shape) == 0
             c = self.c + other
             G, Grest, expMat, id = self.G, self.Grest, self.expMat, self.id
-        
-        # if other is a zonotope
-
-
         # if other is a polynomial zonotope
-        elif type(other) == polyZonotope:
+        elif isinstance(other,polyZonotope): # exact Plus
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            expMat, G = removeRedundantExponents(
+                torch.hstack((expMat1, expMat2)),
+                torch.hstack((self.G, other.G))
+                )
+            c = self.c + other.c
+            Grest = torch.hstack((self.Grest,other.Grest))
+            '''
             assert other.dimension == self.dimension
             c = self.c + other.c
             G = torch.hstack((self.G,other.G))
             Grest = torch.hstack((self.Grest,other.Grest))
+            
             expMat = torch.block_diag(self.expMat,other.expMat)
             if self.id.numel() !=0:
                 id_offset = max(self.id)+1
             else:
                 id_offset = 0 
             id = torch.hstack((self.id,other.id+id_offset))
+            
+            [id, expMat1, expMat2] = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            '''
         return polyZonotope(c,G,Grest,expMat,id,self.__dtype,self.__itype,self.__device)
     __radd__ = __add__
     def __sub__(self,other):
@@ -190,23 +211,70 @@ class polyZonotope:
         self: <polyZonotope>
         return <polyZonotope>
         '''  
-        return polyZonotope(-self.c, self.G, self.Grest, self.expMat, self.id, self.__dtype, self.__itype, self.__device)
+        return polyZonotope(-self.c, -self.G, self.Grest, self.expMat, self.id, self.__dtype, self.__itype, self.__device)
 
     def __iadd__(self,other): 
         return self+other
     def __isub__(self,other):
         return self-other
     def __mul__(self,other):
-        if isinstance(other,torch.Tensor):
+        if isinstance(other,(torch.Tensor,int,float)):
             #assert len(other.shape) == 1
-            assert self.dimension == other.shape[0] or self.dimension == 1 or other.shape[0] == 1, 'Invalid dimension'
+            assert isinstance(other,(int,float)) or len(other.shape) == 0 or self.dimension == other.shape[0] or self.dimension == 1 or other.shape[0] == 1, 'Invalid dimension'
             c = self.c*other
             G = (self.G.T*other).T
             Grest = (self.Grest.T*other).T
+            expMat = self.expMat
+            id = self.id
             
         elif isinstance(other,polyZonotope):
-            assert False    
-        return polyZonotope(c,G,Grest,self.expMat,self.id,self.__dtype,self.__itype,self.__device)
+            assert self.dimension == 1 and other.dimension == 1, 'Both polynomial zonotope must have dimension 1.'
+            '''
+            if self.id.numel() !=0:
+                id_offset = max(self.id)+1
+            else:
+                id_offset = 0 
+            id = torch.hstack((self.id,other.id+id_offset))
+            expMat1 = torch.vstack((self.expMat,torch.zeros(other.expMat.shape[0],self.expMat.shape[1]))).to(dtype=self.__itype)
+            expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat)).to(dtype=self.__itype)
+            '''
+            [id, expMat1, expMat2] = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            G, Grest, expMat = EMPTY_TENSOR,EMPTY_TENSOR, EMPTY_TENSOR.reshape(id.numel(),0).to(dtype=self.__itype,device=self.__device)
+            G1, G2, Grest1, Grest2 = self.G.reshape(-1), other.G.reshape(-1), self.Grest.reshape(-1), other.Grest.reshape(-1)            
+            c = self.c*other.c 
+            # deal with dependent generators
+            if other.G.numel() != 0:
+                c_g = self.c * other.G
+                G = torch.hstack((G,c_g))
+                expMat = torch.hstack((expMat,expMat2))
+            if self.G.numel() != 0:
+                g_c = self.G * other.c
+                G = torch.hstack((G,g_c))
+                expMat = torch.hstack((expMat,expMat1))
+            if self.G.numel() != 0 and other.G.numel() != 0:
+                g_g = torch.outer(G1,G2).reshape(1,-1)
+                G = torch.hstack((G,g_g))
+                for i in range(self.G.shape[-1]):
+                    expMat = torch.hstack((expMat, expMat1[:,i].reshape(-1,1)+expMat2))
+            
+            # deal with independent generators
+            if other.Grest.numel() != 0:
+                c_grest = self.c*other.Grest
+                Grest = torch.hstack((Grest,c_grest))
+            if self.Grest.numel() != 0:
+                grest_c = self.Grest*other.c
+                Grest = torch.hstack((Grest,grest_c))
+            if self.Grest.numel() != 0 and other.Grest.numel() != 0:
+                grest_grest = torch.outer(Grest1,Grest2).reshape(1,-1)
+                Grest = torch.hstack((Grest,grest_grest))
+            if self.G.numel() !=0 and other.Grest.numel() !=0:
+                g_grest = torch.outer(G1,Grest2).reshape(1,-1)
+                Grest = torch.hstack((Grest,g_grest))
+            if self.Grest.numel() != 0 and other.G.numel() !=0:
+                grest_g = torch.outer(Grest1,G2).reshape(1,-1)
+                Grest = torch.hstack((Grest,grest_g))
+        
+        return polyZonotope(c,G,Grest,expMat,id,self.__dtype,self.__itype,self.__device)
     __rmul__ = __mul__
 
     def __rmatmul__(self,other):
@@ -219,7 +287,7 @@ class polyZonotope:
         # TODO: Need to define intervals for matrix
         
         # if other is a matrix
-        if type(other) == torch.Tensor:
+        if isinstance(other, torch.Tensor):
             
             c = other@self.c
             G = other@self.G
@@ -284,44 +352,46 @@ class polyZonotope:
         idRed = self.id[ind]
 
         return polyZonotope(cRed,GRed,GrestRed,expMatRed,idRed,self.__dtype,self.__itype,self.__device)
-    def exactPlus(self,other):
-        '''
-        compute the addition of two sets while preserving the dependencies between the two sets
-        self: <polyZonotope>
-        other: <polyZonotope>
-        return <polyZonotope>
-        '''
-        # NOTE: need to write mergeExpMatrix
-        id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-        
-        ExpNew, Gnew = removeRedundantExponents(
-            torch.hstack((expMat1, expMat2)),
-            torch.hstack((self.G, other.G))
-            )
-        c = self.c + other.c
-        Grest = torch.hstack((self.Grest,other.Grest))
-        return polyZonotope(c,Gnew,Grest,ExpNew,id,self.__dtype,self.__itype,self.__device)
 
-    def cartProd(self,other=None):
+    def exactCartProd(self,other):
         '''
-        compute teh cartesian product of two polyZonotopes
         self: <polyZonotope>
         other: <polyZonotope>
         return <polyZonotope>
         '''    
-        if other == None:
-            return self
-        
-        # convert other set representations to polyZonotopes (other)
-        if type(other) != polyZonotope:
-            if type(other) == zonotope or type(other) == interval:
-                
-                pZ2 = zp.zonotope(pZ2)
-                pZ2 = polyZonotope(pZ2.c)
-
+        if isinstance(other,polyZonotope):
+            dim1, dim2 = self.dimension, other.dimension 
+            c = torch.hstack((self.c,other.c))
+            if self.G.numel() == 0:
+                if other.G.numel() == 0:
+                    G = EMPTY_TENSOR
+                    expMat = None
+                    id = None
+                else:
+                    G = torch.vstack((torch.zeros(dim1,other.n_dep_gens),other.G))
+                    expMat = other.expMat
+                    id = other.id
+            else:
+                if other.G.numel() == 0:
+                    G = torch.vstack((self.G,torch.zeros(dim2,self.n_dep_gens)))
+                    expMat = self.expMat
+                    id = self.id
+                else:
+                    id,expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+                    G = torch.block_diag(self.G,other.G)
+                    expMat = torch.hstack((expMat1,expMat2))
             
-            elif type(other) == torch.Tensor:
-                other = polyZonotope()
+            if self.Grest.numel() == 0:
+                if other.Grest.numel() == 0:
+                    Grest = EMPTY_TENSOR
+                else:
+                    Grest = torch.hstack((torch.zeros(dim1,other.n_indep_gens),other.Grest))
+            else:
+                if other.Grest.numel() == 0:
+                    Grest = torch.hstack((self.Grest, torch.zeros(dim2,self.n_indep_gens)))
+                else:
+                    Grest = torch.block_diag(self.Grest,other.Grest)
+        return polyZonotope(c,G,Grest,expMat,id,self.__dtype,self.__itype, self.__device)
 
     def to_zonotope(self):
         if self.G.numel() != 0:
@@ -334,12 +404,85 @@ class polyZonotope:
         else:
             Z = torch.hstack((self.c.reshape(-1,1),self.Grest))
         return zp.zonotope(Z,self.__dtype,self.__device)
+
+    def to_interval(self,method='interval'):
+        if method == 'interval':
+            return self.to_zonotope().to_interval()
+        else:
+            assert False, 'Not implemented'
+
     @property
     def Z(self):
         return torch.hstack((self.c.reshape(-1,1),self.G,self.Grest)) 
 
+    def slice_dep(self,id_slc,val_slc):
+        '''
+        Slice polynomial zonotpe in depdent generators
+        id_slc: id to dlice
+        val_slc: indeterminant to slice
+        '''
+        if isinstance(id_slc,(int,list)):
+            if isinstance(id_slc,int):
+                id_slc = [id_slc]
+            id_slc = torch.Tensor(id_slc)
+        if isinstance(val_slc,(int,float,list)):
+            if isinstance(val_slc,(int,float)):
+                val_slc = [val_slc]
+            val_slc = torch.Tensor(val_slc)
+        assert all(val_slc<=1) and all(val_slc>=-1), 'Indereminant should be in [-1,1].'
+        
+        id_slc, val_slc = id_slc.reshape(-1,1), val_slc.reshape(-1,1)
+        order = torch.argsort(id_slc.reshape(-1))
+        id_slc, val_slc  = id_slc[order], val_slc[order]
+        ind = torch.nonzero(torch.any(self.id==id_slc,dim=0)).reshape(-1)
+        #assert ind.numel()==len(id_slc), 'Some specidied IDs do not exist!'
+        if ind.numel() != 0:
+            G = self.G*torch.prod(val_slc**self.expMat[ind],dim=0)
+            expMat = torch.clone(self.expMat)
+            expMat[ind] = 0
+        else:
+            expMat = torch.clone(self.expMat)
+            G = torch.clone(self.G)
 
-
+        expMat, G = removeRedundantExponents(expMat,G)
+        ind = torch.sum(expMat,0) == 0
+        if torch.any(ind):
+            c = self.c + torch.sum(G[:,ind],1)
+            G = G[:,~ind]
+            expMat = expMat[:,~ind]
+        else:
+            c = self.c
+        
+        id = self.id
+        ind = torch.sum(expMat,1) == 0
+        if torch.any(ind):
+            expMat = expMat[~ind]
+            id = id[~ind]
+        if G.numel() == 0 and self.Grest.numel() == 0:
+            return polyZonotope(c,dtype=self.__dtype,itype=self.__itype,device=self.__device)
+        else:
+            return polyZonotope(c,G,self.Grest,expMat,id,self.__dtype,self.__itype,self.__device)
+    
+    def deleteZerosGenerators(self,eps=0):
+        expMat, G = removeRedundantExponents(self.expMat,self.G,eps)
+        ind = torch.sum(expMat,0) == 0
+        if torch.any(ind):
+            c = self.c + torch.sum(G[:,ind],1)
+            G = G[:,~ind]
+            expMat = expMat[:,~ind]
+        else:
+            c = self.c
+        
+        id = self.id
+        ind = torch.sum(expMat,1) == 0
+        if torch.any(ind):
+            expMat = expMat[~ind]
+            id = id[~ind]
+        if G.numel() == 0 and self.Grest.numel() == 0:
+            return polyZonotope(c,dtype=self.__dtype,itype=self.__itype,device=self.__device)
+        else:
+            return polyZonotope(c,G,self.Grest,expMat,id,self.__dtype,self.__itype,self.__device)        
+        
     def project(self,dim=[0,1]):
         c = self.c[dim,:]
         G = self.G[dim,:]

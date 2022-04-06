@@ -5,7 +5,7 @@ Reference: CORA
 """
 import torch
 from queue import PriorityQueue
-from zonopy.conSet import DEFAULT_DTYPE, DEFAULT_ITYPE, DEFAULT_DEVICE
+from zonopy.conSet import DEFAULT_OPTS
 
 def argsortrows(Mat):
     '''
@@ -33,7 +33,7 @@ def argsortrows(Mat):
 
 
 
-def removeRedundantExponents(ExpMat,G):
+def removeRedundantExponents(ExpMat,G,eps=0):
     '''
     add up all generators that belong to terms with identical exponents
     
@@ -57,7 +57,7 @@ def removeRedundantExponents(ExpMat,G):
     
     idxD = G
     for _ in range(len(G.shape)-1):    
-        idxD = torch.any(idxD,-1)
+        idxD = torch.any(idxD>eps,-1)
 
     # skip if all non-zero OR G is already empty 
     if not all(idxD) or G.numel() == 0:
@@ -129,6 +129,7 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
 
     # ID vectors not identical -> MERGE
     else:
+        # NOTE: can be improved the speed
         # merge the two sets
         id = id1
         ind2 =torch.zeros(id2.shape,dtype=int)
@@ -144,9 +145,8 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
 
         # construct the new exponent matrices
         L = len(id)
-
         expMat1 = torch.vstack((expMat1,torch.zeros(L-L1,expMat1.shape[1],dtype=int)))
-        temp = torch.zeros(L,expMat2.shape[1],dtype=int)
+        temp = torch.zeros(L,expMat2.shape[1],dtype=expMat2.dtype)
         temp[ind2,:] = expMat2
         expMat2 = temp
 
@@ -179,7 +179,7 @@ def pz_repr(pz):
         else:
             pz_repr += ']'
 
-    if pz.dtype != DEFAULT_DTYPE:
+    if pz.dtype != DEFAULT_OPTS.DTYPE:
         pz_repr += f', dtype={pz.dtype}'
  
     pz_repr += '\n       '
@@ -191,9 +191,9 @@ def pz_repr(pz):
         expMat_str = expMat_str.replace(del_el,del_dict[del_el])
 
     pz_repr += expMat_str
-    if pz.itype != DEFAULT_ITYPE:
+    if pz.itype != DEFAULT_OPTS.ITYPE:
         pz_repr += f', itype={pz.itype}'
-    if pz.device != DEFAULT_DEVICE:
+    if pz.device != DEFAULT_OPTS.DEVICE:
         pz_repr += f', device={pz.device}'
     pz_repr += ')'
     return pz_repr
