@@ -1,3 +1,9 @@
+'''
+Generate parametrized trajectory
+Author: Yongseok Kwon
+
+'''
+
 import torch
 
 def gen_arm_traj(q_0, qd_0, k, T_len=200,down_sample=2):
