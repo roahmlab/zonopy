@@ -1,30 +1,27 @@
+
+
 import torch
-import zonopy
-import matplotlib.pyplot as plt
-from zonopy.forward_kinematics.FK import forward_kinematics
-qpos =  torch.tensor([0,0])
-qvel =  torch.tensor([1.2,-1.2])
-joint_axes = [torch.tensor([0,0,1])]*2
-P = [torch.tensor([0,0,0],dtype=torch.float32), torch.tensor([1,0,0],dtype=torch.float32)]
-_,P_motor = forward_kinematics(qpos,qvel,joint_axes,P)
+import zonopy as zp
+from zonopy.kinematics import forward_kinematics
 
-max_key = max(P_motor.keys())
-n_joints = max_key[0]+1
-n_time_steps = max_key[1]+1
+qpos =  torch.Tensor([0,0])
+qvel =  torch.Tensor([1.2,1.2])
+params = {'joint_axes':[torch.Tensor([0,0,1])]*2, 
+        'P': [torch.Tensor([0,0,0]), torch.Tensor([1,0,0])],
+        'n_joints':2}
+_, R_trig = zp.load_JRS_trig(qpos,qvel)
+_, _, _, _, _, _, _, R_des, _, R, _=zp.gen_JRS(qpos,qvel,params['joint_axes'],taylor_degree=3,make_gens_independent =True)
+n_time_steps = len(R_trig)
 
-fig = plt.figure()    
-ax = fig.gca() 
+P_motor_trig, P_motor = [], []
 
-for i in range(n_joints):
-    for t in range(n_time_steps):
-        Z = P_motor[(i,t)].to_zonotope()
-        if t % 1 == 0:
-            Z.plot2d(ax,facecolor='none')
-            #import pdb; pdb.set_trace()
-            #
+for t in range(n_time_steps):
+    _,P_motor_temp = forward_kinematics(R_trig[t],params)
+    P_motor_trig.append(P_motor_temp)
+    _,P_motor_temp = forward_kinematics(R_des[t],params)
+    P_motor.append(P_motor_temp)
 
-plt.title('FRS of joint')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.axis([-2,2,-2,2])
-plt.show()
+ax = zp.plot_polyzonos(P_motor_trig,plot_freq=1,edgecolor='red',hold_on=True)
+
+zp.plot_polyzonos(P_motor,plot_freq=1,ax=ax)
+
