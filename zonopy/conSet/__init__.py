@@ -48,6 +48,11 @@ class __Property_ID(object):
     __properties: list = []
     __ids: torch.Tensor = torch.tensor([],dtype=int)
 
+    def _reset(self):
+        self.__dict = {'None':[]}
+        self.__properties = []
+        self.__ids = torch.tensor([],dtype=int)
+
     def __getitem__(self,key): 
         assert isinstance(key,str)       
         return torch.tensor(self.__dict[key],dtype=int)

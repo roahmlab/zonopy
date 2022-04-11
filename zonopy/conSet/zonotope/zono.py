@@ -404,15 +404,15 @@ class zonotope:
         assert dim <= self.dimension
 
         g_row_dim =self.generators[dim,:]
-        idx = (g_row_dim!=0).nonzero().reshape(-1)
-        
-        assert idx.numel() != 0, 'no sliceable generator for the dimension.'
-        assert idx.numel() == 1,'more than one no sliceable generators for the dimesion.'        
+        idx = g_row_dim==0
+
+        assert sum(~idx) != 0, 'no sliceable generator for the dimension.'
+        assert sum(~idx) == 1,'more than one no sliceable generators for the dimesion.'        
         
         c = self.center
-        G = self.generators[:,idx]
-        Grest = delete_column(self.generators,idx)
-
+        G = self.generators[:,~idx]
+        Grest = self.generators[:,idx]
+  
         return polyZonotope(c,G,Grest,dtype=self.__dtype,device=self.__device,prop=prop)
     def to_interval(self):
         c = self.__center

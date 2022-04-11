@@ -4,7 +4,7 @@ Author: Yongseok Kwon
 Reference:
 """
 import torch
-
+from numpy import delete
 def delete_column(Mat,idx_del):
     '''
     Mat: <torch.Tensor>
@@ -23,6 +23,13 @@ def delete_column(Mat,idx_del):
     assert len(Mat.shape) == 2 and len(idx_del.shape) == 1
     assert n==0 or max(idx_del) < N
     
+    return delete(Mat,idx_del,1)
+
+    #idx_del = torch.any(torch.arange(N).reshape(1,-1)-idx_del.reshape(-1,1)==0,dim=0)
+    #return Mat[:,~idx_del]
+
+
+    '''
     idx_del,_ = torch.sort(idx_del)
     Mat_new = torch.zeros(Mat.shape[0],N-n)
     j = 0
@@ -33,6 +40,7 @@ def delete_column(Mat,idx_del):
         else:        
             Mat_new[:,i-j] = Mat[:,i]
     return Mat_new
+    '''
     '''
     NOTE: This might be faster
 

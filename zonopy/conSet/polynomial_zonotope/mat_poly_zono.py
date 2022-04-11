@@ -145,16 +145,27 @@ class matPolyZonotope():
         return <matPolyZonotope>
         '''
         if type(other) == torch.Tensor:
-            assert len(other.shape) == 1, 'The other object should be 1-D tensor.'  
-            assert other.shape[0] == self.n_cols
+            if len(other.shape) == 1:
+                assert other.shape[0] == self.n_cols
+                c = self.C @ other
+                G = G_mul_c(self.G,other)
+                Grest = G_mul_c(self.Grest,other)    
+                id = self.id
+                expMat = self.expMat   
+                return polyZonotope(c,G,Grest,expMat,id,self.__dtype,self.__itype,self.__device)
+            elif len(other.shape) == 2:
+                assert other.shape[0] == self.n_cols
+                C = self.C @ other
+                G = G_mul_g(self.G,other).reshape(self.n_rows,self.n_cols,-1)
+                Grest = G_mul_g(self.Grest,other).reshape(self.n_rows,self.n_cols,-1)
+                id = self.id
+                expMat = self.expMat   
+                return matPolyZonotope(C,G,Grest,expMat,id,self.__dtype,self.__itype,self.__device)
+            else:
+                assert False, 'The other object should be 1 or 2-D tensor.'  
             
-            c = self.C @ other
-            G = G_mul_c(self.G,other)
-            Grest = G_mul_c(self.Grest,other)
-            id = self.id
-            expMat = self.expMat 
-            return polyZonotope(c,G,Grest,expMat,id,self.__dtype,self.__itype,self.__device)
-        
+   
+
         # NOTE: this is 'OVERAPPROXIMATED' multiplication for keeping 'fully-k-sliceables'
         # The actual multiplication should take
         # dep. gnes.: C_G, G_c, G_G, Grest_Grest, G_Grest, Grest_G

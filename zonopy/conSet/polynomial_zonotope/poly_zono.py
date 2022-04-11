@@ -6,7 +6,6 @@ Reference: CORA, Patrick Holme's implementation
 from numpy import poly
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix, pz_repr
 from zonopy.conSet import DEFAULT_OPTS, PROPERTY_ID
-from zonopy.conSet.utils import delete_column
 import zonopy as zp
 import torch
 
@@ -317,11 +316,15 @@ class polyZonotope:
             len = torch.sum(G**2,0)
             # determine the smallest gens to remove            
             ind = torch.argsort(len,descending=True)
-            ind = ind[K:]
+            ind_red,ind_rem = ind[:K], ind[K:]
             # split the indices into the ones for dependent and independent
-            indDep = ind[ind < P].to(dtype=int)
-            indInd = ind[ind >= P].to(dtype=int)
+            indDep = ind_rem[ind_rem < P].to(dtype=int)
+            indInd = ind_rem[ind_rem >= P].to(dtype=int)
             indInd = indInd - P
+            indDep_red = ind_red[ind_red < P].to(dtype=int)
+            indInd_red = ind_red[ind_red >= P].to(dtype=int)
+            indInd_red = indInd_red - P
+
             # construct a zonotope from the gens that are removed
             Grem = self.G[:,indDep]
             Erem = self.expMat[:,indDep]
@@ -332,9 +335,9 @@ class polyZonotope:
             zonoRed = zono.reduce(1,option)
             
             # remove the gens that got reduce from the gen matrices
-            GRed = delete_column(self.G,indDep)
-            expMatRed = delete_column(self.expMat,indDep)
-            GrestRed = delete_column(self.Grest,indInd)
+            GRed = self.G[:,indDep_red]
+            expMatRed = self.expMat[:,indDep_red]
+            GrestRed = self.Grest[:,indInd_red]
             
             # add the reduced gens as new indep gens
             cRed = self.c + zonoRed.center
@@ -437,7 +440,7 @@ class polyZonotope:
         ind = torch.nonzero(torch.any(self.id==id_slc,dim=0)).reshape(-1)
         #assert ind.numel()==len(id_slc), 'Some specidied IDs do not exist!'
         if ind.numel() != 0:
-            G = self.G*torch.prod(val_slc**self.expMat[ind],dim=0)
+            G = self.G*torch.prod(val_slc[ind]**self.expMat[ind],dim=0)
             expMat = torch.clone(self.expMat)
             expMat[ind] = 0
         else:

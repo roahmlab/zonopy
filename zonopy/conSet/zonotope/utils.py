@@ -28,10 +28,13 @@ def pickedGenerators(Z,order):
             nUnreduced = int(d*(order-1))
             nReduced = nrOfGens - nUnreduced 
             # pick generators with smallest h values to be reduced
-            ind = torch.argsort(h)[:nReduced]
-            Gred = G[:,ind]
+            sorted_h = torch.argsort(h)
+            ind_red = sorted_h[:nReduced]
+            ind_rem = sorted_h[nReduced:]
+            Gred = G[:,ind_red]
             # unreduced generators
-            Gunred = delete_column(G,ind)
+            #Gunred = delete_column(G,ind_red)
+            Gunred = G[:,ind_rem]
         else:
             Gunred = G
 
