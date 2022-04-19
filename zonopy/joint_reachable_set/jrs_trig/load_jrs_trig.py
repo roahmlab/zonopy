@@ -56,6 +56,10 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
     5: t
 
     '''
+    if isinstance(q_0,list):
+        q_0 = torch.Tensor(q_0)
+    if isinstance(qd_0,list):
+        qd_0 = torch.Tensor(qd_0)
     assert len(q_0.shape) == 1 and len(qd_0.shape) == 1 
     n_joints = len(qd_0)
     assert len(q_0) == n_joints

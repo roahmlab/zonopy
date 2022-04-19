@@ -63,7 +63,7 @@ epsilon = 1e-6;
 for j = 1:n_JRS
     % break JRS computation into two steps...
     tic;
-    delta_kai = max(pi/24, abs(c_kvi(j)/3));
+    delta_kai = max(pi/24, (abs(c_kvi(j))+delta_kvi)/3);
     % first, use dyn_zero_to_t_plan dynamics
     params.tStart = 0; % start time
     params.tFinal = t_plan; % end time for these dynamics

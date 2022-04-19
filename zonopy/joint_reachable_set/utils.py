@@ -3,7 +3,14 @@ from zonopy import polyZonotope, matPolyZonotope
 def remove_dependence_and_compress(Set,id):
     id_idx = Set.id == id
     ful_slc_idx = torch.all(torch.vstack((Set.expMat[id_idx] !=0,Set.expMat[~id_idx] == 0)),dim=0)
-    assert sum(ful_slc_idx) >= 1
+    #print(Set.expMat)
+    #print(Set.id)
+    #print(id_idx)
+    #print(Set.expMat[id_idx])
+    #print(Set.expMat[~id_idx])
+    #print(ful_slc_idx)
+    assert Set.expMat.shape[1] ==0 or sum(ful_slc_idx) >= 1
+    
     if isinstance(Set,polyZonotope):
         c = Set.c
         G = Set.G[:,ful_slc_idx]
