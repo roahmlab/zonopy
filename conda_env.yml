@@ -1,0 +1,13 @@
+name: zonopy
+channels:
+- pytorch
+dependencies:
+- python = 3.8.5
+- anaconda
+- cudatoolkit=10.
+- numpy
+- pip
+- pip:
+  - numpy == 1.22.3
+  - torch == 1.11.0
+  - mat4py == 0.5.0
