@@ -102,7 +102,7 @@ def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
     sinq = cos_sin_q.G[sin_dim]
     n_dgens = len(cosq) 
     G = sinq*w_hat.repeat(n_dgens,1,1).permute(1,2,0)-cosq*(w_hat@w_hat).repeat(n_dgens,1,1).permute(1,2,0)
-
+    
     cosq = cos_sin_q.Grest[cos_dim]
     sinq = cos_sin_q.Grest[sin_dim]
     n_igens = len(cosq) 
@@ -110,3 +110,20 @@ def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
     return matPolyZonotope(C,G,Grest,cos_sin_q.expMat,cos_sin_q.id,cos_sin_q.dtype,cos_sin_q.itype,cos_sin_q.device)
 
 
+def gen_rot_from_q(q,rot_axis):
+    if isinstance(q,(int,float)):
+        q = torch.tensor(q,dtype=torch.float)
+    cosq = torch.cos(q)
+    sinq = torch.sin(q)
+    # normalize
+    w = rot_axis/torch.norm(rot_axis)
+    # skew-sym. mat for cross prod 
+    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]])
+    # Rodrigues' rotation formula
+    Rot = torch.eye(3) + sinq*w_hat + (1-cosq)*w_hat@w_hat
+    return Rot
+
+if __name__ == '__main__':
+    import zonopy as zp
+    pz = zp.polyZonotope([0],[[0,torch.pi]],[[torch.pi/2,0]])
+    R = gen_rotatotope_from_jrs(pz)
