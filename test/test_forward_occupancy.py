@@ -8,7 +8,7 @@ if torch.cuda.is_available():
 
 qpos =  torch.tensor([0.0,0.0],device=zp.conSet.DEFAULT_OPTS.DEVICE)
 qvel =  torch.tensor([torch.pi,torch.pi/2],device=zp.conSet.DEFAULT_OPTS.DEVICE)
-params = {'joint_axes':[torch.Tensor([0.0,0.0,1.0],device=zp.conSet.DEFAULT_OPTS.DEVICE)]*2, 
+params = {'joint_axes':[torch.tensor([0.0,0.0,1.0],device=zp.conSet.DEFAULT_OPTS.DEVICE)]*2, 
         'R': [torch.eye(3,device=zp.conSet.DEFAULT_OPTS.DEVICE)]*2,
         'P': [torch.tensor([0.0,0.0,0.0],device=zp.conSet.DEFAULT_OPTS.DEVICE), torch.tensor([1.0,0.0,0.0],device=zp.conSet.DEFAULT_OPTS.DEVICE)],
         'n_joints':2}
