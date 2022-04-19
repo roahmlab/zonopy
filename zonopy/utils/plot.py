@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from zonopy.utils.math import cos, sin
-def plot_JRSs(Qs,deg= 6,order=40,plot_freq=10,facecolor='none',edgecolor='green',linewidth=.2, hold_on=False, title=None, ax=None, axis_lim=None):
+def plot_JRSs(Qs,deg= 6,plot_freq=10,facecolor='none',edgecolor='green',linewidth=.2, hold_on=False, title=None, ax=None, axis_lim=None):
     n_time_steps = len(Qs)
     n_joints = len(Qs[0])
     if axis_lim is None:
