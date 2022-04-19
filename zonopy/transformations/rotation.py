@@ -64,7 +64,7 @@ def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.Tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=polyZono.device)
+    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=polyZono.device)
 
     cosq = polyZono.c[cos_dim]
     sinq = polyZono.c[sin_dim]
