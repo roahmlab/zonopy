@@ -8,7 +8,7 @@ from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import load_JRS_trig, loa
 from zonopy.joint_reachable_set.gen_jrs import gen_JRS
 
 from zonopy.utils import *
-from zonopy.load_urdf.load_robot import *
+from zonopy.robots.load_robot import *
 
 __version__ = "0.0.1"
 __logo__ = """
