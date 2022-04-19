@@ -95,7 +95,7 @@ def removeRedundantExponents(ExpMat,G,eps=0):
     # sort the exponents vectors according to the hash value
     ind = argsortrows(rankMat)
     '''
-    rankMat = torch.vstack((temp@ExpMat,ExpMat))
+    rankMat = torch.vstack((temp.to(dtype=torch.float)@ExpMat.to(dtype=torch.float),ExpMat))
     # sort the exponents vectors according to the hash value
     ind = torch.unique(rankMat,dim=-1,sorted=True,return_inverse=True)[1].argsort()
     
