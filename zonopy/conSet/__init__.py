@@ -46,16 +46,16 @@ DEFAULT_OPTS = __DefaultOptions()
 class __Property_ID(object):
     __dict: dict = {'None':[]}
     __properties: list = []
-    __ids: torch.Tensor = torch.tensor([],dtype=int)
+    __ids: torch.Tensor = torch.tensor([],dtype=torch.long)
 
     def _reset(self):
         self.__dict = {'None':[]}
         self.__properties = []
-        self.__ids = torch.tensor([],dtype=int)
+        self.__ids = torch.tensor([],dtype=torch.long)
 
     def __getitem__(self,key): 
         assert isinstance(key,str)       
-        return torch.tensor(self.__dict[key],dtype=int)
+        return torch.tensor(self.__dict[key],dtype=torch.long)
     @property
     def offset(self):
         return self.__ids.numel()    
@@ -68,7 +68,7 @@ class __Property_ID(object):
 
     def update(self,num,prop='None',device=DEFAULT_OPTS.DEVICE):
         if isinstance(prop,str):
-            new_id = torch.arange(num,dtype=int,device=device) + self.offset
+            new_id = torch.arange(num,dtype=torch.long,device=device) + self.offset
             l_id = new_id.tolist()
             self.__ids = torch.hstack((self.__ids,new_id))
             if prop in self.__properties:

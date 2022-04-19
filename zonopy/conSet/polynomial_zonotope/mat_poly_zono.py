@@ -91,15 +91,15 @@ class matPolyZonotope():
                     assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
                 assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
                 assert id.numel() == expMat.shape[0], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[0]}, but the number of identifiers is {id.numel()}.'
-                self.id = id.to(dtype=int,device=device)  
+                self.id = id.to(dtype=torch.long,device=device)  
             else:
                 self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device) 
         elif isinstance(id, torch.Tensor) and id.numel() == 0:
             self.expMat = torch.eye(0,dtype=itype,device=device)
-            self.id = id.to(dtype=int,device=device)  
+            self.id = id.to(dtype=torch.long,device=device)  
         elif isinstance(id, list) and len(id) == 0:
             self.expMat = torch.eye(0,dtype=itype,device=device)
-            self.id = torch.tensor(id,dtype=int,device=device)     
+            self.id = torch.tensor(id,dtype=torch.long,device=device)     
         else:
             raise ValueError('Identifiers can only be defined as long as the exponent matrix is defined.')
         self.__dtype, self.__itype, self.__device  = dtype, itype, device
@@ -212,7 +212,7 @@ class matPolyZonotope():
             if self.Grest.numel() != 0 and other.G.numel() !=0:
                 Grest_G = G_mul_g(self.Grest,other.G)
                 Grest = torch.hstack((Grest,Grest_G))
-            return polyZonotope(c,G,Grest,expMat.to(dtype=int),id,self.__dtype,self.__itype,self.__device)
+            return polyZonotope(c,G,Grest,expMat.to(dtype=torch.long),id,self.__dtype,self.__itype,self.__device)
 
         elif type(other) == matPolyZonotope:
             assert self.n_cols == other.n_rows
@@ -310,11 +310,11 @@ class matPolyZonotope():
             ind = torch.argsort(len,descending=True)
             ind_red,ind_rem = ind[:K], ind[K:]
             # split the indices into the ones for dependent and independent
-            indDep = ind_rem[ind_rem < P].to(dtype=int)
-            indInd = ind_rem[ind_rem >= P].to(dtype=int)
+            indDep = ind_rem[ind_rem < P].to(dtype=torch.long)
+            indInd = ind_rem[ind_rem >= P].to(dtype=torch.long)
             indInd = indInd - P
-            indDep_red = ind_red[ind_red < P].to(dtype=int)
-            indInd_red = ind_red[ind_red >= P].to(dtype=int)
+            indDep_red = ind_red[ind_red < P].to(dtype=torch.long)
+            indInd_red = ind_red[ind_red >= P].to(dtype=torch.long)
             indInd_red = indInd_red - P
 
             # construct a zonotope from the gens that are removed

@@ -171,9 +171,9 @@ class zonotope:
         return <zonotope>
         '''
         if isinstance(slice_dim, list):
-            slice_dim = torch.tensor(slice_dim,dtype=int,device=self.__device)
+            slice_dim = torch.tensor(slice_dim,dtype=torch.long,device=self.__device)
         elif isinstance(slice_dim, int) or (isinstance(slice_dim, torch.Tensor) and len(slice_dim.shape)==0):
-            slice_dim = torch.tensor([slice_dim],dtype=int,device=self.__device)
+            slice_dim = torch.tensor([slice_dim],dtype=torch.long,device=self.__device)
 
         if isinstance(slice_pt, list):
             slice_pt = torch.tensor(slice_pt,dtype=self.__dtype,device=self.__device)

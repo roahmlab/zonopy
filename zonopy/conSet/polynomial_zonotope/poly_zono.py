@@ -77,7 +77,7 @@ class polyZonotope:
             expMat = torch.eye(self.G.shape[-1],dtype=itype,device=device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
             self.expMat,self.G = removeRedundantExponents(expMat,self.G)
             self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
-            #self.id = torch.arange(self.expMat.shape[0],dtype=int,device=device) 
+            #self.id = torch.arange(self.expMat.shape[0],dtype=torch.long,device=device) 
         elif expMat != None:
             #check correctness of user input 
             if isinstance(expMat, list):
@@ -89,7 +89,7 @@ class polyZonotope:
             self.expMat,self.G = removeRedundantExponents(expMat,self.G)
             #if self.G.numel()==0:
                 #self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device)
-                #self.id = torch.arange(self.expMat.shape[0],dtype=int,device=device)
+                #self.id = torch.arange(self.expMat.shape[0],dtype=torch.long,device=device)
             if id != None:
                 if isinstance(id, list):
                     id = torch.tensor(id)
@@ -98,15 +98,15 @@ class polyZonotope:
                     assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
                 assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
                 assert id.numel() == expMat.shape[0], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[0]}, but the number of identifiers is {id.numel()}.'
-                self.id = id.to(dtype=int,device=device)  
+                self.id = id.to(dtype=torch.long,device=device)  
             else:
                 self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device) 
         elif isinstance(id, torch.Tensor) and id.numel() == 0:
             self.expMat = torch.eye(0,dtype=itype,device=device)
-            self.id = id.to(dtype=int,device=device)  
+            self.id = id.to(dtype=torch.long,device=device)  
         elif isinstance(id, list) and len(id) == 0:
             self.expMat = torch.eye(0,dtype=itype,device=device)
-            self.id = torch.tensor(id,dtype=int,device=device)      
+            self.id = torch.tensor(id,dtype=torch.long,device=device)      
         else:
             assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
         self.__dtype, self.__itype, self.__device  = dtype, itype, device
@@ -144,7 +144,7 @@ class polyZonotope:
             expMat_print = self.expMat[torch.argsort(self.id)]
         
         pz_str = f"""center: \n{self.c.to(dtype=torch.float,device='cpu')} \n\nnumber of dependent generators: {self.G.shape[-1]} 
-            \ndependent generators: \n{self.G.to(dtype=torch.float,device='cpu')}  \n\nexponent matrix: \n {expMat_print.to(dtype=int,device='cpu')}
+            \ndependent generators: \n{self.G.to(dtype=torch.float,device='cpu')}  \n\nexponent matrix: \n {expMat_print.to(dtype=torch.long,device='cpu')}
             \nnumber of independent generators: {self.Grest.shape[-1]} \n\nindependent generators: \n {self.Grest.to(dtype=torch.float,device='cpu')}
             \ndimension: {self.dimension} \ndtype: {self.dtype}\nitype: {self.itype}\ndtype: {self.device}"""
         
@@ -315,11 +315,11 @@ class polyZonotope:
             ind = torch.argsort(len,descending=True)
             ind_red,ind_rem = ind[:K], ind[K:]
             # split the indices into the ones for dependent and independent
-            indDep = ind_rem[ind_rem < P].to(dtype=int)
-            indInd = ind_rem[ind_rem >= P].to(dtype=int)
+            indDep = ind_rem[ind_rem < P].to(dtype=torch.long)
+            indInd = ind_rem[ind_rem >= P].to(dtype=torch.long)
             indInd = indInd - P
-            indDep_red = ind_red[ind_red < P].to(dtype=int)
-            indInd_red = ind_red[ind_red >= P].to(dtype=int)
+            indDep_red = ind_red[ind_red < P].to(dtype=torch.long)
+            indInd_red = ind_red[ind_red >= P].to(dtype=torch.long)
             indInd_red = indInd_red - P
             # construct a zonotope from the gens that are removed
             Grem = self.G[:,indDep]
@@ -346,7 +346,7 @@ class polyZonotope:
         # remove all exponent vector dimensions that have no entries
         ind = torch.sum(expMatRed,1)>0
         #ind = temp.nonzero().reshape(-1)
-        expMatRed = expMatRed[ind,:].to(dtype=int)
+        expMatRed = expMatRed[ind,:].to(dtype=torch.long)
         idRed = self.id[ind]
 
         if self.dimension == 1:
