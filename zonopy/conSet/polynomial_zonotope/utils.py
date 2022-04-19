@@ -28,6 +28,16 @@ def argsortrows(Mat):
     for i in range(num_row):
         ind.append(Q.get()[-1])
 
+
+
+    # np.lexsort([Mat[:,i] for i in reversed(range(Mat.shape[1]))])
+    # np.lexsort(tuple(b.T.flip(0)))
+    # torch.unique(b.T,dim=-1,sorted=True,return_inverse=True)[1].argsort()+1
+    '''
+    
+    
+    '''
+
     return ind
     
 
@@ -55,11 +65,11 @@ def removeRedundantExponents(ExpMat,G,eps=0):
     reverse_order = list(range(1,dim_G))+[0]
     G = G.permute(permute_order)
     
-    idxD = G
-    for _ in range(len(G.shape)-1):    
-        idxD = torch.any(idxD>eps,-1)
+    idxD = torch.any(abs(G)>eps,-1)
+    for _ in range(dim_G-2):
+        idxD = torch.any(idxD,-1)
 
-    # skip if all non-zero OR G is already empty 
+    # skip if all non-zero OR G is non-empty 
     if not all(idxD) or G.numel() == 0:
         # if all generators are zero
         if all(~idxD):
@@ -78,13 +88,38 @@ def removeRedundantExponents(ExpMat,G,eps=0):
 
     # add hash value of the exponent vector to the exponent matrix
     temp = torch.arange(ExpMat.shape[0],dtype=itype,device=device).reshape(1,-1) + 1
-    rankMat = torch.hstack(((temp@ExpMat).T,ExpMat.T))
     
+    
+    '''  
+    rankMat = torch.hstack(((temp@ExpMat).T,ExpMat.T))
     # sort the exponents vectors according to the hash value
     ind = argsortrows(rankMat)
+    '''
+    rankMat = torch.vstack((temp@ExpMat,ExpMat))
+    # sort the exponents vectors according to the hash value
+    ind = torch.unique(rankMat,dim=-1,sorted=True,return_inverse=True)[1].argsort()
+    
     ExpMatTemp = ExpMat[:,ind]
     Gtemp = G[ind]
     
+    # vectorized 
+    ExpMatNew, ind_red = torch.unique_consecutive(ExpMatTemp,dim=-1,return_inverse=True)
+    # NOTE
+    if ind_red.max()+1 == ind_red.numel():
+        return ExpMatTemp,Gtemp.permute(reverse_order)
+
+    n_rem = ind_red.max()+1
+    ind = torch.arange(n_rem).reshape(-1,1) == ind_red 
+    num_rep = ind.sum(1)
+
+    Gtemp2 = Gtemp.repeat((n_rem,)+(1,)*(dim_G-1))[ind.reshape(-1)].cumsum(0)
+    Gtemp2 = torch.cat((torch.zeros((1,)+Gtemp2.shape[1:],device=device),Gtemp2),0)
+    
+    num_rep2 = torch.hstack((torch.zeros(1,dtype=int,device=device),num_rep.cumsum(0)))
+    Gnew = (Gtemp2[num_rep2[1:]] - Gtemp2[num_rep2[:-1]]).permute(reverse_order)
+
+
+    '''
     # initialization
     counterNew = 0
     ExpMatNew = torch.zeros_like(ExpMat)
@@ -95,6 +130,7 @@ def removeRedundantExponents(ExpMat,G,eps=0):
     Gnew[counterNew] = Gtemp[0]
 
     # loop over all exponent vectors
+    
     for counter in range(1,ExpMatTemp.shape[1]):
         if all(ExpMatNew[:,counterNew] == ExpMatTemp[:,counter]):
             Gnew[counterNew] += Gtemp[counter]
@@ -105,6 +141,7 @@ def removeRedundantExponents(ExpMat,G,eps=0):
 
     ExpMatNew = ExpMatNew[:,:counterNew+1]
     Gnew = Gnew[:counterNew+1].permute(reverse_order)
+    '''
     return ExpMatNew, Gnew
 
 def mergeExpMatrix(id1, id2, expMat1, expMat2):
@@ -129,10 +166,24 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
 
     # ID vectors not identical -> MERGE
     else:
-        # NOTE: can be improved the speed
+        itype = expMat1.dtype
+        device = expMat1.device
+
+        
+        id =id1
+        ind2 =torch.zeros_like(id2)
+
+        Ind_rep = id2.reshape(-1,1) == id1
+        ind = torch.any(Ind_rep,axis=1)
+        non_ind = ~ind
+        ind2[ind] = Ind_rep.nonzero()[:,1]
+        ind2[non_ind] = torch.arange(non_ind.sum()) + len(id)
+        id = torch.hstack((id,id2[non_ind]))
+
+        '''
         # merge the two sets
         id = id1
-        ind2 =torch.zeros(id2.shape,dtype=int)
+        ind2 =torch.zeros_like(id2)
         for i in range(L2):
             ind = [j for j in range(len(id)) if id[j] == id2[i]]
             # if ind is empty
@@ -142,11 +193,11 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
                 ind2[i] = len(id)-1
             else:
                 ind2[i] = ind[0]
-
+        '''
         # construct the new exponent matrices
         L = len(id)
-        expMat1 = torch.vstack((expMat1,torch.zeros(L-L1,expMat1.shape[1],dtype=int)))
-        temp = torch.zeros(L,expMat2.shape[1],dtype=expMat2.dtype)
+        expMat1 = torch.vstack((expMat1,torch.zeros(L-L1,expMat1.shape[1],dtype=itype,device=device)))
+        temp = torch.zeros(L,expMat2.shape[1],dtype=itype,device=device)
         temp[ind2,:] = expMat2
         expMat2 = temp
 

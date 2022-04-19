@@ -6,6 +6,7 @@ Reference:
 from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.zonotope.zono import zonotope
 from zonopy.conSet.utils import G_mul_c, G_mul_g, G_mul_C, G_mul_G
+from zonopy.conSet.zonotope.utils import pickedGenerators
 import torch
 
 EMPTY_TENSOR = torch.tensor([])
@@ -140,8 +141,20 @@ class matZonotope():
 
         return <matZonotope>
         '''
-        non_zero_idxs = torch.any(torch.any(abs(self.generators)>eps,axis=0),axis=0).to(dtype=int)
+        non_zero_idxs = torch.any(torch.any(abs(self.generators)>eps,axis=0),axis=0)
         Z_new = torch.zeros(self.n_rows,self.n_cols,sum(non_zero_idxs)+1)
         Z_new[:,:,0] = self.center
         Z_new[:,:,1:] = self.generators[:,:,non_zero_idxs]
-        return matZonotope(Z_new,self.device,self.dtype)
+        return matZonotope(Z_new,self.__dtype,self.__device)
+
+    def reduce(self,order,option='girard'):
+        if option == 'girard':
+            Z = self.deleteZerosGenerators()
+            center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
+            d = torch.sum(abs(Gred),-1).reshape(-1)
+            Gbox = torch.diag(d).reshape(self.n_rows,self.n_cols,-1)
+            ZRed = torch.cat((center.reshape(self.n_rows,self.n_cols,-1),Gunred,Gbox),dim=-1)
+            return matZonotope(ZRed,self.__dtype,self.__device)
+        else:
+            assert False, 'Invalid reduction option'
+        return

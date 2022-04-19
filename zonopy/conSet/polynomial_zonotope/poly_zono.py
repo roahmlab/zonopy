@@ -3,7 +3,6 @@ Define class for matrix polynomial zonotope
 Author: Yongseok Kwon
 Reference: CORA, Patrick Holme's implementation
 """
-from numpy import poly
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix, pz_repr
 from zonopy.conSet import DEFAULT_OPTS, PROPERTY_ID
 import zonopy as zp
@@ -80,7 +79,7 @@ class polyZonotope:
             self.id = PROPERTY_ID.update(self.expMat.shape[0],prop,device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
             #self.id = torch.arange(self.expMat.shape[0],dtype=int,device=device) 
         elif expMat != None:
-            #check correctness of user input
+            #check correctness of user input 
             if isinstance(expMat, list):
                 expMat = torch.tensor(expMat)
             assert type(expMat) == torch.Tensor, 'The exponent matrix should be either torch tensor or list.'
@@ -253,9 +252,7 @@ class polyZonotope:
             if self.G.numel() != 0 and other.G.numel() != 0:
                 g_g = torch.outer(G1,G2).reshape(1,-1)
                 G = torch.hstack((G,g_g))
-                for i in range(self.G.shape[-1]):
-                    expMat = torch.hstack((expMat, expMat1[:,i].reshape(-1,1)+expMat2))
-            
+                expMat = torch.hstack((expMat, expMat1.repeat_interleave(expMat2.shape[1],dim=1)+expMat2.repeat(1,expMat1.shape[1])))
             # deal with independent generators
             if other.Grest.numel() != 0:
                 c_grest = self.c*other.Grest
@@ -304,7 +301,7 @@ class polyZonotope:
         Q = self.Grest.shape[1]
             
         # number of gens kept (N gens will be added back after reudction)
-        K = max(0,int(N*order-N))
+        K = int(N*order-N)
         # check if the order need to be reduced
         if P+Q > N*order and K >=0:
             G = torch.hstack((self.G,self.Grest))
@@ -324,7 +321,6 @@ class polyZonotope:
             indDep_red = ind_red[ind_red < P].to(dtype=int)
             indInd_red = ind_red[ind_red >= P].to(dtype=int)
             indInd_red = indInd_red - P
-
             # construct a zonotope from the gens that are removed
             Grem = self.G[:,indDep]
             Erem = self.expMat[:,indDep]
@@ -342,18 +338,19 @@ class polyZonotope:
             # add the reduced gens as new indep gens
             cRed = self.c + zonoRed.center
             GrestRed = torch.hstack((GrestRed,zonoRed.generators))
-            
         else:
             cRed = self.c
             GRed= self.G
             GrestRed = self.Grest
             expMatRed = self.expMat
         # remove all exponent vector dimensions that have no entries
-        temp = torch.sum(expMatRed,1)>0
-        ind = temp.nonzero().reshape(-1)
+        ind = torch.sum(expMatRed,1)>0
+        #ind = temp.nonzero().reshape(-1)
         expMatRed = expMatRed[ind,:].to(dtype=int)
         idRed = self.id[ind]
 
+        if self.dimension == 1:
+            GrestRed = torch.sum(GrestRed,dim=-1).reshape(1,-1)
         return polyZonotope(cRed,GRed,GrestRed,expMatRed,idRed,self.__dtype,self.__itype,self.__device)
 
     def exactCartProd(self,other):
@@ -432,15 +429,19 @@ class polyZonotope:
             if isinstance(val_slc,(int,float)):
                 val_slc = [val_slc]
             val_slc = torch.Tensor(val_slc)
-        assert all(val_slc<=1) and all(val_slc>=-1), 'Indereminant should be in [-1,1].'
+        
+        if any(abs(val_slc)>1):
+            import pdb; pdb.set_trace()
+        #assert all(val_slc<=1) and all(val_slc>=-1), 'Indereminant should be in [-1,1].'
         
         id_slc, val_slc = id_slc.reshape(-1,1), val_slc.reshape(-1,1)
         order = torch.argsort(id_slc.reshape(-1))
         id_slc, val_slc  = id_slc[order], val_slc[order]
-        ind = torch.nonzero(torch.any(self.id==id_slc,dim=0)).reshape(-1)
+        ind = torch.any(self.id==id_slc,dim=0)#.nonzero().reshape(-1)
+        ind2 = torch.any(self.id==id_slc,dim=1)#.nonzero().reshape(-1)        
         #assert ind.numel()==len(id_slc), 'Some specidied IDs do not exist!'
         if ind.numel() != 0:
-            G = self.G*torch.prod(val_slc[ind]**self.expMat[ind],dim=0)
+            G = self.G*torch.prod(val_slc[ind2]**self.expMat[ind],dim=0)
             expMat = torch.clone(self.expMat)
             expMat[ind] = 0
         else:

@@ -8,7 +8,6 @@ import matplotlib.patches as patches
 from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope 
 from zonopy.conSet.interval.interval import interval
-from zonopy.conSet.utils import delete_column
 from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
 
 EMPTY_TENSOR = torch.tensor([])
@@ -187,21 +186,18 @@ class zonotope:
         assert len(slice_dim) == len(slice_pt), f'The number of slicing dimension ({len(slice_dim)}) and the number of slicing point ({len(slice_dim)}) should be the same.'
 
         N = len(slice_dim)
-        
+        slice_dim, ind = torch.sort(slice_dim)
+        slice_pt = slice_pt[ind]
+
         Z = self.Z
         c = self.center
         G = self.generators
+        
 
-        slice_idx = torch.zeros(N,dtype=int,device=self.__device)
-        for i in range(N):
-            non_zero_idx = (G[slice_dim[i],:] != 0).nonzero().reshape(-1)
-            if len(non_zero_idx) != 1:
-                if len(non_zero_idx) == 0:
-                    raise ValueError('no generator for slice index')
-                else:
-                    raise ValueError('more than one generators for slice index')
-            slice_idx[i] = non_zero_idx
-
+        non_zero_idx = G[slice_dim] != 0
+        assert torch.all(torch.sum(non_zero_idx,-1)==1), 'There should be one generator for each slice index.'
+        slice_idx = torch.any(non_zero_idx!=0,0)
+        
         slice_c = c[slice_dim]
 
         slice_G = torch.zeros(N,N,dtype=self.__dtype,device=self.__device)
@@ -211,11 +207,7 @@ class zonotope:
         slice_lambda = torch.linalg.solve(slice_G, slice_pt - slice_c)
 
         assert not any(abs(slice_lambda)>1), 'slice point is ouside bounds of reach set, and therefore is not verified'
-
-        Z_new = torch.zeros(Z.shape,dtype=self.__dtype,device=self.__device)
-        Z_new[:,0] = c + G[:,slice_idx]@slice_lambda
-        Z_new[:,1:] = G
-        Z_new = delete_column(Z_new,slice_idx+1)
+        Z_new = torch.hstack(((c + G[:,slice_idx]@slice_lambda).reshape(-1,1),G[:,~slice_idx]))
         return zonotope(Z_new,self.__dtype,self.__device)
 
     def project(self,dim=[0,1]):
@@ -422,11 +414,12 @@ class zonotope:
 
     def reduce(self,order,option='girard'):
         if option == 'girard':
-            center, Gunred, Gred = pickedGenerators(self,order)
+            Z = self.deleteZerosGenerators()
+            center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
             d = torch.sum(abs(Gred),1)
             Gbox = torch.diag(d)
             ZRed = torch.hstack((center.reshape(-1,1),Gunred,Gbox))
-            return zonotope(ZRed,self.dtype,self.device)
+            return zonotope(ZRed,self.__dtype,self.__device)
         else:
             assert False, 'Invalid reduction option'
 

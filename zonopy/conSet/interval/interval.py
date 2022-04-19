@@ -99,9 +99,9 @@ class interval:
     def __mul__(self, other):
         if isinstance(other,(int,float)):
             if other >= 0:
-                return interval(other * self.__inf, other * self.__sup)
+                return interval(other * self.__inf, other * self.__sup, self.__dtype, self.__device)
             else:
-                return interval(other * self.__sup, other * self.__inf)
+                return interval(other * self.__sup, other * self.__inf, self.__dtype, self.__device)
 
         if self.numel() == 1 and isinstance(other, interval):
             candidates = other.inf.repeat(4,1).reshape((4,) + other.shape)
@@ -112,7 +112,7 @@ class interval:
 
             new_inf = torch.min(candidates,dim=0).values
             new_sup = torch.max(candidates,dim=0).values
-            return interval(new_inf, new_sup)
+            return interval(new_inf, new_sup, self.__dtype, self.__device)
 
         elif isinstance(other, interval) and other.numel() == 1:
             candidates = self.inf.repeat(4,1).reshape((4,) + self.shape)
@@ -123,7 +123,7 @@ class interval:
 
             new_inf = torch.min(candidates,dim=0).values
             new_sup = torch.max(candidates,dim=0).values
-            return interval(new_inf, new_sup)
+            return interval(new_inf, new_sup, self.__dtype, self.__device)
 
         else:
             assert False, "such multiplication is not implemented yet"
@@ -133,13 +133,13 @@ class interval:
     def __getitem__(self, pos):
         inf = self.__inf[pos]
         sup = self.__sup[pos]
-        return interval(inf, sup)
+        return interval(inf, sup, self.__dtype, self.__device)
 
     def __setitem__(self, pos, value):
         # set one interval
         if isinstance(value, interval):
-            self.__inf[pos] = value.__inf
-            self.__sup[pos] = value.__sup
+            self.__inf[pos] = value.__inf.to(dtype = self.__dtype, device = self.__device)
+            self.__sup[pos] = value.__sup.to(dtype = self.__dtype, device = self.__device)
         else:
             self.__inf[pos] = value
             self.__sup[pos] = value
@@ -159,6 +159,14 @@ class interval:
         return (self.inf+self.sup)/2
     def rad(self):
         return (self.sup-self.inf)/2
+    def to(self,dtype=None,device=None):
+        if dtype is None:
+            dtype = self.dtype
+        if device is None:
+            device = self.device
+        return interval(self.__inf, self.__sup, self.__dtype, self.__device)
+
+
     '''
 
 

@@ -3,26 +3,30 @@ Utilities for zonotope and matrix zonotope
 Author: Yongseok Kwon
 Reference: CORA
 """
-from zonopy.conSet.utils import delete_column
 
 import torch
 
-def pickedGenerators(Z,order):
+def pickedGenerators(c,G,order):
     '''
     selects generators to be reduced
     '''
-    Z = Z.deleteZerosGenerators()
-    c = Z.center
-    G = Z.generators
-    Gunred = torch.tensor([]).reshape(Z.dimension,0)
-    Gred = torch.tensor([]).reshape(Z.dimension,0)
+    dim = c.shape
+    dim_c = len(dim)
+    norm_dim = tuple(range(1,dim_c+1))
+    permute_order = (dim_c,) + tuple(range(dim_c))
+    reverse_order = norm_dim+(0,)
+    G = G.permute(permute_order)
+
+    Gunred = torch.tensor([]).reshape(dim+(0,))
+    Gred = torch.tensor([]).reshape(dim+(0,))
     if G.numel() != 0:
-        d, nrOfGens = G.shape
+        d = torch.prod(torch.tensor(G.shape[1:]))
+        nrOfGens = G.shape[0]
         # only reduce if zonotope order is greater than the desired order
         if nrOfGens > d*order:
             
             # compute metric of generators
-            h = torch.linalg.vector_norm(G,1,0) - torch.linalg.vector_norm(G,torch.inf,0)
+            h = torch.linalg.vector_norm(G,1,norm_dim) - torch.linalg.vector_norm(G,torch.inf,norm_dim)
 
             # number of generators that are not reduced
             nUnreduced = int(d*(order-1))
@@ -31,12 +35,12 @@ def pickedGenerators(Z,order):
             sorted_h = torch.argsort(h)
             ind_red = sorted_h[:nReduced]
             ind_rem = sorted_h[nReduced:]
-            Gred = G[:,ind_red]
+            Gred = G[ind_red].permute(reverse_order)
             # unreduced generators
             #Gunred = delete_column(G,ind_red)
-            Gunred = G[:,ind_rem]
+            Gunred = G[ind_rem].permute(reverse_order)
         else:
-            Gunred = G
+            Gunred = G.permute(reverse_order)
 
     return c, Gunred, Gred
 

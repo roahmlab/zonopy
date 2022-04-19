@@ -156,8 +156,8 @@ class matPolyZonotope():
             elif len(other.shape) == 2:
                 assert other.shape[0] == self.n_cols
                 C = self.C @ other
-                G = G_mul_g(self.G,other).reshape(self.n_rows,self.n_cols,-1)
-                Grest = G_mul_g(self.Grest,other).reshape(self.n_rows,self.n_cols,-1)
+                G = (self.G.permute(2,0,1) @ other).permute(1,2,0)
+                Grest = (self.Grest.permute(2,0,1) @ other).permute(1,2,0)
                 id = self.id
                 expMat = self.expMat   
                 return matPolyZonotope(C,G,Grest,expMat,id,self.__dtype,self.__itype,self.__device)
@@ -179,17 +179,6 @@ class matPolyZonotope():
         elif type(other) == polyZonotope:
             assert self.n_cols == other.dimension
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            '''
-            if self.id.numel() !=0:
-                id_offset = max(self.id)+1
-            else:
-                id_offset = 0 
-            id = torch.hstack((self.id,other.id+id_offset))
-            expMat1 = torch.vstack((self.expMat,torch.zeros(other.expMat.shape[0],self.expMat.shape[1]))).to(dtype=self.__itype)
-            expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat)).to(dtype=self.__itype)
-            '''
-
-            # NOTE: expMat shape?
             G, Grest, expMat = EMPTY_TENSOR, EMPTY_TENSOR, EMPTY_TENSOR.reshape(id.numel(),0).to(dtype=self.__itype)
             
             c = self.C @ other.c
@@ -206,8 +195,7 @@ class matPolyZonotope():
             if self.G.numel() != 0 and other.G.numel() != 0:
                 G_G = G_mul_g(self.G,other.G,self.n_rows)
                 G = torch.hstack((G,G_G))
-                for i in range(self.G.shape[-1]):
-                    expMat = torch.hstack((expMat, expMat1[:,i].reshape(-1,1)+expMat2))
+                expMat = torch.hstack((expMat, expMat1.repeat_interleave(expMat2.shape[1],dim=1)+expMat2.repeat(1,expMat1.shape[1])))
             # deal with independent generators
             if other.Grest.numel() != 0:
                 C_Grest = self.C @ other.Grest
@@ -229,15 +217,6 @@ class matPolyZonotope():
         elif type(other) == matPolyZonotope:
             assert self.n_cols == other.n_rows
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            '''
-            if self.id.numel() !=0:
-                id_offset = max(self.id)+1
-            else:
-                id_offset = 0 
-            id = torch.hstack((self.id,other.id+id_offset))
-            expMat1 = torch.vstack((self.expMat,torch.zeros(other.expMat.shape[0],self.expMat.shape[1]))).to(dtype=self.__itype)
-            expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat)).to(dtype=self.__itype)
-            '''
             dims = [self.n_rows, self.n_cols, other.n_cols]
             G, Grest, expMat = EMPTY_TENSOR,EMPTY_TENSOR, EMPTY_TENSOR.reshape(id.numel(),0).to(dtype=self.__itype)
             C = self.C @ other.C
@@ -254,8 +233,7 @@ class matPolyZonotope():
             if self.G.numel() != 0 and other.G.numel() != 0:
                 G_G = G_mul_G(self.G,other.G,dims)
                 G = torch.cat((G,G_G),dim=-1)
-                for i in range(self.G.shape[-1]):
-                    expMat = torch.hstack((expMat, expMat1[:,i].reshape(-1,1)+expMat2))
+                expMat = torch.hstack((expMat, expMat1.repeat_interleave(expMat2.shape[1],dim=1)+expMat2.repeat(1,expMat1.shape[1])))
             
             # deal with independent generators
             if other.Grest.numel() != 0:
@@ -299,9 +277,79 @@ class matPolyZonotope():
             return matPolyZonotope(C,G,Grest,self.expMat,self.id,self.__dtype,self.__itype,self.__device)
 
     def to_matZonotope(self):
-        Z = torch.cat((self.C.reshape(self.n_rows,self.n_cols,1),self.G),-1)
-        Z = torch.cat((Z,self.Grest),-1)
+        if self.G.numel() != 0:
+            temp = torch.prod(torch.ones(self.expMat.shape,device=self.__device)-(self.expMat%2),0)
+            Gquad = self.G[:,:,temp==1]
+            c = self.C + 0.5*torch.sum(Gquad,-1)
+            G = torch.cat((self.G[:,:,temp==0],0.5*Gquad,self.Grest),-1)
+            Z = torch.cat((c.reshape(self.n_rows,self.n_cols,1),G),-1)
+        else:
+            Z = torch.cat((self.C.reshape(self.n_rows,self.n_cols,1),self.Grest),-1)
+        #Z = torch.cat((self.C.reshape(self.n_rows,self.n_cols,1),self.G),-1)
+        #Z = torch.cat((Z,self.Grest),-1)
         return zp.matZonotope(Z,self.__dtype,self.__device)
+
+    def reduce(self,order,option='girard'):
+        # extract dimensions
+        N = self.n_rows * self.n_cols
+        P = self.n_dep_gens
+        Q = self.n_indep_gens
+            
+        # number of gens kept (N gens will be added back after reudction)
+        K = int(N*order-N)
+        # check if the order need to be reduced
+        if P+Q > N*order and K >=0:
+            G = torch.cat((self.G,self.Grest),-1)
+            # half the generators length for exponents that are all even
+            temp = torch.prod(torch.ones(self.expMat.shape,device=self.__device)-(self.expMat%2),0)
+            ind = temp.nonzero().reshape(-1)
+            G[:,:,ind] *= 0.5
+            # caculate the length of the gens with a special metric
+            len = torch.sum(G**2,(0,1))
+            # determine the smallest gens to remove            
+            ind = torch.argsort(len,descending=True)
+            ind_red,ind_rem = ind[:K], ind[K:]
+            # split the indices into the ones for dependent and independent
+            indDep = ind_rem[ind_rem < P].to(dtype=int)
+            indInd = ind_rem[ind_rem >= P].to(dtype=int)
+            indInd = indInd - P
+            indDep_red = ind_red[ind_red < P].to(dtype=int)
+            indInd_red = ind_red[ind_red >= P].to(dtype=int)
+            indInd_red = indInd_red - P
+
+            # construct a zonotope from the gens that are removed
+            Grem = self.G[:,:,indDep]
+            Erem = self.expMat[:,indDep]
+            GrestRem = self.Grest[:,:,indInd]
+
+            pZtemp = matPolyZonotope(torch.zeros(self.n_rows,self.n_cols),Grem,GrestRem,Erem,None,self.__dtype,self.__itype,self.__device)
+            zono = pZtemp.to_matZonotope() # zonotope over-approximation
+            # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
+            zonoRed = zono.reduce(1,option)
+            
+            # remove the gens that got reduce from the gen matrices
+            GRed = self.G[:,:,indDep_red]
+            expMatRed = self.expMat[:,indDep_red]
+            GrestRed = self.Grest[:,:,indInd_red]
+            
+            # add the reduced gens as new indep gens
+            cRed = self.C + zonoRed.center
+            GrestRed = torch.cat((GrestRed,zonoRed.generators),-1)
+            
+        else:
+            cRed = self.C
+            GRed= self.G
+            GrestRed = self.Grest
+            expMatRed = self.expMat
+        # remove all exponent vector dimensions that have no entries
+        ind = torch.sum(expMatRed,1)>0
+        #ind = temp.nonzero().reshape(-1)
+        expMatRed = expMatRed[ind,:].to(dtype=int)
+        idRed = self.id[ind]
+
+        if self.n_rows == 1 and self.n_cols == 1:
+            GrestRed = torch.sum(GrestRed,dim=-1).reshape(1,1,-1)
+        return matPolyZonotope(cRed,GRed,GrestRed,expMatRed,idRed,self.__dtype,self.__itype,self.__device)
 
 if __name__ == '__main__':
     
