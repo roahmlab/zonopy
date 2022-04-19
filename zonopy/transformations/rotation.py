@@ -92,7 +92,7 @@ def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.Tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=q.device)
+    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=q.device)
 
     cosq = cos_sin_q.c[cos_dim]
     sinq = cos_sin_q.c[sin_dim]
@@ -124,7 +124,7 @@ def gen_rot_from_q(q,rot_axis):
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.Tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=device)
+    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=device)
     # Rodrigues' rotation formula
     Rot = torch.eye(3,device=device) + sinq*w_hat + (1-cosq)*w_hat@w_hat
     return Rot
