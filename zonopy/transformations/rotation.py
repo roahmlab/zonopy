@@ -13,6 +13,8 @@ k_dim = 3
 
 from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
 from zonopy.utils.math import cos, sin
+from zonopy.conSet import DEFAULT_OPTS
+
 
 def get_rotato_pair_from_jrs_trig(PZ_JRS_trig,joint_axes,R0=None):
     '''
@@ -62,12 +64,12 @@ def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]])
+    w_hat = torch.Tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=polyZono.device)
 
     cosq = polyZono.c[cos_dim]
     sinq = polyZono.c[sin_dim]
     # Rodrigues' rotation formula
-    C = torch.eye(3) + sinq*w_hat + (1-cosq)*w_hat@w_hat
+    C = torch.eye(3,device=polyZono.device) + sinq*w_hat + (1-cosq)*w_hat@w_hat
 
     cosq = polyZono.G[cos_dim]
     sinq = polyZono.G[sin_dim]
@@ -90,12 +92,12 @@ def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]])
+    w_hat = torch.Tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=q.device)
 
     cosq = cos_sin_q.c[cos_dim]
     sinq = cos_sin_q.c[sin_dim]
     # Rodrigues' rotation formula
-    C = torch.eye(3) + sinq*w_hat + (1-cosq)*w_hat@w_hat
+    C = torch.eye(3,device=q.device) + sinq*w_hat + (1-cosq)*w_hat@w_hat
 
     
     cosq = cos_sin_q.G[cos_dim]
@@ -113,14 +115,18 @@ def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
 def gen_rot_from_q(q,rot_axis):
     if isinstance(q,(int,float)):
         q = torch.tensor(q,dtype=torch.float)
+        device= DEFAULT_OPTS.DEVICE
+    else:
+        device = q.device
+
     cosq = torch.cos(q)
     sinq = torch.sin(q)
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]])
+    w_hat = torch.Tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=device)
     # Rodrigues' rotation formula
-    Rot = torch.eye(3) + sinq*w_hat + (1-cosq)*w_hat@w_hat
+    Rot = torch.eye(3,device=device) + sinq*w_hat + (1-cosq)*w_hat@w_hat
     return Rot
 
 if __name__ == '__main__':
