@@ -5,7 +5,7 @@ from zonopy.kinematics.FO import forward_occupancy
 import time
 #if torch.cuda.is_available():
 #    zp.conSet.DEFAULT_OPTS.set(device='cuda:0')
-zp.conSet.DEFAULT_OPTS.setup_cuda()
+zp.setup_cuda()
 
 qpos =  torch.tensor([0.0,0.0])
 qvel =  torch.tensor([torch.pi,torch.pi/2])
