@@ -143,9 +143,9 @@ class polyZonotope:
         else:
             expMat_print = self.expMat[torch.argsort(self.id)]
         
-        pz_str = f"""center: \n{self.c.to(dtype=torch.float,device='cpu')} \n\nnumber of dependent generators: {self.G.shape[-1]} 
-            \ndependent generators: \n{self.G.to(dtype=torch.float,device='cpu')}  \n\nexponent matrix: \n {expMat_print.to(dtype=torch.long,device='cpu')}
-            \nnumber of independent generators: {self.Grest.shape[-1]} \n\nindependent generators: \n {self.Grest.to(dtype=torch.float,device='cpu')}
+        pz_str = f"""center: \n{self.c.to(dtype=torch.float)} \n\nnumber of dependent generators: {self.G.shape[-1]} 
+            \ndependent generators: \n{self.G.to(dtype=torch.float)}  \n\nexponent matrix: \n {expMat_print.to(dtype=torch.long)}
+            \nnumber of independent generators: {self.Grest.shape[-1]} \n\nindependent generators: \n {self.Grest.to(dtype=torch.float)}
             \ndimension: {self.dimension} \ndtype: {self.dtype}\nitype: {self.itype}\ndtype: {self.device}"""
         
         del_dict = {'tensor':' ','    ':' ','(':'',')':''}
@@ -237,7 +237,8 @@ class polyZonotope:
             expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat)).to(dtype=self.__itype)
             '''
             [id, expMat1, expMat2] = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            G, Grest, expMat = EMPTY_TENSOR,EMPTY_TENSOR, EMPTY_TENSOR.reshape(id.numel(),0).to(dtype=self.__itype,device=self.__device)
+            empty_tensor = EMPTY_TENSOR.to(device=self.__device)
+            G, Grest, expMat = empty_tensor,empty_tensor, empty_tensor.reshape(id.numel(),0).to(dtype=self.__itype,device=self.__device)
             G1, G2, Grest1, Grest2 = self.G.reshape(-1), other.G.reshape(-1), self.Grest.reshape(-1), other.Grest.reshape(-1)            
             c = self.c*other.c 
             # deal with dependent generators
@@ -361,10 +362,11 @@ class polyZonotope:
         '''    
         if isinstance(other,polyZonotope):
             dim1, dim2 = self.dimension, other.dimension 
+            empty_tensor = EMPTY_TENSOR.to(device=self.__device)
             c = torch.hstack((self.c,other.c))
             if self.G.numel() == 0:
                 if other.G.numel() == 0:
-                    G = EMPTY_TENSOR
+                    G = empty_tensor
                     expMat = None
                     id = None
                 else:
@@ -383,7 +385,7 @@ class polyZonotope:
             
             if self.Grest.numel() == 0:
                 if other.Grest.numel() == 0:
-                    Grest = EMPTY_TENSOR
+                    Grest = empty_tensor
                 else:
                     Grest = torch.hstack((torch.zeros(dim1,other.n_indep_gens),other.Grest))
             else:

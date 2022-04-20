@@ -179,7 +179,9 @@ class matPolyZonotope():
         elif type(other) == polyZonotope:
             assert self.n_cols == other.dimension
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            G, Grest, expMat = EMPTY_TENSOR, EMPTY_TENSOR, EMPTY_TENSOR.reshape(id.numel(),0).to(dtype=self.__itype)
+            
+            empty_tensor = EMPTY_TENSOR.to(device=self.__device)
+            G, Grest, expMat = empty_tensor, empty_tensor, empty_tensor.reshape(id.numel(),0).to(dtype=self.__itype)
             
             c = self.C @ other.c
             
@@ -218,7 +220,8 @@ class matPolyZonotope():
             assert self.n_cols == other.n_rows
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             dims = [self.n_rows, self.n_cols, other.n_cols]
-            G, Grest, expMat = EMPTY_TENSOR,EMPTY_TENSOR, EMPTY_TENSOR.reshape(id.numel(),0).to(dtype=self.__itype)
+            empty_tensor = EMPTY_TENSOR.to(device=self.__device)
+            G, Grest, expMat = empty_tensor,empty_tensor, empty_tensor.reshape(id.numel(),0).to(dtype=self.__itype)
             C = self.C @ other.C
             
             # deal with dependent generators
