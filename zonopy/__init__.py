@@ -19,3 +19,14 @@ __logo__ = """
     |_____|  |
        |_____|
 """
+
+def setup_cuda():
+   if torch.cuda.is_available():
+      #self.__device =f'cuda:{device_num}'
+      #torch.cuda.set_device(device_num)
+      torch.set_default_tensor_type('torch.cuda.FloatTensor')
+      from zonopy.conSet import DEFAULT_OPTS
+      DEFAULT_OPTS.set(device='cuda')
+   else:
+      print('WARNING: CUDA is NOT available.')
+

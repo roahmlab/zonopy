@@ -35,21 +35,8 @@ class __DefaultOptions(object):
         if device is not None:
             PROPERTY_ID._to(device)
             self.__device = device
-    def setup_cuda(self):
-        if torch.cuda.is_available():
-            #self.__device =f'cuda:{device_num}'
-            #torch.cuda.set_device(device_num)
-            torch.set_default_tensor_type('torch.cuda.FloatTensor')
-        else:
-            print('WARNING: CUDA is NOT available.')
-
-
 
 DEFAULT_OPTS = __DefaultOptions()
-
-
-
-        
 
 
 class __Property_ID(object):
