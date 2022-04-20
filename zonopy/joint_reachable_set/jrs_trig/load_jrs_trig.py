@@ -14,8 +14,8 @@ T_fail_safe = 0.5
 
 dirname = os.path.dirname(__file__)
 jrs_path = os.path.join(dirname,'jrs_trig_mat_saved/')
-jrs_key = loadmat(jrs_path+'c_kvi.mat')
-jrs_key = torch.tensor(jrs_key['c_kvi'],dtype=torch.float)
+JRS_KEY = loadmat(jrs_path+'c_kvi.mat')
+JRS_KEY = torch.tensor(JRS_KEY['c_kvi'],dtype=torch.float)
 
 '''
 qjrs_path = os.path.join(dirname,'qjrs_mat_saved/')
@@ -56,7 +56,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
     5: t
 
     '''
-    jrs_key = jrs_key.to(device=q_0.device)
+    jrs_key = JRS_KEY.to(device=q_0.device)
     if isinstance(q_0,list):
         q_0 = torch.tensor(q_0,dtype=torch.float)
     if isinstance(qd_0,list):
