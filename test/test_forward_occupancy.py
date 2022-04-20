@@ -3,14 +3,15 @@ import zonopy as zp
 from zonopy.kinematics.FO import forward_occupancy
 
 import time
-if torch.cuda.is_available():
-    zp.conSet.DEFAULT_OPTS.set(device='cuda:0')
+#if torch.cuda.is_available():
+#    zp.conSet.DEFAULT_OPTS.set(device='cuda:0')
+zp.conSet.DEFAULT_OPTS.setup_cuda()
 
-qpos =  torch.tensor([0.0,0.0],device=zp.conSet.DEFAULT_OPTS.DEVICE)
-qvel =  torch.tensor([torch.pi,torch.pi/2],device=zp.conSet.DEFAULT_OPTS.DEVICE)
-params = {'joint_axes':[torch.tensor([0.0,0.0,1.0],device=zp.conSet.DEFAULT_OPTS.DEVICE)]*2, 
-        'R': [torch.eye(3,device=zp.conSet.DEFAULT_OPTS.DEVICE)]*2,
-        'P': [torch.tensor([0.0,0.0,0.0],device=zp.conSet.DEFAULT_OPTS.DEVICE), torch.tensor([1.0,0.0,0.0],device=zp.conSet.DEFAULT_OPTS.DEVICE)],
+qpos =  torch.tensor([0.0,0.0])
+qvel =  torch.tensor([torch.pi,torch.pi/2])
+params = {'joint_axes':[torch.tensor([0.0,0.0,1.0])]*2, 
+        'R': [torch.eye(3)]*2,
+        'P': [torch.tensor([0.0,0.0,0.0]), torch.tensor([1.0,0.0,0.0])],
         'n_joints':2}
 link_zonos = [zp.zonotope(torch.tensor([[0.5,0.5,0.0],[0.0,0.0,0.01],[0.0,0.0,0.0]])).to_polyZonotope()]*2
 
