@@ -8,6 +8,7 @@ from zonopy.conSet import DEFAULT_OPTS, PROPERTY_ID
 import zonopy as zp
 import torch
 
+
 EMPTY_TENSOR = torch.tensor([])
 class polyZonotope:
     '''
