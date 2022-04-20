@@ -76,8 +76,8 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
             PZ_JRS = [[] for _ in range(n_time_steps)]
             R = [[] for _ in range(n_time_steps)]            
         for t in range(n_time_steps):
-            c_qpos = torch.cos(q_0[i],dtype=torch.float)
-            s_qpos = torch.sin(q_0[i],dtype=torch.float)
+            c_qpos = torch.cos(q_0[i])
+            s_qpos = torch.sin(q_0[i])
             Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=torch.float)
             A = torch.block_diag(Rot_qpos,torch.eye(4))
             jrs_mat_load = torch.tensor(jrs_mats_load[t],dtype=torch.float)[0]
