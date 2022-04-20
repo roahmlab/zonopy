@@ -27,8 +27,6 @@ def setup_cuda():
       torch.set_default_tensor_type('torch.cuda.FloatTensor')
       from zonopy.conSet import DEFAULT_OPTS
       DEFAULT_OPTS.set(device='cuda')
-      from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import jrs_key
-      jrs_key = jrs_key.to(device='cuda')
    else:
       print('WARNING: No CUDA GPUs are available.')
 
