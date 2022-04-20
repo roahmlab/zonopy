@@ -379,7 +379,7 @@ class zonotope:
         '''
         
         z = self.project(dim)
-        p = z.polygon()
+        p = z.polygon().to(device='cpu')
 
         ax.add_patch(patches.Polygon(p.T,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
 
