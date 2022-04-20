@@ -56,6 +56,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
     5: t
 
     '''
+    jrs_key = jrs_key.to(device=q_0.device)
     if isinstance(q_0,list):
         q_0 = torch.tensor(q_0,dtype=torch.float)
     if isinstance(qd_0,list):
