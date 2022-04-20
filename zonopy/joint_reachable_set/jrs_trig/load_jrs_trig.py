@@ -15,7 +15,7 @@ T_fail_safe = 0.5
 dirname = os.path.dirname(__file__)
 jrs_path = os.path.join(dirname,'jrs_trig_mat_saved/')
 jrs_key = loadmat(jrs_path+'c_kvi.mat')
-jrs_key = torch.tensor(jrs_key['c_kvi'])
+jrs_key = torch.tensor(jrs_key['c_kvi'],dtype=torch.float)
 
 '''
 qjrs_path = os.path.join(dirname,'qjrs_mat_saved/')
@@ -57,14 +57,14 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
 
     '''
     if isinstance(q_0,list):
-        q_0 = torch.Tensor(q_0)
+        q_0 = torch.tensor(q_0,dtype=torch.float)
     if isinstance(qd_0,list):
-        qd_0 = torch.Tensor(qd_0)
+        qd_0 = torch.tensor(qd_0,dtype=torch.float)
     assert len(q_0.shape) == 1 and len(qd_0.shape) == 1 
     n_joints = len(qd_0)
     assert len(q_0) == n_joints
     if joint_axes is None:
-        joint_axes = [torch.Tensor([0,0,1]) for _ in range(n_joints)]
+        joint_axes = [torch.tensor([0,0,1],dtype=torch.float) for _ in range(n_joints)]
     for i in range(n_joints):
         closest_idx = torch.argmin(abs(qd_0[i]-jrs_key))
         jrs_filename = jrs_path+'jrs_trig_mat_'+format(jrs_key[closest_idx],'.3f')+'.mat'
@@ -75,11 +75,11 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
             PZ_JRS = [[] for _ in range(n_time_steps)]
             R = [[] for _ in range(n_time_steps)]            
         for t in range(n_time_steps):
-            c_qpos = torch.cos(q_0[i])
-            s_qpos = torch.sin(q_0[i])
-            Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]])
+            c_qpos = torch.cos(q_0[i],dtype=torch.float)
+            s_qpos = torch.sin(q_0[i],dtype=torch.float)
+            Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=torch.float)
             A = torch.block_diag(Rot_qpos,torch.eye(4))
-            jrs_mat_load = torch.tensor(jrs_mats_load[t])[0]
+            jrs_mat_load = torch.tensor(jrs_mats_load[t],dtype=torch.float)[0]
             JRS_zono_i = zonotope(jrs_mat_load)
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qd_0[i])
             PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim,prop='k_trig'))
@@ -98,14 +98,14 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
 def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None):
     n_joints = len(q_0)
     if joint_axes is None:
-        joint_axes = [torch.Tensor([0,0,1]) for _ in range(n_joints)]
+        joint_axes = [torch.tensor([0,0,1],dtype=torch.float) for _ in range(n_joints)]
     PZ_JRS, R = load_JRS_trig(q_0,qd_0,joint_axes)
     n_time_steps = len(PZ_JRS)
     jrs_dim = PZ_JRS[0][0].dimension
     # Error Zonotope
     gain = Kr[0,0].reshape(1,1) # controller gain
     e = uniform_bound/ gain # max pos error
-    d = torch.Tensor([2*uniform_bound]).reshape(1,1) # max vel error
+    d = torch.tensor([2*uniform_bound],dtype=torch.float).reshape(1,1) # max vel error
 
     G_pos_err = torch.zeros(jrs_dim,2)
     G_pos_err[0,0] = (torch.cos(torch.zeros(1))-torch.cos(e))/2
@@ -135,7 +135,7 @@ def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None):
             # modified trajectories
             qd_a[t].append(polyZonotope(vel_C, torch.hstack((vel_G,gain*e))))
             qdd_a[t].append(polyZonotope(acc_C, torch.hstack((acc_G,gain*d))))
-            r[t].append(polyZonotope(torch.zeros(1),torch.hstack((d,gain*e))))
+            r[t].append(polyZonotope(torch.zeros(1,dtype=torch.float),torch.hstack((d,gain*e))))
             
             R_t[t].append(R[t][i].T)
     # return q_des, qd_des, qdd_des, q, qd, qd_a, qdd_a, r, c_k, delta_k, id, id_names
