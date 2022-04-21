@@ -236,7 +236,7 @@ class polyZonotope:
             expMat1 = torch.vstack((self.expMat,torch.zeros(other.expMat.shape[0],self.expMat.shape[1]))).to(dtype=self.__itype)
             expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat)).to(dtype=self.__itype)
             '''
-            [id, expMat1, expMat2] = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             empty_tensor = EMPTY_TENSOR.to(device=self.__device)
             G, Grest, expMat = empty_tensor,empty_tensor, empty_tensor.reshape(id.numel(),0).to(dtype=self.__itype,device=self.__device)
             G1, G2, Grest1, Grest2 = self.G.reshape(-1), other.G.reshape(-1), self.Grest.reshape(-1), other.Grest.reshape(-1)            

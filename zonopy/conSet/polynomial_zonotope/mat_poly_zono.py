@@ -124,6 +124,9 @@ class matPolyZonotope():
     @property
     def T(self):
         return matPolyZonotope(self.C.T,self.G.permute(1,0,2),self.Grest.permute(1,0,2),self.expMat,self.id,self.__dtype,self.__itype,self.__device)
+    @property
+    def Z(self):
+        return torch.cat((self.C.reshape(self.n_rows,self.n_cols,1),self.G,self.Grest),dim=-1)
 
     def to(self,dtype=None,itype=None,device=None):
         if dtype is None:
@@ -144,7 +147,7 @@ class matPolyZonotope():
         other: <matPolyZonotope>
         return <matPolyZonotope>
         '''
-        if type(other) == torch.Tensor:
+        if isinstance(other, torch.Tensor):
             if len(other.shape) == 1:
                 assert other.shape[0] == self.n_cols
                 c = self.C @ other
@@ -176,7 +179,23 @@ class matPolyZonotope():
         # indep. gnes.: C_Grest, Grest_c, Grest_Grest
         #               G_Grest, Grest_G (partially-k-sliceable)
         
-        elif type(other) == polyZonotope:
+        elif isinstance(other,polyZonotope):
+
+            assert self.n_cols == other.dimension
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            #import pdb;pdb.set_trace()
+            _Z = (self.Z.permute(2,0,1) @ other.Z).permute(0,2,1)
+            c = _Z[0,0]
+
+            G = _Z[:self.n_dep_gens+1,:other.n_dep_gens+1].reshape(-1,self.n_rows)[1:].permute(1,0)
+            expMat = torch.hstack((expMat2,expMat1,expMat1.repeat_interleave(other.n_dep_gens,dim=1)+expMat2.repeat(1,self.n_dep_gens)))
+            
+            Indep1,Indep2 = torch.arange(self.n_generators+1)>self.n_dep_gens, torch.arange(other.n_generators+1)>other.n_dep_gens
+            ind = tuple((Indep1.reshape(-1,1) + Indep2).nonzero().T)
+            Grest = _Z[ind].permute(1,0)            
+            
+            '''
+
             assert self.n_cols == other.dimension
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             
@@ -214,9 +233,27 @@ class matPolyZonotope():
             if self.Grest.numel() != 0 and other.G.numel() !=0:
                 Grest_G = G_mul_g(self.Grest,other.G)
                 Grest = torch.hstack((Grest,Grest_G))
+            '''
             return polyZonotope(c,G,Grest,expMat.to(dtype=torch.long),id,self.__dtype,self.__itype,self.__device)
 
-        elif type(other) == matPolyZonotope:
+        elif isinstance(other,matPolyZonotope):
+
+            assert self.n_cols == other.n_rows
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+
+            _Z = self.Z.permute(2,0,1).reshape(-1,1,self.n_rows,self.n_cols) @ other.Z.permute(2,0,1)
+            C = _Z[0,0]
+
+            G = _Z[:self.n_dep_gens+1,:other.n_dep_gens+1].reshape(-1,self.n_rows,self.n_cols)[1:].permute(1,2,0)
+            expMat = torch.hstack((expMat2,expMat1,expMat1.repeat_interleave(other.n_dep_gens,dim=1)+expMat2.repeat(1,self.n_dep_gens)))
+            
+            Indep1,Indep2 = torch.arange(self.n_generators+1)>self.n_dep_gens, torch.arange(other.n_generators+1)>other.n_dep_gens
+            ind = tuple((Indep1.reshape(-1,1) + Indep2).nonzero().T)
+            Grest = _Z[ind].permute(1,2,0)
+
+            '''
+            
+
             assert self.n_cols == other.n_rows
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             dims = [self.n_rows, self.n_cols, other.n_cols]
@@ -254,6 +291,7 @@ class matPolyZonotope():
             if self.Grest.numel() != 0 and other.G.numel() !=0:
                 Grest_G = G_mul_G(self.Grest,other.G,dims)
                 Grest = torch.cat((Grest,Grest_G),dim=-1)
+            '''
             return matPolyZonotope(C,G,Grest,expMat,id,self.__dtype,self.__itype,self.__device)
 
 
@@ -270,7 +308,7 @@ class matPolyZonotope():
         other: <matPolyZonotope>
         return <matPolyZonotope>
         '''
-        if type(other) == torch.Tensor:
+        if isinstance(other,torch.Tensor):
             assert len(other.shape) == 2, 'The other object should be 2-D tensor.'  
             assert other.shape[1] == self.n_rows
                 
