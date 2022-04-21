@@ -227,15 +227,6 @@ class polyZonotope:
             
         elif isinstance(other,polyZonotope):
             assert self.dimension == 1 and other.dimension == 1, 'Both polynomial zonotope must have dimension 1.'
-            '''
-            if self.id.numel() !=0:
-                id_offset = max(self.id)+1
-            else:
-                id_offset = 0 
-            id = torch.hstack((self.id,other.id+id_offset))
-            expMat1 = torch.vstack((self.expMat,torch.zeros(other.expMat.shape[0],self.expMat.shape[1]))).to(dtype=self.__itype)
-            expMat2 = torch.vstack((torch.zeros(self.expMat.shape[0],other.expMat.shape[1]),other.expMat)).to(dtype=self.__itype)
-            '''
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             empty_tensor = EMPTY_TENSOR.to(device=self.__device)
             G, Grest, expMat = empty_tensor,empty_tensor, empty_tensor.reshape(id.numel(),0).to(dtype=self.__itype,device=self.__device)
