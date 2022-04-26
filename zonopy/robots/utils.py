@@ -3,8 +3,7 @@ Utilities for parsing URDF data
 Author: Yongseok Kwon
 Reference:
 """
-from math import cos, sin
-from torch import Tensor
+from torch import tensor, cos, sin
 
 def Euler_to_Rot(rpy):
     '''
@@ -28,6 +27,6 @@ def Rp_to_Trans(R,p):
 
 
 def parellel_axis(Ii, mass, R, p):
-    skew = Tensor([[0,-p[2],p[1]],[p[2],0,-p[0]],[-p[1],p[0],0]])
+    skew = tensor([[0.0,-p[2],p[1]],[p[2],0,-p[0]],[-p[1],p[0],0]])
     Io = R@Ii@R.T + mass*(skew@skew.T)
     return Io
