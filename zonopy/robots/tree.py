@@ -5,7 +5,8 @@ Reference: MATLAB robotics toolbox
 """
 
 from zonopy.robots.utils import Euler_to_Rot,Rp_to_Trans
-from torch import Tensor, pi
+from torch import tensor, pi
+from torch import float as torch_float
 class rigidBodyTree:
     def __init__(self,links,joints,base,gravity=True):
         self.n_bodies = len(links)-1
@@ -14,9 +15,9 @@ class rigidBodyTree:
         self.bodies = [rigidBody(body,joints) for body in links if body.name != base.name]
         self.body_name = [body.name for body in self.bodies]
         if gravity:
-            self.gravity = Tensor([0, 0, -9.81])
+            self.gravity = tensor([0.0, 0.0, -9.81],dtype=torch_float)
         else:
-            self.gravity = Tensor([0, 0, 0])
+            self.gravity = tensor([0.0, 0.0, 0.0],dtype=torch_float)
         self.__match_tree_id()
 
     def __repr__(self):
@@ -83,22 +84,22 @@ class rigidBody:
     def __set_inertial(self,inertial):
         if inertial is None:
             self.mass = None
-            self.inertia = Tensor()
-            self.com = Tensor()
-            self.com_rot = Tensor()
+            self.inertia = tensor([],dtype=torch_float)
+            self.com = tensor([],dtype=torch_float)
+            self.com_rot = tensor([],dtype=torch_float)
         else:
             self.mass = inertial.mass
-            self.inertia = Tensor(inertial.inertia.to_matrix())
+            self.inertia = tensor(inertial.inertia.to_matrix(),dtype=torch_float)
             if inertial.origin is not None:
-                self.com = Tensor(inertial.origin.xyz)
-                self.com_rot = Tensor(Euler_to_Rot(inertial.origin.rpy))
+                self.com = tensor(inertial.origin.xyz,dtype=torch_float)
+                self.com_rot = tensor(Euler_to_Rot(inertial.origin.rpy),dtype=torch_float)
             else:
-                self.com = Tensor([0,0,0])
-                self.com_rot = Tensor([[1,0,0],[0,1,0],[0,0,1]])
+                self.com = tensor([0.0,0.0,0.0])
+                self.com_rot = tensor([[1.0,0.0,0.0],[0.0,1.0,0.0],[0.0,0.0,1.0]])
     def __add_joint(self,joints):
         if joints is None:
             self.joint = None
-            self.transform= Tensor([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
+            self.transform= tensor([[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[0.0,0.0,0.0,1.0]])
             return
         for joint in joints:
             if joint.child == self.name:
@@ -108,7 +109,7 @@ class rigidBody:
                 break
     def __set_transform(self,joint):
         R = Euler_to_Rot(joint.origin.rpy)
-        self.transform = Tensor(Rp_to_Trans(R,joint.origin.xyz))
+        self.transform = tensor(Rp_to_Trans(R,joint.origin.xyz),dtype=torch_float)
 
     def add_parent(self,id):
         self.parent_id =  id
@@ -122,16 +123,16 @@ class rigidBodyJoint:
         self.name = joint.name
         
         if self.type == 'fixed':
-            self.axis = Tensor([0,0,0])
-            self.pos_lim = Tensor()
+            self.axis = tensor([0.0,0.0,0.0])
+            self.pos_lim = tensor([],dtype=torch_float)
             self.vel_lim = None
             self.f_lim = None
         else: 
-            self.axis = Tensor(joint.axis)
+            self.axis = tensor(joint.axis,dtype=torch_float)
             if self.type == 'continuous':
-                self.pos_lim = Tensor([pi, -pi])
+                self.pos_lim = tensor([pi, -pi])
             else:
-                self.pos_lim = Tensor([joint.limit.upper, joint.limit.lower])
+                self.pos_lim = tensor([joint.limit.upper, joint.limit.lower],dtype=torch_float)
             self.vel_lim = joint.limit.velocity
             self.f_lim = joint.limit.effort
     def __repr__(self):

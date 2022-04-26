@@ -7,7 +7,7 @@ PI = torch.tensor(torch.pi)
 def gen_JRS(q,dq,joint_axes=None,taylor_degree=1,make_gens_independent=True):
     n_q = len(q)
     if joint_axes is None:
-        joint_axes = [torch.Tensor([0,0,1]) for _ in range(n_q)]
+        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_q)]
     
     traj_type = 'orig'
     T_full,T_plan, dt = 1, 0.5 ,0.01
@@ -60,7 +60,7 @@ def gen_traj_JRS(q,dq,joint_axes=None,taylor_degree=1,make_gens_independent=True
 
     n_q = len(q)
     if joint_axes is None:
-        joint_axes = [torch.Tensor([0,0,1]) for _ in range(n_q)]
+        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_q)]
     
     traj_type = 'orig'
     ultimate_bound = 0.0191
