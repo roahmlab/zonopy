@@ -10,11 +10,7 @@ from torch import Tensor
 
 EMPTY_TENSOR = torch.tensor([])
 class interval:
-    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR,dtype=None,device=None):
-        if dtype is None:
-            dtype = DEFAULT_OPTS.DTYPE
-        if device is None:
-            device = DEFAULT_OPTS.DEVICE
+    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR):
         if isinstance(inf,list):
             inf = torch.tensor(inf)
         if isinstance(sup,list):
@@ -27,35 +23,32 @@ class interval:
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
         assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
-        self.__inf = inf.to(dtype=dtype,device=device)
-        self.__sup = sup.to(dtype=dtype,device=device)
+        self.__inf = inf
+        self.__sup = sup
         self.__shape = tuple(inf.shape)
-        self.__dtype = dtype
-        self.__device = device
     @property
     def inf(self):
         return self.__inf
     @inf.setter
     def inf(self,value):
         assert self.__inf.shape == value.shape
-        self.__inf = value.to(dtype=self.__dtype,device=self.__device)
+        self.__inf = value
     @property
     def sup(self):
         return self.__sup
     @sup.setter
     def sup(self,value):
         assert self.__inf.shape == value.shape
-        self.__inf = value.to(dtype=self.__dtype,device=self.__device)
-
+        self.__inf = value
     @property
     def shape(self):
         return self.__shape
     @property
     def dtype(self):
-        return self.__dtype
+        return self.inf.dtype
     @property
     def device(self):
-        return self.__device
+        return self.inf.device
     def __str__(self):
         intv_str = f"interval of shape {self.shape}.\n inf: {self.__inf}.\n sup: {self.__sup}.\n"
         del_dict = {'tensor(':'','    ':' ',')':''}
@@ -76,7 +69,7 @@ class interval:
             inf, sup = self.__inf+other, self.__sup+other
         else:
             assert False, f'the other object should be interval or numberic, but {type(other)}.'
-        return interval(inf,sup,self.__dtype,self.__device)
+        return interval(inf,sup)
     __radd__ = __add__
     def __sub__(self,other):
         return self.__add__(-other)
@@ -94,14 +87,14 @@ class interval:
         self: <interval>
         return <interval>
         '''   
-        return interval(-self.__sup,-self.__inf,self.__dtype,self.__device)
+        return interval(-self.__sup,-self.__inf)
 
     def __mul__(self, other):
         if isinstance(other,(int,float)):
             if other >= 0:
-                return interval(other * self.__inf, other * self.__sup, self.__dtype, self.__device)
+                return interval(other * self.__inf, other * self.__sup)
             else:
-                return interval(other * self.__sup, other * self.__inf, self.__dtype, self.__device)
+                return interval(other * self.__sup, other * self.__inf)
 
         if self.numel() == 1 and isinstance(other, interval):
             candidates = other.inf.repeat(4,1).reshape((4,) + other.shape)
@@ -112,7 +105,7 @@ class interval:
 
             new_inf = torch.min(candidates,dim=0).values
             new_sup = torch.max(candidates,dim=0).values
-            return interval(new_inf, new_sup, self.__dtype, self.__device)
+            return interval(new_inf, new_sup)
 
         elif isinstance(other, interval) and other.numel() == 1:
             candidates = self.inf.repeat(4,1).reshape((4,) + self.shape)
@@ -123,7 +116,7 @@ class interval:
 
             new_inf = torch.min(candidates,dim=0).values
             new_sup = torch.max(candidates,dim=0).values
-            return interval(new_inf, new_sup, self.__dtype, self.__device)
+            return interval(new_inf, new_sup)
 
         else:
             assert False, "such multiplication is not implemented yet"
@@ -133,13 +126,13 @@ class interval:
     def __getitem__(self, pos):
         inf = self.__inf[pos]
         sup = self.__sup[pos]
-        return interval(inf, sup, self.__dtype, self.__device)
+        return interval(inf, sup)
 
     def __setitem__(self, pos, value):
         # set one interval
         if isinstance(value, interval):
-            self.__inf[pos] = value.__inf.to(dtype = self.__dtype, device = self.__device)
-            self.__sup[pos] = value.__sup.to(dtype = self.__dtype, device = self.__device)
+            self.__inf[pos] = value.__inf
+            self.__sup[pos] = value.__sup
         else:
             self.__inf[pos] = value
             self.__sup[pos] = value
@@ -164,7 +157,7 @@ class interval:
             dtype = self.dtype
         if device is None:
             device = self.device
-        return interval(self.__inf, self.__sup, self.__dtype, self.__device)
+        return interval(self.__inf, self.__sup)
 
 
     '''
