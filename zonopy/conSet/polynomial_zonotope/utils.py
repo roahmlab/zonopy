@@ -4,44 +4,7 @@ Author: Yongseok Kwon
 Reference: CORA
 """
 import torch
-from queue import PriorityQueue
 from zonopy.conSet import DEFAULT_OPTS
-
-def argsortrows(Mat):
-    '''
-    argument of sorted rows of a matrix
-    Mat: <torch.tensor, dtype=int> matrix
-    
-    return,
-    ind: <list>, index
-    '''
-    
-    num_row = Mat.shape[0]
-    List = Mat.tolist()
-    Q = PriorityQueue()
-    for i in range(num_row):
-        row_list = List[i]
-        row_list.append(i)
-        Q.put(row_list)
-
-    ind = [] 
-    for i in range(num_row):
-        ind.append(Q.get()[-1])
-
-
-
-    # np.lexsort([Mat[:,i] for i in reversed(range(Mat.shape[1]))])
-    # np.lexsort(tuple(b.T.flip(0)))
-    # torch.unique(b.T,dim=-1,sorted=True,return_inverse=True)[1].argsort()+1
-    '''
-    
-    
-    '''
-
-    return ind
-    
-
-
 
 def removeRedundantExponents(ExpMat,G,eps=0):
     '''
@@ -56,15 +19,8 @@ def removeRedundantExponents(ExpMat,G,eps=0):
     '''
     # True for non-zero generators
     # NOTE: need to fix or maybe G should be zero tensor for empty
-    itype = ExpMat.dtype
-    dtype = G.dtype
-    device = G.device
 
-    dim_G = len(G.shape)
-    permute_order = [dim_G-1] + list(range(dim_G-1))
-    reverse_order = list(range(1,dim_G))+[0]
-    G = G.permute(permute_order)
-    
+    dim_G = len(G.shape)    
     idxD = torch.any(abs(G)>eps,-1)
     for _ in range(dim_G-2):
         idxD = torch.any(idxD,-1)
@@ -73,13 +29,8 @@ def removeRedundantExponents(ExpMat,G,eps=0):
     if not all(idxD) or G.numel() == 0:
         # if all generators are zero
         if all(~idxD):
-            # NOTE: might be better to assign None
-            Gnew = torch.tensor([],dtype=dtype,device=device).reshape(G.shape[1:]+(0,))
-            ExpMatNew = torch.tensor([],dtype=itype,device=device).reshape(ExpMat.shape[:1]+(0,))
-            '''
-            ExpMatNew = torch.zeros(ExpMat.shape[0],1)
-            Gnew = torch.zeros(G.shape[0],1)
-            '''
+            Gnew = torch.tensor([]).reshape((0,)+G.shape[1:])
+            ExpMatNew = torch.tensor([],dtype=ExpMat.dtype).reshape((0,)+ExpMat.shape[1:])
             return ExpMatNew, Gnew
         else:
             # keep non-zero genertors
@@ -87,61 +38,28 @@ def removeRedundantExponents(ExpMat,G,eps=0):
             ExpMat = ExpMat[:,idxD]
 
     # add hash value of the exponent vector to the exponent matrix
-    temp = torch.arange(ExpMat.shape[0],dtype=itype,device=device).reshape(1,-1) + 1
-    
-    
-    '''  
-    rankMat = torch.hstack(((temp@ExpMat).T,ExpMat.T))
+    temp = torch.arange(ExpMat.shape[1]).reshape(-1,1) + 1
+    rankMat = torch.hstack((ExpMat.to(dtype=torch.float)@temp.to(dtype=torch.float),ExpMat))
     # sort the exponents vectors according to the hash value
-    ind = argsortrows(rankMat)
-    '''
-    rankMat = torch.vstack((temp.to(dtype=torch.float)@ExpMat.to(dtype=torch.float),ExpMat))
-    # sort the exponents vectors according to the hash value
-    ind = torch.unique(rankMat,dim=-1,sorted=True,return_inverse=True)[1].argsort()
+    ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
     
-    ExpMatTemp = ExpMat[:,ind]
+    ExpMatTemp = ExpMat[ind]
     Gtemp = G[ind]
     
     # vectorized 
-    ExpMatNew, ind_red = torch.unique_consecutive(ExpMatTemp,dim=-1,return_inverse=True)
-    # NOTE
+    ExpMatNew, ind_red = torch.unique_consecutive(ExpMatTemp,dim=0,return_inverse=True)
     if ind_red.max()+1 == ind_red.numel():
-        return ExpMatTemp,Gtemp.permute(reverse_order)
+        return ExpMatTemp,Gtemp
 
     n_rem = ind_red.max()+1
     ind = torch.arange(n_rem).reshape(-1,1) == ind_red 
     num_rep = ind.sum(1)
 
     Gtemp2 = Gtemp.repeat((n_rem,)+(1,)*(dim_G-1))[ind.reshape(-1)].cumsum(0)
-    Gtemp2 = torch.cat((torch.zeros((1,)+Gtemp2.shape[1:],device=device),Gtemp2),0)
+    Gtemp2 = torch.cat((torch.zeros((1,)+Gtemp2.shape[1:]),Gtemp2),0)
     
-    num_rep2 = torch.hstack((torch.zeros(1,dtype=int,device=device),num_rep.cumsum(0)))
-    Gnew = (Gtemp2[num_rep2[1:]] - Gtemp2[num_rep2[:-1]]).permute(reverse_order)
-
-
-    '''
-    # initialization
-    counterNew = 0
-    ExpMatNew = torch.zeros_like(ExpMat)
-    Gnew = torch.zeros_like(G)
-    
-    # first entry
-    ExpMatNew[:,counterNew] = ExpMatTemp[:,0]
-    Gnew[counterNew] = Gtemp[0]
-
-    # loop over all exponent vectors
-    
-    for counter in range(1,ExpMatTemp.shape[1]):
-        if all(ExpMatNew[:,counterNew] == ExpMatTemp[:,counter]):
-            Gnew[counterNew] += Gtemp[counter]
-        else:
-            counterNew += 1
-            Gnew[counterNew] = Gtemp[counter]
-            ExpMatNew[:,counterNew] = ExpMatTemp[:,counter]
-
-    ExpMatNew = ExpMatNew[:,:counterNew+1]
-    Gnew = Gnew[:counterNew+1].permute(reverse_order)
-    '''
+    num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long),num_rep.cumsum(0)))
+    Gnew = (Gtemp2[num_rep2[1:]] - Gtemp2[num_rep2[:-1]])
     return ExpMatNew, Gnew
 
 def mergeExpMatrix(id1, id2, expMat1, expMat2):
@@ -165,11 +83,7 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
         id = id1
 
     # ID vectors not identical -> MERGE
-    else:
-        itype = expMat1.dtype
-        device = expMat1.device
-
-        
+    else:        
         id =id1
         ind2 =torch.zeros_like(id2)
 
@@ -179,26 +93,11 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
         ind2[ind] = Ind_rep.nonzero()[:,1]
         ind2[non_ind] = torch.arange(non_ind.sum()) + len(id)
         id = torch.hstack((id,id2[non_ind]))
-
-        '''
-        # merge the two sets
-        id = id1
-        ind2 =torch.zeros_like(id2)
-        for i in range(L2):
-            ind = [j for j in range(len(id)) if id[j] == id2[i]]
-            # if ind is empty
-            if not ind:
-                id2_i = id2[i].clone().detach()
-                id = torch.hstack((id,id2_i))
-                ind2[i] = len(id)-1
-            else:
-                ind2[i] = ind[0]
-        '''
         # construct the new exponent matrices
         L = len(id)
-        expMat1 = torch.vstack((expMat1,torch.zeros(L-L1,expMat1.shape[1],dtype=itype,device=device)))
-        temp = torch.zeros(L,expMat2.shape[1],dtype=itype,device=device)
-        temp[ind2,:] = expMat2
+        expMat1 = torch.hstack((expMat1,torch.zeros(len(expMat1),L-L1,dtype=expMat1.dtype)))
+        temp = torch.zeros(len(expMat2),L,dtype = expMat2.dtype)
+        temp[:,ind2] = expMat2
         expMat2 = temp
 
     return id, expMat1, expMat2
@@ -207,7 +106,7 @@ def pz_repr(pz):
     # TODO: number of show 
     # TODO: precision
 
-    pz_mat = torch.hstack((pz.c.reshape(-1,1),pz.G,pz.Grest))
+    pz_mat = pz.Z.T
     pz_repr = 'polyZonotope('
     for i in range(pz.dimension):
         if i == 0 and pz.dimension>1:
@@ -219,7 +118,7 @@ def pz_repr(pz):
         for j in range(pz_mat.shape[1]):
             pz_repr +=  ('{{:.{}f}}').format(4).format(pz_mat[i,j].item())
             
-            if j == 0 or (j != pz_mat.shape[1]-1 and j == pz.G.shape[1]):
+            if j == 0 or (j != pz_mat.shape[1]-1 and j == pz.G.shape[0]):
                 pz_repr += ' | '
             elif j !=pz_mat.shape[1]-1:
                 pz_repr +=', '
@@ -268,9 +167,17 @@ def check_decimals(tensor):
 '''
 if __name__ == '__main__':
     
-    expMat = torch.tensor([[1]])
-    G = torch.tensor([[0],[0],[0]])
+    expMat = torch.tensor([[1],[2],[1]])
+    G = torch.tensor([[2],[3],[4]])
 
     expMat, G = removeRedundantExponents(expMat,G)
     print(G)
     print(expMat)
+
+    expMat1 = torch.tensor([[1,2],[2,3],[1,4]])
+    id1 = torch.tensor([1,2])
+    expMat2 = torch.tensor([[1,2],[2,3],[1,4]])
+    id2 = torch.tensor([2,3])
+    id, expMat1,expMat2 = mergeExpMatrix(id1,id2,expMat1,expMat2)    
+
+    print(id,expMat1,expMat2)

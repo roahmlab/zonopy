@@ -9,7 +9,6 @@ from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
 from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
 
-EMPTY_TENSOR = torch.tensor([])
 class zonotope:
     '''
     zono: <zonotope>, <torch.float64>
@@ -29,13 +28,13 @@ class zonotope:
     G = [[g1],[g2],...,[gN]]
     zono = c + a1*g1 + a2*g2 + ... + aN*gN
     '''
-    def __init__(self,Z=EMPTY_TENSOR):
+    def __init__(self,Z):
         ################ may not need these for speed ################ 
         if isinstance(Z,list):
             Z = torch.tensor(Z,dtype=torch.float)
-        assert isinstance(Z,torch.Tensor), f'The input matrix should be either torch tensor or list, but {type(Z)}.'
+        assert isinstance(Z,torch.Tensor), f'The input matrix should be either torch tensor or list, not {type(Z)}.'
         assert Z.dtype == torch.float or Z.dtype == torch.double, f'dtype should be either torch.float (torch.float32) or torch.double (torch.float64), but {Z.dtype}.'
-        assert len(Z.shape) == 2, f'The dimension of Z input should be either 1 or 2, but {len(Z.shape)}.'
+        assert len(Z.shape) == 2, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
         ############################################################## 
         self.Z = Z
     @property
@@ -175,13 +174,13 @@ class zonotope:
 
         non_zero_idx = G[:,slice_dim] != 0
         assert torch.all(torch.sum(non_zero_idx,0)==1), 'There should be one generator for each slice index.'
-        slice_idx = (non_zero_idx!=0).T.nonzero()[:,1]
+        slice_idx = torch.any(non_zero_idx!=0,1)
 
         slice_c = c[slice_dim]
         slice_g = G[slice_idx,slice_dim]
-        slice_lambda = slice_g/(slice_pt-slice_c)
-
+        slice_lambda = (slice_pt-slice_c)/slice_g
         assert not any(abs(slice_lambda)>1), 'slice point is ouside bounds of reach set, and therefore is not verified'
+        
         Z = torch.vstack((c + slice_lambda@G[slice_idx],G[~slice_idx]))
         return zonotope(Z)
 
@@ -346,7 +345,7 @@ class zonotope:
         if option == 'girard':
             Z = self.deleteZerosGenerators()
             center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
-            d = torch.sum(abs(Gred),1)
+            d = torch.sum(abs(Gred),0)
             Gbox = torch.diag(d)
             ZRed = torch.vstack((center,Gunred,Gbox))
             return zonotope(ZRed)
@@ -361,17 +360,25 @@ class zonotope:
         return <polyZonotope>
         '''
         if dim is None:
-            return polyZonotope(self.center,Grest = self.generators)
+            return polyZonotope(self.Z,0)
         assert isinstance(dim,int) and dim <= self.dimension
 
+        idx = self.Z[:,dim] == 0
+        idx[0] = False
+        assert sum(~idx) == 2,'sliceable generator should be one for the dimension.' 
+        ind = torch.argsort(idx)
+        return polyZonotope(self.Z[ind],1,prop=prop)
+        
+        '''
         g_row_dim =self.generators[:,dim]
+        
         idx = g_row_dim==0
-
         assert sum(~idx) == 1, 'sliceable generator should be one for the dimension.'
         c = self.center
         G = self.generators[~idx]
         Grest = self.generators[idx]
         return polyZonotope(c,G,Grest,prop=prop)
+        '''
     def to_interval(self):
         c = self.center
         delta = torch.sum(abs(self.Z),dim=0) - abs(c)

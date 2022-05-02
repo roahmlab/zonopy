@@ -5,11 +5,9 @@ Reference:
 """
 from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.zonotope.zono import zonotope
-from zonopy.conSet.utils import G_mul_c, G_mul_g, G_mul_C, G_mul_G
 from zonopy.conSet.zonotope.utils import pickedGenerators
 import torch
 
-EMPTY_TENSOR = torch.tensor([])
 class matZonotope():
     '''
     matZono: <matZonotope>, <torch.float64>
@@ -26,7 +24,7 @@ class matZonotope():
     G = [[G1],[G2],...,[GN]]
     zono = C + a1*G1 + a2*G2 + ... + aN*GN
     '''
-    def __init__(self,Z=EMPTY_TENSOR):
+    def __init__(self,Z):
         if isinstance(Z,list):
             Z = torch.tensor(Z)
         assert isinstance(Z,torch.Tensor), f'The input matrix should be torch tensor, but {type(Z)}.'
