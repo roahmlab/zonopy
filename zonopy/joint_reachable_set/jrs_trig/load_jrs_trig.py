@@ -15,7 +15,7 @@ T_fail_safe = 0.5
 dirname = os.path.dirname(__file__)
 jrs_path = os.path.join(dirname,'jrs_trig_mat_saved/')
 JRS_KEY = loadmat(jrs_path+'c_kvi.mat')
-JRS_KEY = torch.tensor(JRS_KEY['c_kvi'],dtype=torch.float)
+#JRS_KEY = torch.tensor(JRS_KEY['c_kvi'],dtype=torch.float)
 
 '''
 qjrs_path = os.path.join(dirname,'qjrs_mat_saved/')
@@ -56,12 +56,12 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
     5: t
 
     '''
-    jrs_key = JRS_KEY.to(device=q_0.device)
+    jrs_key = torch.tensor(JRS_KEY['c_kvi'],dtype=torch.float)
     if isinstance(q_0,list):
         q_0 = torch.tensor(q_0,dtype=torch.float)
     if isinstance(qd_0,list):
         qd_0 = torch.tensor(qd_0,dtype=torch.float)
-    assert len(q_0.shape) == 1 and len(qd_0.shape) == 1 
+    assert len(q_0.shape) == len(qd_0.shape) == 1 
     n_joints = len(qd_0)
     assert len(q_0) == n_joints
     if joint_axes is None:
@@ -81,17 +81,17 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
             Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=torch.float)
             A = torch.block_diag(Rot_qpos,torch.eye(4))
             jrs_mat_load = torch.tensor(jrs_mats_load[t],dtype=torch.float)[0]
-            JRS_zono_i = zonotope(jrs_mat_load)
+            JRS_zono_i = zonotope(jrs_mat_load.T)
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qd_0[i])
             PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim,prop='k_trig'))
             # fail safe
             if t == 0:
-                delta_k = PZ_JRS[0][i].G[ka_dim,0]
+                delta_k = PZ_JRS[0][i].G[0,ka_dim]
                 c_breaking = - qd_0[i]/T_fail_safe
                 delta_breaking = - delta_k/T_fail_safe
             elif t >= int(n_time_steps/2):
                 PZ_JRS[t][i].c[acc_dim] = c_breaking
-                PZ_JRS[t][i].G[acc_dim] = delta_breaking
+                PZ_JRS[t][i].G[0,acc_dim] = delta_breaking
             R_temp= gen_rotatotope_from_jrs_trig(PZ_JRS[t][i],joint_axes[i])
             R[t].append(R_temp)
     return PZ_JRS, R
