@@ -186,14 +186,14 @@ class matPolyZonotope():
             #import pdb;pdb.set_trace()
             _Z = (self.Z.permute(2,0,1) @ other.Z).permute(0,2,1)
             c = _Z[0,0]
-
-            G = _Z[:self.n_dep_gens+1,:other.n_dep_gens+1].reshape(-1,self.n_rows)[1:].permute(1,0)
+            z1 = _Z[1:self.n_dep_gens+1,0]
+            z2 = _Z[:self.n_dep_gens+1,1:other.n_dep_gens+1].reshape(-1,self.n_rows)
+            G = torch.vstack((z1,z2)).T
+            z3 = _Z[self.n_dep_gens+1:].reshape(-1,self.n_rows)
+            z4 = _Z[:self.n_dep_gens+1,other.n_dep_gens+1:].reshape(-1,self.n_rows)
+            Grest = torch.vstack((z3,z4)).T
             expMat = torch.hstack((expMat2,expMat1,expMat1.repeat_interleave(other.n_dep_gens,dim=1)+expMat2.repeat(1,self.n_dep_gens)))
-            
-            Indep1,Indep2 = torch.arange(self.n_generators+1)>self.n_dep_gens, torch.arange(other.n_generators+1)>other.n_dep_gens
-            ind = tuple((Indep1.reshape(-1,1) + Indep2).nonzero().T)
-            Grest = _Z[ind].permute(1,0)            
-            
+
             '''
 
             assert self.n_cols == other.dimension
@@ -243,17 +243,16 @@ class matPolyZonotope():
 
             _Z = self.Z.permute(2,0,1).reshape(-1,1,self.n_rows,self.n_cols) @ other.Z.permute(2,0,1)
             C = _Z[0,0]
-
-            G = _Z[:self.n_dep_gens+1,:other.n_dep_gens+1].reshape(-1,self.n_rows,self.n_cols)[1:].permute(1,2,0)
+            z1 = _Z[1:self.n_dep_gens+1,0]
+            z2 = _Z[:self.n_dep_gens+1,1:other.n_dep_gens+1].reshape(-1,self.n_rows,other.n_cols)
+            G = torch.vstack((z1,z2)).permute(1,2,0)
+            z3 = _Z[self.n_dep_gens+1:].reshape(-1,self.n_rows,other.n_cols)
+            z4 = _Z[:self.n_dep_gens+1,other.n_dep_gens+1:].reshape(-1,self.n_rows,other.n_cols)
+            Grest = torch.vstack((z3,z4)).permute(1,2,0)
             expMat = torch.hstack((expMat2,expMat1,expMat1.repeat_interleave(other.n_dep_gens,dim=1)+expMat2.repeat(1,self.n_dep_gens)))
-            
-            Indep1,Indep2 = torch.arange(self.n_generators+1)>self.n_dep_gens, torch.arange(other.n_generators+1)>other.n_dep_gens
-            ind = tuple((Indep1.reshape(-1,1) + Indep2).nonzero().T)
-            Grest = _Z[ind].permute(1,2,0)
+
 
             '''
-            
-
             assert self.n_cols == other.n_rows
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             dims = [self.n_rows, self.n_cols, other.n_cols]
