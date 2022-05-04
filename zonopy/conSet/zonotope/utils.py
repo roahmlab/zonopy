@@ -12,10 +12,9 @@ def pickedGenerators(c,G,order):
     '''
     dim = c.shape
     norm_dim = tuple(range(1,len(dim)+1))
-    
-    if G.numel() != 0:
+    nrOfGens = G.shape[0]
+    if  nrOfGens != 0:
         d = torch.prod(torch.tensor(G.shape[1:]))
-        nrOfGens = G.shape[0]
         # only reduce if zonotope order is greater than the desired order
         if nrOfGens > d*order:
             
