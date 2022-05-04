@@ -36,7 +36,6 @@ for t in range(n_time_steps):
 t =  time.time()
 print(t-t_start)
 t_start = t
-
 ax = zp.plot_polyzonos(FO_link_trig,plot_freq=1,edgecolor='blue')#,hold_on=True)
 
 #zp.plot_polyzonos(FO_link,plot_freq=1,ax=ax)

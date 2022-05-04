@@ -70,7 +70,6 @@ def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     sinq = polyZono.c[sin_dim]
     # Rodrigues' rotation formula
     C = (torch.eye(3) + sinq*w_hat + (1-cosq)*w_hat@w_hat).unsqueeze(0)
-
     cosq = polyZono.Z[1:,cos_dim:cos_dim+1].unsqueeze(-1)
     sinq = polyZono.Z[1:,sin_dim:sin_dim+1].unsqueeze(-1)
     G = sinq*w_hat - cosq*(w_hat@w_hat)

@@ -362,23 +362,11 @@ class zonotope:
         if dim is None:
             return polyZonotope(self.Z,0)
         assert isinstance(dim,int) and dim <= self.dimension
-
-        idx = self.Z[:,dim] == 0
-        idx[0] = False
-        assert sum(~idx) == 2,'sliceable generator should be one for the dimension.' 
-        ind = torch.argsort(idx)
-        return polyZonotope(self.Z[ind],1,prop=prop)
-        
-        '''
-        g_row_dim =self.generators[:,dim]
-        
-        idx = g_row_dim==0
+        idx = self.generators[:,dim] == 0
         assert sum(~idx) == 1, 'sliceable generator should be one for the dimension.'
-        c = self.center
-        G = self.generators[~idx]
-        Grest = self.generators[idx]
-        return polyZonotope(c,G,Grest,prop=prop)
-        '''
+        Z = torch.vstack((self.center,self.generators[~idx],self.generators[idx]))
+        return polyZonotope(Z,1,prop=prop)
+
     def to_interval(self):
         c = self.center
         delta = torch.sum(abs(self.Z),dim=0) - abs(c)

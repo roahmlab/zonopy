@@ -227,9 +227,9 @@ class matPolyZonotope():
             ind_red,ind_rem = ind[:K], ind[K:]
             # split the indices into the ones for dependent and independent
             indDep = ind_rem[ind_rem < P]
-            ind_REM = torch.hstack((indDep, ind_rem[ind_rem >= P] - P))
+            ind_REM = torch.hstack((indDep, ind_rem[ind_rem >= P]))
             indDep_red = ind_red[ind_red < P]
-            ind_RED = torch.hstack((indDep_red,ind_red[ind_red >= P] - P))
+            ind_RED = torch.hstack((indDep_red,ind_red[ind_red >= P]))
             # construct a zonotope from the gens that are removed
             n_dg_rem = indDep.shape[0]
             Erem = self.expMat[indDep]
