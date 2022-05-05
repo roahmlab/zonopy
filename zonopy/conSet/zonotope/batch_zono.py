@@ -264,40 +264,47 @@ class batchZonotope:
         #z = self.deleteZerosGenerators()
         c = self.center
         G = torch.clone(self.generators)
-        h = torch.linalg.vector_norm(G,dim=1)
-        h_sort, indicies = torch.sort(h,descending=True)
-        h_zero = h_sort < 1e-6
-        if torch.any(h_zero):
-            first_reduce_idx = torch.nonzero(h_zero)[0,0]
-            Gunred = G[indicies[:first_reduce_idx]]
-            # Gred = G[indicies[first_reduce_idx:]]
-            # d = torch.sum(abs(Gred),0)
-            # G = torch.vstack((Gunred,torch.diag(d)))
-            G = Gunred
+        h = torch.linalg.vector_norm(G,dim=-1)
+        h_sort, indicies = torch.sort(h,dim=-1,descending=True)
 
-        n_gens, dim = G.shape
-                        
+        h_zero = ((h_sort > 1e-6).sum(tuple(range(1))) ==0)
+        if torch.any(h_zero):
+            first_reduce_idx = torch.nonzero(h_zero).squeeze(-1)[0]
+            G = G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
+        
+        n_gens, dim = G.shape[-2:]
+          
         if dim == 1:
-            C = G/torch.linalg.vector_norm(G,dim=1).reshape(-1,1)
+            C = G/torch.linalg.vector_norm(G,dim=-1).unsqueeze(-1)
         elif dim == 2:      
-            C = torch.hstack((-G[:,1],G[:,0]))
-            C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
+            x_idx = self.batch_idx_all+(slice(None),0)
+            y_idx = self.batch_idx_all+(slice(None),1)
+            C = torch.cat((-G[y_idx],G[x_idx]),-1)
+            C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
         elif dim == 3:
             # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
             comb = torch.combinations(torch.arange(n_gens),r=dim-1)
-            
-            Q = torch.hstack((G[comb[:,0]],G[comb[:,1]]))
-            C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]-Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
-            C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
+
+            Q = torch.cat((G[self.batch_idx_all+(comb[:,0],)],G[self.batch_idx_all+(comb[:,1],)]),dim=-1)
+            temp1 = (Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),4)]).unsqueeze(-1)
+            temp2 = (-Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
+            temp3 = (Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),4)]-Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
+            C = torch.cat((temp1,temp2,temp3),dim=-1)
+            C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
         elif dim >=4 and dim<=7:
             assert False
         else:
             assert False
         
         index = torch.sum(torch.isnan(C),dim=1) == 0
-        C = C[index]
-        deltaD = torch.sum(abs(C@G.T),dim=1)
-        d = (C@c)
+        n_c_batch = index.sum(dim=-1).reshape(-1)
+        C = C[index] 
+        # NOTE: C is sort of flatten, so need to repeat G and c for n_c_batch for each layer
+
+        deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=1)
+        d = (C@c.unsqueeze(-1)).squeeze(-1)
+        PA = torch.cat((C,-C),dim=-2)
+        Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)
         PA = torch.vstack((C,-C))
         Pb = torch.hstack((d+deltaD,-d+deltaD))
         return PA, Pb, C

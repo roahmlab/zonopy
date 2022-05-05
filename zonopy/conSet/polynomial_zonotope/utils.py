@@ -35,14 +35,18 @@ def removeRedundantExponents(ExpMat,G,eps=0):
         else:
             # keep non-zero genertors
             G = G[idxD]
-            ExpMat = ExpMat[:,idxD]
-
+            ExpMat = ExpMat[idxD]
+    '''
+    hash = torch.hstack((torch.tensor(1),ExpMat.max(0).values)).cumprod(0)[:-1]*ExpMat
+    hash = hash.sum(1)
+    ind = torch.unique(hash,dim=0,sorted=True,return_inverse=True)[1].argsort()
+    '''
     # add hash value of the exponent vector to the exponent matrix
     temp = torch.arange(ExpMat.shape[1]).reshape(-1,1) + 1
     rankMat = torch.hstack((ExpMat.to(dtype=torch.float)@temp.to(dtype=torch.float),ExpMat))
     # sort the exponents vectors according to the hash value
     ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
-    
+
     ExpMatTemp = ExpMat[ind]
     Gtemp = G[ind]
     
@@ -52,7 +56,7 @@ def removeRedundantExponents(ExpMat,G,eps=0):
         return ExpMatTemp,Gtemp
 
     n_rem = ind_red.max()+1
-    ind = torch.arange(n_rem).reshape(-1,1) == ind_red 
+    ind = torch.arange(n_rem).unsqueeze(1) == ind_red 
     num_rep = ind.sum(1)
 
     Gtemp2 = Gtemp.repeat((n_rem,)+(1,)*(dim_G-1))[ind.reshape(-1)].cumsum(0)

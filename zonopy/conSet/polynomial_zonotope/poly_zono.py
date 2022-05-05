@@ -47,6 +47,7 @@ class polyZonotope:
             # NOTE: MERGE redundant for 000?
             expMat = torch.eye(G.shape[0],dtype=torch.long) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
             self.expMat,G = removeRedundantExponents(expMat,G)
+            #self.expMat =expMat
             self.id = PROPERTY_ID.update(self.expMat.shape[1],prop) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat != None:
             #check correctness of user input 
@@ -56,6 +57,7 @@ class polyZonotope:
             assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
             assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
             self.expMat,G = removeRedundantExponents(expMat,G)
+            #self.expMat =expMat
             if id != None:
                 if isinstance(id, list):
                     id = torch.tensor(id,dtype=torch.long)

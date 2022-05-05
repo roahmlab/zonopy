@@ -66,6 +66,7 @@ class __Property_ID(object):
         if isinstance(prop,str):
             new_id = torch.arange(num,dtype=torch.long,device=device) + self.offset
             l_id = new_id.tolist()
+            import pdb; pdb.set_trace()
             self.__ids = torch.hstack((self.__ids,new_id))
             if prop in self.__properties:
                 self.__dict[prop].extend(l_id)
