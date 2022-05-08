@@ -165,7 +165,6 @@ class zonotope:
         assert len(slice_pt.shape) ==1, 'slicing point should be 1-dim component.'
         assert len(slice_dim) == len(slice_pt), f'The number of slicing dimension ({len(slice_dim)}) and the number of slicing point ({len(slice_dim)}) should be the same.'
 
-        N = len(slice_dim)
         slice_dim, ind = torch.sort(slice_dim)
         slice_pt = slice_pt[ind]
 
@@ -174,14 +173,14 @@ class zonotope:
 
         non_zero_idx = G[:,slice_dim] != 0
         assert torch.all(torch.sum(non_zero_idx,0)==1), 'There should be one generator for each slice index.'
-        slice_idx = torch.any(non_zero_idx!=0,1)
+        slice_idx = non_zero_idx.T.nonzero()[:,1]
 
         slice_c = c[slice_dim]
         slice_g = G[slice_idx,slice_dim]
         slice_lambda = (slice_pt-slice_c)/slice_g
-        assert not any(abs(slice_lambda)>1), 'slice point is ouside bounds of reach set, and therefore is not verified'
+        assert not (abs(slice_lambda)>1).any(), 'slice point is ouside bounds of reach set, and therefore is not verified'
         
-        Z = torch.vstack((c + slice_lambda@G[slice_idx],G[~slice_idx]))
+        Z = torch.vstack((c + slice_lambda@G[slice_idx],G[~non_zero_idx.any(-1)]))
         return zonotope(Z)
 
     def project(self,dim=[0,1]):

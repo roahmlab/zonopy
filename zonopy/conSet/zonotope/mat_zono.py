@@ -28,9 +28,7 @@ class matZonotope():
         if isinstance(Z,list):
             Z = torch.tensor(Z)
         assert isinstance(Z,torch.Tensor), f'The input matrix should be torch tensor, but {type(Z)}.'
-        assert len(Z.shape) == 2 or len(Z.shape) == 3, f'The dimension of Z input should be either 2 or 3, but {len(Z.shape)}.'
-        if len(Z.shape) == 2:
-            Z = Z.reshape(1,Z.shape[0],Z.shape[1])
+        assert len(Z.shape) == 3, f'The dimension of Z input should be either 2 or 3, but {len(Z.shape)}.'
         self.Z = Z
     @property
     def dtype(self):
@@ -64,7 +62,7 @@ class matZonotope():
         return len(self.Z)-1
     @property
     def T(self):
-        return matZonotope(self.Z.permute(0,2,1))
+        return matZonotope(self.Z.transpose(1,2))
 
     def to(self,dtype=None,device=None):
         Z = self.Z.to(dtype=dtype,device=device)
@@ -109,7 +107,7 @@ class matZonotope():
         if isinstance(other, torch.Tensor):
             assert len(other.shape) == 2, 'The other object should be 2-D tensor.'  
             assert other.shape[1] == self.n_rows 
-            Z = other @ self.Z
+            Z = other @ self.Z 
             return matZonotope(Z)
         else:
             assert False, 'Invalid object for reversed matrix multiplication with matrix zonotope.'

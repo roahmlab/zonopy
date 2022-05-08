@@ -2,9 +2,15 @@ from zonopy.conSet.zonotope.zono import zonotope
 from zonopy.conSet.zonotope.mat_zono import matZonotope
 from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
 from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope
+
+from zonopy.conSet.zonotope.batch_zono import batchZonotope
+from zonopy.conSet.zonotope.batch_mat_zono import batchMatZonotope
+from zonopy.conSet.polynomial_zonotope.batch_poly_zono import batchPolyZonotope
+from zonopy.conSet.polynomial_zonotope.batch_mat_poly_zono import batchMatPolyZonotope
+
 from zonopy.conSet.interval.interval import interval
 
-from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import load_JRS_trig, load_traj_JRS_trig
+from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import load_JRS_trig, load_traj_JRS_trig, load_batch_JRS_trig
 from zonopy.joint_reachable_set.gen_jrs import gen_JRS
 
 from zonopy.utils import *

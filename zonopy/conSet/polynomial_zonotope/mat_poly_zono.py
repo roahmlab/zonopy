@@ -9,8 +9,6 @@ from zonopy import polyZonotope
 import zonopy as zp
 import torch
 
-EMPTY_TENSOR = torch.tensor([])
-
 class matPolyZonotope():
     '''
     <matPolyZonotope>
@@ -128,16 +126,12 @@ class matPolyZonotope():
         return <matPolyZonotope>
         '''
         if isinstance(other, torch.Tensor):
+            assert other.shape[0] == self.n_cols
+            Z = self.Z @ other
             if len(other.shape) == 1:
-                assert other.shape[0] == self.n_cols
-                Z = self.Z@other
                 return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
             elif len(other.shape) == 2:
-                assert other.shape[0] == self.n_cols
-                Z = self.Z @ other
                 return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
-            else:
-                assert False, 'The other object should be 1 or 2-D tensor.'  
 
         # NOTE: this is 'OVERAPPROXIMATED' multiplication for keeping 'fully-k-sliceables'
         # The actual multiplication should take
@@ -175,6 +169,8 @@ class matPolyZonotope():
             expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return matPolyZonotope(Z,n_dep_gens,expMat,id)
+        elif isinstance(other,zp.batchMatPolyZonotope):
+            return other.__rmatmul__(self)
         else:
             raise ValueError('the other object should be torch tensor or polynomial zonotope.')
 
@@ -191,7 +187,7 @@ class matPolyZonotope():
         if isinstance(other,torch.Tensor):
             assert len(other.shape) == 2, 'The other object should be 2-D tensor.'  
             assert other.shape[1] == self.n_rows
-            Z = self.Z @ other.T
+            Z = other @ self.Z
             return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
 
     def to_matZonotope(self):
@@ -256,6 +252,36 @@ class matPolyZonotope():
         if self.n_rows == 1 and self.n_cols == 1:
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
         return matPolyZonotope(ZRed,n_dg_red,expMatRed,idRed)
+
+    def reduce_dep(self,order,option='girard'):
+        # extract dimensions
+        N = self.n_rows * self.n_cols
+        P = self.n_dep_gens 
+        Q = self.n_indep_gens
+            
+        # number of gens kept (N gens will be added back after reudction)
+        K = int(N*order-N)
+        # check if the order need to be reduced
+        if Q > N*order and K >=0:
+            G = self.Grest
+            # caculate the length of the gens with a special metric
+            len = torch.sum(G**2,(1,2))
+            # determine the smallest gens to remove            
+            ind = torch.argsort(len,descending=True)
+            ind_red,ind_rem = ind[:K], ind[K:]
+            # construct a zonotope from the gens that are removed
+            Ztemp = zp.matZonotope(torch.vstack((torch.zeros(1,self.n_rows,self.n_cols),G[ind_rem])))
+            # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
+            zonoRed = Ztemp.reduce(1,option)
+            # add the reduced gens as new indep gens
+            ZRed = torch.vstack(((self.C + zonoRed.center).unsqueeze(0),self.G,G[ind_red],zonoRed.generators))
+        else:
+            ZRed = self.Z
+        n_dg_red = self.n_dep_gens
+        if self.n_rows == 1 == self.n_cols and n_dg_red != 1:
+            ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
+            n_dg_red = 1
+        return polyZonotope(ZRed,n_dg_red,self.expMat,self.id)
 
 if __name__ == '__main__':
     

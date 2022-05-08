@@ -6,9 +6,9 @@ Reference: CORA
 
 import torch
 import matplotlib.patches as patches
-from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope 
+from zonopy.conSet.polynomial_zonotope.batch_poly_zono import batchPolyZonotope 
 from zonopy.conSet.interval.interval import interval
-from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
+from zonopy.conSet.zonotope.utils import pickedBatchGenerators
 from zonopy.conSet.zonotope.zono import zonotope
 class batchZonotope:
     '''
@@ -46,7 +46,6 @@ class batchZonotope:
             return batchZonotope(Z)
         else:
             return zonotope(Z)
-    # index_select
     @property 
     def batch_shape(self):
         return self.Z.shape[:self.batch_dim]
@@ -70,7 +69,7 @@ class batchZonotope:
         self.Z[self.batch_idx_all+(slice(1,None),)] = value
     @property 
     def shape(self):
-        return (self.Z.shape[-1],)
+        return self.Z.shape[-1:]
     @property
     def dimension(self):
         return self.Z.shape[-1]
@@ -98,15 +97,15 @@ class batchZonotope:
         return <polyZonotope>
         '''   
         if isinstance(other, torch.Tensor):
-            Z = torch.clone(self.Z)
             assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
+            Z = torch.clone(self.Z)
             Z[self.batch_idx_all+(0,)] += other
         elif isinstance(other, zonotope): 
             assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.cat(((self.center + other.center).unsqueeze(self.batch_dim),self.generators,other.generators.repeat(self.batch_shape+(1,1,))),self.batch_dim)
+            Z = torch.cat(((self.center + other.center).unsqueeze(-2),self.generators,other.generators.repeat(self.batch_shape+(1,1,))),-2)
         elif isinstance(other, batchZonotope): 
             assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.cat(((self.center + other.center).unsqueeze(self.batch_dim),self.generators,other.generators),self.batch_dim)
+            Z = torch.cat(((self.center + other.center).unsqueeze(-2),self.generators,other.generators),-2)
         else:
             assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
         return batchZonotope(Z)
@@ -141,7 +140,6 @@ class batchZonotope:
         self: <zonotope>
         return <zonotope>
         '''
-
         Z = -self.Z
         Z[self.batch_idx_all+(slice(1,None),)] = self.Z[self.batch_idx_all+(slice(1,None),)]
         return batchZonotope(Z)    
@@ -157,7 +155,7 @@ class batchZonotope:
         return <zonotope>
         '''   
         assert isinstance(other, torch.Tensor), f'The other object should be torch tensor, but {type(other)}.'
-        Z = self.Z@other.T
+        Z = self.Z@other.transpose(-2,-1)
         return batchZonotope(Z)
 
     def slice(self,slice_dim,slice_pt):
@@ -182,36 +180,29 @@ class batchZonotope:
 
         assert isinstance(slice_dim, torch.Tensor) and isinstance(slice_pt, torch.Tensor), 'Invalid type of input'
         assert len(slice_dim.shape) ==1, 'slicing dimension should be 1-dim component.'
-        assert len(slice_pt.shape) ==1, 'slicing point should be 1-dim component.'
-        assert len(slice_dim) == len(slice_pt), f'The number of slicing dimension ({len(slice_dim)}) and the number of slicing point ({len(slice_dim)}) should be the same.'
+        #assert slice_pt.shape[:-1] ==self.batch_shape, 'slicing point should be (batch+1)-dim component.'
+        assert len(slice_dim) == slice_pt.shape[-1], f'The number of slicing dimension ({len(slice_dim)}) and the number of slicing point ({slice_pt.shape[-1]}) should be the same.'
 
         N = len(slice_dim)
         slice_dim, ind = torch.sort(slice_dim)
-        slice_pt = slice_pt[ind]
+        slice_pt = slice_pt[(slice(None),)*(len(slice_pt.shape)-1)+(ind,)]
 
         c = self.center
         G = self.generators
-
-        non_zero_idx = G[self.batch_idx_all+(slice(None),slice_dim)] != 0
+        G_dim = G[self.batch_idx_all+(slice(None),slice_dim)]
+        non_zero_idx = G_dim != 0
         assert torch.all(torch.sum(non_zero_idx,-2)==1), 'There should be one generator for each slice index.'
-        slice_idx = torch.any(non_zero_idx!=0,-1)
+        slice_idx = non_zero_idx.transpose(-2,-1).nonzero()
 
+
+        #slice_idx = torch.any(non_zero_idx,-1)        
         slice_c = c[self.batch_idx_all+(slice_dim,)]
-        slice_g = G[slice_idx][self.batch_idx_all+(slice_dim,)]
-
-
-        non_zero_idx = G[:,slice_dim] != 0
-        assert torch.all(torch.sum(non_zero_idx,0)==1), 'There should be one generator for each slice index.'
-        slice_idx = torch.any(non_zero_idx!=0,1)
-
-        slice_c = c[slice_dim]
-        slice_g = G[slice_idx,slice_dim]
-        slice_lambda = (slice_pt-slice_c)/slice_g
-        assert not any(abs(slice_lambda)>1), 'slice point is ouside bounds of reach set, and therefore is not verified'
+        slice_g = G_dim[slice_idx[:,0],slice_idx[:,2],slice_idx[:,1]].reshape(self.batch_shape+(N,))
         
-        Z = torch.vstack((c + slice_lambda@G[slice_idx],G[~slice_idx]))
-        return zonotope(Z)
-
+        slice_lambda = (slice_pt-slice_c)/slice_g
+        assert not (abs(slice_lambda)>1).any(), 'slice point is ouside bounds of reach set, and therefore is not verified'        
+        Z = torch.cat((c.unsqueeze(-2) + slice_lambda.unsqueeze(-2)@G[slice_idx[:,0],slice_idx[:,2]].reshape(self.batch_shape+(N,self.dimension)),G[~non_zero_idx.any(-1)].reshape(self.batch_shape+(-1,self.dimension))),-2)
+        return batchZonotope(Z)
     def project(self,dim=[0,1]):
         '''
         the projection of a zonotope onto the specified dimensions
@@ -231,8 +222,7 @@ class batchZonotope:
         return <torch.Tensor>, <torch.float64>
         '''
         dim = 2
-        #z = self.deleteZerosGenerators()
-        z =self
+        z = self.deleteZerosGenerators()
         c = z.center.unsqueeze(-2).repeat((1,)*(self.batch_dim+2))
         G = torch.clone(z.generators)
         x_idx = self.batch_idx_all+(slice(None),0)
@@ -296,18 +286,14 @@ class batchZonotope:
         else:
             assert False
         
-        index = torch.sum(torch.isnan(C),dim=1) == 0
-        n_c_batch = index.sum(dim=-1).reshape(-1)
-        C = C[index] 
-        # NOTE: C is sort of flatten, so need to repeat G and c for n_c_batch for each layer
+        #index = torch.sum(torch.isnan(C),dim=1) == 0
+        #n_c_batch = index.sum(dim=-1).reshape(-1)
 
         deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=1)
         d = (C@c.unsqueeze(-1)).squeeze(-1)
         PA = torch.cat((C,-C),dim=-2)
         Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)
-        PA = torch.vstack((C,-C))
-        Pb = torch.hstack((d+deltaD,-d+deltaD))
-        return PA, Pb, C
+        return PA, Pb
 
     def deleteZerosGenerators(self,sorted=False,sort=False):
         '''
@@ -319,8 +305,8 @@ class batchZonotope:
         if sorted:
             non_zero_idxs = torch.sum(torch.any(self.generators!=0,-1),tuple(range(self.batch_dim))) != 0
             g_red = self.generators[self.batch_idx_all+(non_zero_idxs,)]
-        else: 
-            zero_idxs = torch.any(self.generators==0,axis=-1)
+        else:
+            zero_idxs = torch.all(self.generators==0,axis=-1)
             ind = zero_idxs.sort(-1)[1].unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape)
             max_non_zero_len = (~zero_idxs).sum(-1).max()
             g_red = self.generators.gather(-2,ind)[self.batch_idx_all+(slice(None,max_non_zero_len),)]
@@ -346,17 +332,17 @@ class batchZonotope:
         
         Z = self.project(dim)
         P = Z.polygon().to(device='cpu')
-        P = P.reshape(torch.prod(torch.tensor(self.batch_shape)),-1,self.dimension)
+        P = P.reshape(torch.prod(torch.tensor(self.batch_shape)),-1,2)
         for i in range(len(P)):
             ax.add_patch(patches.Polygon(P[i],alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
 
     def reduce(self,order,option='girard'):
         if option == 'girard':
             Z = self.deleteZerosGenerators()
-            center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
-            d = torch.sum(abs(Gred),self.batch_dim)
+            center, Gunred, Gred = pickedBatchGenerators(Z,order)
+            d = torch.sum(abs(Gred),-2)
             Gbox = torch.diag_embed(d)
-            ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gunred,Gbox),self.batch_dim)
+            ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gunred,Gbox),-2)
             return batchZonotope(ZRed)
         else:
             assert False, 'Invalid reduction option'
@@ -369,61 +355,18 @@ class batchZonotope:
         return <polyZonotope>
         '''
         if dim is None:
-            return polyZonotope(self.Z,0)
+            return batchPolyZonotope(self.Z,0)
         assert isinstance(dim,int) and dim <= self.dimension
-        idx = self.generators[:,dim] == 0
-        assert sum(~idx) == 1, 'sliceable generator should be one for the dimension.'
-        Z = torch.vstack((self.center,self.generators[~idx],self.generators[idx]))
-        return polyZonotope(Z,1,prop=prop)
+        idx = self.generators[self.batch_idx_all+(slice(None),dim)] == 0
+        assert ((~idx).sum(-1)==1).all(), 'sliceable generator should be one for the dimension.'
+        Z = torch.cat((self.center.unsqueeze(-2),self.generators[~idx].reshape(self.batch_shape+(-1,self.dimension)),self.generators[idx].reshape(self.batch_shape+(-1,self.dimension))),-2)
+        return batchPolyZonotope(Z,1,prop=prop)
 
     def to_interval(self):
         c = self.center
         delta = torch.sum(abs(self.Z),self.batch_dim) - abs(c)
         leftLimit, rightLimit = c -delta, c + delta
         return interval(leftLimit,rightLimit)
-    
-    
-    
-    '''
-    c = self.center
-    g = self.generators.sort(self.batch_dim,descending=True)[0]
-
-
-    '''
-    def pickedGenerators(self,order):
-        '''
-        selects generators to be reduced
-        '''
-        c = self.center
-        G = self.generators.sort(self.batch_dim,descending=True)[0]
-        
-        dim = c.shape
-        norm_dim = tuple(range(1,len(dim)+1))
-        nrOfGens = self.n_generators
-        if nrOfGens != 0:
-            d = self.dimension
-            # only reduce if zonotope order is greater than the desired order
-            if nrOfGens > d*order:
-                
-                # compute metric of generators
-                h = torch.linalg.vector_norm(G,1,-1) - torch.linalg.vector_norm(G,torch.inf,-1) #NOTE: -1
-
-                # number of generators that are not reduced
-                nUnreduced = int(d*(order-1))
-                nReduced = nrOfGens - nUnreduced 
-                # pick generators with smallest h values to be reduced
-                sorted_h = torch.argsort(h,-1).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape) #NOTE: -1
-                Gsorted = G.gather(self.batch_dim,sorted_h)
-                Gred = Gsorted[self.batch_idx_all+(slice(None,nReduced),)]
-                Gunred = Gsorted[self.batch_idx_all+(slice(nReduced,None),)]
-            else:
-                Gred = torch.tensor([]).reshape(self.batch_shape+(0,)+self.shape)
-                Gunred = G
-        else:
-            Gred = torch.tensor([]).reshape(self.batch_shape+(0,)+self.shape)
-            Gunred = torch.tensor([]).reshape(self.batch_shape+(0,)+self.shape)
-
-        return c, Gunred, Gred
 
 
 if __name__ == '__main__':

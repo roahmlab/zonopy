@@ -113,8 +113,15 @@ for j = 1:n_JRS
     % convert JRS zonotope to JRS matrix for the sake of python loading
     n_timestep = size(JRS,1);
     JRS_mat = cell(n_timestep,1);
+
+
     for i = 1:n_timestep
-        JRS_mat{i} = JRS{i}.Z';
+        JRS_mat{i} = [JRS{i}.center JRS{i}.generators];
+        if i == 1 || i == 51
+            Z = zonotope([JRS_mat{i}(:,1:2),JRS_mat{i}(:,4:end)]).reduce('girard',2).Z;
+            JRS_mat{i} = [Z(:,1:2),JRS_mat{i}] 
+
+        end
     end
     save(filename, 'JRS_mat', 'options', 't_plan', 't_total', 'current_c_kvi');
 
