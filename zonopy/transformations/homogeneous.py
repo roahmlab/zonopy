@@ -16,7 +16,7 @@ def gen_batch_H_from_jrs_trig(bPZ,rot_axis):
     cosq = bPZ.c[bPZ.batch_idx_all+(slice(cos_dim,cos_dim+1),)].unsqueeze(-1)
     sinq = bPZ.c[bPZ.batch_idx_all+(slice(sin_dim,sin_dim+1),)].unsqueeze(-1)
     C = torch.eye(4) + sinq*w_hat + (1-cosq)*w_hat@w_hat
-    cosq = bPZ.G[bPZ.batch_idx_all+(slice(None),slice(cos_dim,cos_dim+1))].unsqueeze(-1)
-    sinq = bPZ.G[bPZ.batch_idx_all+(slice(None),slice(sin_dim,sin_dim+1))].unsqueeze(-1)
+    cosq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(cos_dim,cos_dim+1))].unsqueeze(-1)
+    sinq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(sin_dim,sin_dim+1))].unsqueeze(-1)
     G = sinq*w_hat - cosq*(w_hat@w_hat)
     return batchMatPolyZonotope(torch.cat((C.unsqueeze(-3),G),-3),bPZ.n_dep_gens,bPZ.expMat,bPZ.id)

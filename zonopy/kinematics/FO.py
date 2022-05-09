@@ -2,7 +2,6 @@ import torch
 from zonopy import polyZonotope, matPolyZonotope
 
 def batch_forward_occupancy(H_jrs,link_zonos,robot_params):
-
     zono_order = 20
     n_joints = robot_params['n_joints']
     H = robot_params['H']
@@ -14,9 +13,6 @@ def batch_forward_occupancy(H_jrs,link_zonos,robot_params):
         FO_link_temp = H_motor_temp@link_zonos[i]
         FO_link.append(FO_link_temp.reduce_dep(zono_order))
     return FO_link, H_motor[1:]
-
-    return 
-
 
 def forward_occupancy(rotatos,link_zonos,robot_params):
     '''

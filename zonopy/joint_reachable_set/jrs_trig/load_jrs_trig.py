@@ -36,7 +36,6 @@ time_dim = 5
 
 def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
     jrs_key = torch.tensor(JRS_KEY['c_kvi'],dtype=torch.float)
-    
     n_joints = qd_0.shape[-1]
     PZ_JRS_batch = []
     H_batch = []
@@ -53,8 +52,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
         Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=torch.float)
         A = torch.block_diag(Rot_qpos,torch.eye(4))
         JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i])
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators().to_polyZonotope(ka_dim,prop='k_trig')
-
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
         delta_k = PZ_JRS.G[0,0,ka_dim]
         c_breaking = - qd_0[i]/T_fail_safe
         delta_breaking = - delta_k/T_fail_safe
@@ -64,7 +62,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
 
         PZ_JRS_batch.append(PZ_JRS)
         H_batch.append(H_temp)
-    return PZ_JRS, H_batch
+    return PZ_JRS_batch, H_batch
 
 
 def load_JRS_trig(q_0,qd_0,joint_axes=None):

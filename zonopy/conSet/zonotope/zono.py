@@ -5,7 +5,7 @@ Reference: CORA
 """
 import torch
 import matplotlib.patches as patches
-from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope 
+from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
 from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
 

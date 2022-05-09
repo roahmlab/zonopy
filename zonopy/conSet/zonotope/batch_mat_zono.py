@@ -133,8 +133,8 @@ class batchMatZonotope():
             non_zero_idxs = torch.sum(torch.sum(self.generators==0,(-2,-1))==0,tuple(range(self.batch_dim))) != 0
             g_red = self.generators[self.batch_idx_all+(non_zero_idxs,)]
         else: 
-            zero_idxs = torch.sum(self.generators!=0,(-2,-1))==0
-            ind = zero_idxs.to(dtype=torch.float).sort(-1)[1].unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape)
+            zero_idxs = torch.sum(self.generators!=0,(-2,-1))==0     
+            ind = zero_idxs.to(dtype=torch.float).sort(-1)[1].reshape(self.batch_shape+(self.n_generators,1,1)).repeat((1,)*(self.batch_dim+1)+self.shape)
             max_non_zero_len = (~zero_idxs).sum(-1).max()
             g_red = self.generators.gather(-3,ind)[self.batch_idx_all+(slice(None,max_non_zero_len),)]
         Z = torch.cat((self.center.unsqueeze(self.batch_dim),g_red),self.batch_dim)

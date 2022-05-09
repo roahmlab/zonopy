@@ -13,11 +13,11 @@ def pickedBatchGenerators(bZ,order):
     '''
     c = bZ.center
     G = bZ.generators.sort(bZ.batch_dim,descending=True)[0]
-    
-    norm_dim = tuple(range(-1,-len(bZ.shape)-1,-1))
+    dim = len(bZ.shape)
+    norm_dim = tuple(range(-1,-dim-1,-1))
     nrOfGens = bZ.n_generators
     if nrOfGens != 0:
-        d = bZ.dimension
+        d = torch.prod(torch.tensor(bZ.shape))
         # only reduce if zonotope order is greater than the desired order
         if nrOfGens > d*order:
             
@@ -28,7 +28,8 @@ def pickedBatchGenerators(bZ,order):
             nUnreduced = int(d*(order-1))
             nReduced = nrOfGens - nUnreduced 
             # pick generators with smallest h values to be reduced
-            sorted_h = torch.argsort(h,-1).unsqueeze(-1).repeat((1,)*(bZ.batch_dim+1)+bZ.shape) #NOTE: -1
+            
+            sorted_h = torch.argsort(h,-1).reshape(bZ.batch_shape+(bZ.n_generators,)+(1,)*dim).repeat((1,)*(bZ.batch_dim+1)+bZ.shape) #NOTE: -1
             Gsorted = G.gather(bZ.batch_dim,sorted_h)
             Gred = Gsorted[bZ.batch_idx_all+(slice(None,nReduced),)]
             Gunred = Gsorted[bZ.batch_idx_all+(slice(nReduced,None),)]

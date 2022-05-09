@@ -85,9 +85,9 @@ class batchPolyZonotope:
     def __getitem__(self,idx):
         Z = self.Z[idx]
         if len(Z.shape) > 2:
-            return batchPolyZonotope(Z)
+            return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
         else:
-            return polyZonotope(Z)
+            return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
     @property 
     def batch_shape(self):
         return self.Z.shape[:-2]
