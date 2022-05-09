@@ -118,8 +118,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
             s_qpos = torch.sin(q_0[i])
             Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=torch.float)
             A = torch.block_diag(Rot_qpos,torch.eye(4))
-            jrs_mat_load = torch.tensor(jrs_mats_load[t],dtype=torch.float).squeeze(0)
-            JRS_zono_i = zonotope(jrs_mat_load)
+            JRS_zono_i = zonotope(torch.tensor(jrs_mats_load[t,0],dtype=torch.float).squeeze(0))
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qd_0[i])
             PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim,prop='k_trig'))
             # fail safe

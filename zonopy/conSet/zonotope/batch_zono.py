@@ -274,7 +274,6 @@ class batchZonotope:
         elif dim == 3:
             # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
             comb = torch.combinations(torch.arange(n_gens),r=dim-1)
-
             Q = torch.cat((G[self.batch_idx_all+(comb[:,0],)],G[self.batch_idx_all+(comb[:,1],)]),dim=-1)
             temp1 = (Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),4)]).unsqueeze(-1)
             temp2 = (-Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
@@ -289,7 +288,7 @@ class batchZonotope:
         #index = torch.sum(torch.isnan(C),dim=1) == 0
         #n_c_batch = index.sum(dim=-1).reshape(-1)
 
-        deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=1)
+        deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=-1)
         d = (C@c.unsqueeze(-1)).squeeze(-1)
         PA = torch.cat((C,-C),dim=-2)
         Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)

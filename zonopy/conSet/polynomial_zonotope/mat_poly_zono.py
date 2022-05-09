@@ -281,7 +281,7 @@ class matPolyZonotope():
         if self.n_rows == 1 == self.n_cols and n_dg_red != 1:
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
             n_dg_red = 1
-        return polyZonotope(ZRed,n_dg_red,self.expMat,self.id)
+        return matPolyZonotope(ZRed,n_dg_red,self.expMat,self.id)
 
 if __name__ == '__main__':
     

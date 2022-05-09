@@ -99,9 +99,10 @@ def removeRedundantExponents(ExpMat,G,eps=0):
             G = G[idxD]
             ExpMat = ExpMat[idxD]
     '''
-    hash = torch.hstack((torch.tensor(1),ExpMat.max(0).values)).cumprod(0)[:-1]*ExpMat
+    hash = torch.hstack((torch.tensor(1),(ExpMat.max(0).values+1).cumprod(0)))[:-1]*ExpMat
     hash = hash.sum(1)
     ind = torch.unique(hash,dim=0,sorted=True,return_inverse=True)[1].argsort()
+
     '''
     # add hash value of the exponent vector to the exponent matrix
     temp = torch.arange(ExpMat.shape[1]).reshape(-1,1) + 1
