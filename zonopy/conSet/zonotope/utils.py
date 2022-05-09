@@ -39,7 +39,6 @@ def pickedBatchGenerators(bZ,order):
     else:
         Gred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
         Gunred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
-
     return c, Gunred, Gred
 
 
@@ -74,8 +73,6 @@ def pickedGenerators(c,G,order):
     else:
         Gred = torch.tensor([]).reshape((0,)+dim)
         Gunred = torch.tensor([]).reshape((0,)+dim)
-
-
     return c, Gunred, Gred
 
 

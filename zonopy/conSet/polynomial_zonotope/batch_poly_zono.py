@@ -226,7 +226,7 @@ class batchPolyZonotope:
             len = torch.sum(G**2,-1) # NOTE -1
             # determine the smallest gens to remove            
             ind = torch.argsort(len,dim=-1,descending=True).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape)
-            ind_red, ind_rem = ind[self.batch_idx_all+(slice(K),)], ind[self.batch_idx_all+(slice(None,K),)]
+            ind_red, ind_rem = ind[self.batch_idx_all+(slice(K),)], ind[self.batch_idx_all+(slice(K,None),)]
             # construct a zonotope from the gens that are removed
             Ztemp = zp.batchZonotope(torch.cat((torch.zeros(self.batch_shape+(1,self.dimension)),G.gather(-2,ind_rem)),dim=-2))
             # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
@@ -278,7 +278,7 @@ class batchPolyZonotope:
             Gquad = self.G[self.batch_idx_all+(~ind,)]
             c = self.c + 0.5*torch.sum(Gquad,-2)
             Z = torch.cat((c.unsqueeze(-2), self.G[self.batch_idx_all+(ind,)],0.5*Gquad,self.Grest),-2)
-        else:
+        else: 
             Z = self.Z
         return zp.batchZonotope(Z)
 

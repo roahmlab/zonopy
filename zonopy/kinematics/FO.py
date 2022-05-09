@@ -16,13 +16,13 @@ def batch_forward_occupancy(rotatos,link_zonos,robot_params):
         R_motor.append(R_motor_temp.reduce_dep(zono_order))
         FO_link_temp = R_motor[-1]@link_zonos[i] + P_motor[-1]
         FO_link.append(FO_link_temp.reduce_dep(zono_order))
-    return FO_link, R_motor[1:]
+    return FO_link, R_motor[1:], P_motor[1:]
 
 def forward_occupancy(rotatos,link_zonos,robot_params):
     '''
     P: <list>
     '''
-    zono_order = 30
+    zono_order = 40
     n_joints = robot_params['n_joints']
     P = robot_params['P']
     R = robot_params['R']
