@@ -197,11 +197,12 @@ class batchZonotope:
 
         #slice_idx = torch.any(non_zero_idx,-1)        
         slice_c = c[self.batch_idx_all+(slice_dim,)]
-        slice_g = G_dim[slice_idx[:,0],slice_idx[:,2],slice_idx[:,1]].reshape(self.batch_shape+(N,))
+        ind = tuple(slice_idx[:,:-2].T)
+        slice_g = G_dim[ind+(slice_idx[:,-1],slice_idx[:,-2])].reshape(self.batch_shape+(N,))
         
         slice_lambda = (slice_pt-slice_c)/slice_g
         assert not (abs(slice_lambda)>1).any(), 'slice point is ouside bounds of reach set, and therefore is not verified'        
-        Z = torch.cat((c.unsqueeze(-2) + slice_lambda.unsqueeze(-2)@G[slice_idx[:,0],slice_idx[:,2]].reshape(self.batch_shape+(N,self.dimension)),G[~non_zero_idx.any(-1)].reshape(self.batch_shape+(-1,self.dimension))),-2)
+        Z = torch.cat((c.unsqueeze(-2) + slice_lambda.unsqueeze(-2)@G[ind+(slice_idx[:,-1],)].reshape(self.batch_shape+(N,self.dimension)),G[~non_zero_idx.any(-1)].reshape(self.batch_shape+(-1,self.dimension))),-2)
         return batchZonotope(Z)
     def project(self,dim=[0,1]):
         '''

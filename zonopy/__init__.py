@@ -10,7 +10,7 @@ from zonopy.conSet.polynomial_zonotope.batch_mat_poly_zono import batchMatPolyZo
 
 from zonopy.conSet.interval.interval import interval
 
-from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import load_JRS_trig, load_traj_JRS_trig, load_batch_JRS_trig
+from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import load_JRS_trig, load_traj_JRS_trig, load_batch_JRS_trig, load_batch_JRS_trig_ic
 from zonopy.joint_reachable_set.gen_jrs import gen_JRS
 
 from zonopy.utils import *
