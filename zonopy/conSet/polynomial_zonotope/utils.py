@@ -57,9 +57,8 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
     n_rem = ind_red.max()+1
     ind = torch.arange(n_rem).unsqueeze(1) == ind_red 
     num_rep = ind.sum(1)
-
-    Gtemp2 = Gtemp.repeat((1,)*batch_shape+(n_rem,)+(1,)*(dim_N-1))[batch_idx_all + (ind.reshape(-1),)].cumsum(-dim_N)    
-    Gtemp2 = torch.cat((torch.zeros(batch_shape+(1,)+Gtemp2.shape[-dim_N:]),Gtemp2),-dim_N)
+    Gtemp2 = Gtemp.repeat((1,)*len(batch_shape)+(n_rem,)+(1,)*(dim_N-1))[batch_idx_all + (ind.reshape(-1),)].cumsum(-dim_N)    
+    Gtemp2 = torch.cat((torch.zeros(batch_shape+Gtemp2.shape[-dim_N:]),Gtemp2),-dim_N)
     
     num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long),num_rep.cumsum(0)))
     Gnew = (Gtemp2[batch_idx_all +(num_rep2[1:],)] - Gtemp2[batch_idx_all +(num_rep2[:-1],)])

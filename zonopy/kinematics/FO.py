@@ -1,18 +1,22 @@
 import torch
 from zonopy import polyZonotope, matPolyZonotope
 
-def batch_forward_occupancy(H_jrs,link_zonos,robot_params):
-    zono_order = 20
+def batch_forward_occupancy(rotatos,link_zonos,robot_params):
+    zono_order = 40
     n_joints = robot_params['n_joints']
-    H = robot_params['H']
-    H_motor = [matPolyZonotope(torch.eye(4,dtype=torch.float32).unsqueeze(0))]
+    P = robot_params['P']
+    R = robot_params['R']
+    P_motor = [polyZonotope(torch.zeros(3,dtype=torch.float32).unsqueeze(0))]
+    R_motor = [matPolyZonotope(torch.eye(3,dtype=torch.float32).unsqueeze(0))]
     FO_link = []
     for i in range(n_joints):
-        H_motor_temp = H_motor[-1]@H[i]@H_jrs[i]
-        H_motor.append(H_motor_temp.reduce_dep(zono_order))
-        FO_link_temp = H_motor_temp@link_zonos[i]
+        P_motor_temp = R_motor[-1]@P[i] + P_motor[-1]
+        P_motor.append(P_motor_temp.reduce_dep(zono_order))
+        R_motor_temp = R_motor[-1]@R[i]@rotatos[i]
+        R_motor.append(R_motor_temp.reduce_dep(zono_order))
+        FO_link_temp = R_motor[-1]@link_zonos[i] + P_motor[-1]
         FO_link.append(FO_link_temp.reduce_dep(zono_order))
-    return FO_link, H_motor[1:]
+    return FO_link, R_motor[1:]
 
 def forward_occupancy(rotatos,link_zonos,robot_params):
     '''

@@ -58,7 +58,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
         delta_breaking = - delta_k/T_fail_safe
         PZ_JRS.c[50:,acc_dim] = c_breaking
         PZ_JRS.G[50:,0,acc_dim] = delta_breaking
-        H_temp= gen_batch_H_from_jrs_trig(PZ_JRS,joint_axes[i])
+        H_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
 
         PZ_JRS_batch.append(PZ_JRS)
         H_batch.append(H_temp)

@@ -143,7 +143,6 @@ class batchMatPolyZonotope():
         return <matPolyZonotope>
         '''
         if isinstance(other, torch.Tensor):
-            assert other.shape[-2] == self.n_cols
             Z = self.Z @ other
             if len(other.shape) == 1:
                 return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
