@@ -17,12 +17,13 @@ link_zonos = [zp.zonotope(torch.tensor([[0.5,0.5,0.0],[0.0,0.0,0.01],[0.0,0.0,0.
 t_start = time.time()
 
 J1, R_trig1 = zp.load_batch_JRS_trig(qpos,qvel)
-
+FO_link1,r_trig1, p_trig1 = forward_occupancy(R_trig1,link_zonos,params)
 t =  time.time()
 print(t-t_start)
 t_start = t
 
-FO_link1,r_trig1, p_trig1 = forward_occupancy(R_trig1,link_zonos,params)
+for i in range(N_joints):
+    FO_link1[i].polytope()
 
 t =  time.time()
 print(t-t_start)
@@ -47,20 +48,10 @@ import pdb;pdb.set_trace()
 '''
 
 t_start = time.time()
-
 J2, R_trig2 = zp.load_JRS_trig(qpos,qvel)
-
-t =  time.time()
-print(t-t_start)
-t_start = t
-#_, R =zp.gen_JRS(qpos,qvel,params['joint_axes'],taylor_degree=1,make_gens_independent =True)
 n_time_steps = len(R_trig2)
-t =  time.time()
-print(t-t_start)
-t_start = t
 
 FO_link2, r_trig2, p_trig2 = [], [], []
-
 for t in range(1,n_time_steps):
     FO_link_temp,r_temp,p_temp = forward_occupancy(R_trig2[t],link_zonos,params)
     FO_link2.append(FO_link_temp)
@@ -70,6 +61,7 @@ for t in range(1,n_time_steps):
 t =  time.time()
 print(t-t_start)
 t_start = t
+
 ax = zp.plot_polyzonos(FO_link2,plot_freq=1,edgecolor='blue',ax=ax)#,hold_on=True)
 import pdb;pdb.set_trace()
 

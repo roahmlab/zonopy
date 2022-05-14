@@ -4,7 +4,7 @@ from zonopy.kinematics.FO import forward_occupancy
 import time
 zp.setup_cuda()
 batch_size = 1
-N_joints = 2
+N_joints = 7
 
 
 params = {'joint_axes':[torch.tensor([0.0,0.0,1.0])]*N_joints, 
