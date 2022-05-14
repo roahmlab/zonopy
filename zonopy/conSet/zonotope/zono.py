@@ -219,7 +219,7 @@ class zonotope:
         full_vertices = torch.vstack((vertices_half,-vertices_half[1:] + vertices_half[0]+ vertices_half[-1])) + c
         return full_vertices
 
-    def polytope(self):
+    def polytope2(self):
         '''
         converts a zonotope from a G- to a H- representation
         P
@@ -228,6 +228,63 @@ class zonotope:
         '''
 
         #z = self.deleteZerosGenerators()
+        c = self.center
+        G = torch.clone(self.generators)
+        '''
+        h = torch.linalg.vector_norm(G,dim=1)
+        h_sort, indicies = torch.sort(h,descending=True)
+        h_zero = h_sort < 1e-6
+        if torch.any(h_zero):
+            first_reduce_idx = torch.nonzero(h_zero)[0,0]
+            Gunred = G[indicies[:first_reduce_idx]]
+            # Gred = G[indicies[first_reduce_idx:]]
+            # d = torch.sum(abs(Gred),0)
+            # G = torch.vstack((Gunred,torch.diag(d)))
+            G = Gunred
+        '''
+        n_gens, dim = G.shape
+                        
+        if dim == 1:
+            C = G/torch.linalg.vector_norm(G,dim=1).reshape(-1,1)
+        elif dim == 2:      
+            C = torch.hstack((-G[:,1],G[:,0]))
+            C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
+        elif dim == 3:
+            # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
+            comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            
+            Q = torch.hstack((G[comb[:,0]],G[comb[:,1]]))
+            C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]-Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
+            C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
+        elif dim >=4 and dim<=7:
+            assert False
+        else:
+            assert False
+        
+        #index = torch.sum(torch.isnan(C),dim=1) == 0
+        #C = C[index]
+        deltaD = torch.sum(abs(C@G.T),dim=1)
+        d = (C@c)
+        PA = torch.vstack((C,-C))
+        Pb = torch.hstack((d+deltaD,-d+deltaD))
+        return PA, Pb, C
+
+    def polytope(self):
+        '''
+        converts a zonotope from a G- to a H- representation
+        self: <zonotope>
+        return,
+        A: <torch.tensor>, shape [*,nx]
+        b: <torch.tensor>, shape [*]
+
+        Ex. 
+        if max(A@torch.tensor(nx)-b)>=1e-6:
+            NO COLLISION !!!
+        else:
+            COLLISION !!!
+
+
+        '''
         c = self.center
         G = torch.clone(self.generators)
         h = torch.linalg.vector_norm(G,dim=1)
@@ -338,15 +395,21 @@ class zonotope:
         z = self.project(dim)
         p = z.polygon().to(device='cpu')
 
-        ax.add_patch(patches.Polygon(p,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
+        return ax.add_patch(patches.Polygon(p,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
 
     def reduce(self,order,option='girard'):
         if option == 'girard':
             Z = self.deleteZerosGenerators()
-            center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
-            d = torch.sum(abs(Gred),0)
-            Gbox = torch.diag(d)
-            ZRed = torch.vstack((center,Gunred,Gbox))
+            if order == 1:
+                center, G = Z.center,Z.generators
+                d = torch.sum(abs(G),0)
+                Gbox = torch.diag(d)
+                ZRed = torch.vstack((center,Gbox))
+            else:
+                center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
+                d = torch.sum(abs(Gred),0)
+                Gbox = torch.diag(d)
+                ZRed = torch.vstack((center,Gunred,Gbox))
             return zonotope(ZRed)
         else:
             assert False, 'Invalid reduction option'

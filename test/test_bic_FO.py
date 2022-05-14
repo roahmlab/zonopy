@@ -3,8 +3,8 @@ import zonopy as zp
 from zonopy.kinematics.FO import forward_occupancy
 import time
 zp.setup_cuda()
-batch_size = 32
-N_joints = 7
+batch_size = 1
+N_joints = 2
 
 
 params = {'joint_axes':[torch.tensor([0.0,0.0,1.0])]*N_joints, 
@@ -48,7 +48,7 @@ t =  time.time()
 print(t-t_start)
 t_start = t
 
-plot_on = False
+plot_on = True
 if plot_on:
     import matplotlib.pyplot as plt
     for i in range(batch_size):
@@ -56,9 +56,10 @@ if plot_on:
         ax = fig.gca()
         for j in range(N_joints):
             for t in range(100):
-                FO_link1[j][i,t].to_zonotope().plot(ax)
-                FO_link2[i][j][t].to_zonotope().plot(ax,edgecolor='red')
-                FO_link3[i][t][j].to_zonotope().plot(ax,edgecolor='blue')
+                if t%10==1:
+                    FO_link1[j][i,t].to_zonotope().plot(ax)
+                    FO_link2[i][j][t].to_zonotope().plot(ax,edgecolor='red')
+                    FO_link3[i][t][j].to_zonotope().plot(ax,edgecolor='blue')
         plt.autoscale()
         plt.show()
 

@@ -219,7 +219,7 @@ class batchMatPolyZonotope():
             Z = self.Z
         return zp.batchMatZonotope(Z)
 
-    def reduce_dep(self,order,option='girard'):
+    def reduce_indep(self,order,option='girard'):
         # extract dimensions
         N = self.n_rows*self.n_cols
         Q = self.n_indep_gens
@@ -228,10 +228,12 @@ class batchMatPolyZonotope():
         K = int(N*order-N)
         # check if the order need to be reduced
         if Q > N*order and K >=0:
+            print('reduce!')
+            
             G = self.Grest
             # caculate the length of the gens with a special metric
             len = torch.sum(G**2,(-1,-2)) # NOTE -1
-            # determine the smallest gens to remove            
+            # determine the smallest gens to remove 
             ind = torch.argsort(len,dim=-1,descending=True).unsqueeze(-1).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape)
             ind_red, ind_rem = ind[self.batch_idx_all+(slice(K),)], ind[self.batch_idx_all+(slice(K,None),)]
             # construct a zonotope from the gens that are removed

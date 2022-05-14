@@ -149,12 +149,46 @@ class polyZonotope:
             Z = torch.vstack((self.c+other.c, self.G,other.G,self.Grest,other.Grest))
             expMat = torch.vstack((expMat1,expMat2))
             n_dep_gens = self.n_dep_gens + other.n_dep_gens
+            # if other is a zonotope
+        elif isinstance(other,zp.zonotope): # exact Plus
+            n_dep_gens, expMat, id = self.n_dep_gens, self.expMat, self.id
+            Z = torch.vstack((self.c+other.center, self.G,self.Grest,other.generators))
         return polyZonotope(Z,n_dep_gens,expMat,id)
     __radd__ = __add__
     def __sub__(self,other):
-        return self.__add__(-other)
+        # if other is a vector
+        if  isinstance(other,(torch.Tensor,float,int)):
+            assert isinstance(other,(float,int)) or other.shape == self.c.shape or len(other.shape) == 0           
+            Z = torch.vstack((self.c-other,self.Z[1:]))
+            n_dep_gens, expMat, id = self.n_dep_gens, self.expMat, self.id
+        # if other is a polynomial zonotope
+        elif isinstance(other,polyZonotope): # exact Plus
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            Z = torch.vstack((self.c-other.c, self.G,-other.G,self.Grest,other.Grest))
+            expMat = torch.vstack((expMat1,expMat2))
+            n_dep_gens = self.n_dep_gens + other.n_dep_gens
+            # if other is a zonotope
+        elif isinstance(other,zp.zonotope): # exact Plus
+            n_dep_gens, expMat, id = self.n_dep_gens, self.expMat, self.id
+            Z = torch.vstack((self.c-other.center, self.G,self.Grest,other.generators))
+        return polyZonotope(Z,n_dep_gens,expMat,id)
     def __rsub__(self,other):
-        return -self.__sub__(other)
+        # if other is a vector
+        if  isinstance(other,(torch.Tensor,float,int)):
+            assert isinstance(other,(float,int)) or other.shape == self.c.shape or len(other.shape) == 0           
+            Z = torch.vstack((other-self.c,-self.G,self.Grest))
+            n_dep_gens, expMat, id = self.n_dep_gens, self.expMat, self.id
+        # if other is a polynomial zonotope
+        elif isinstance(other,polyZonotope): # exact Plus
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
+            Z = torch.vstack((other.c-self.c,other.G,-self.G,other.Grest,self.Grest))
+            expMat = torch.vstack((expMat1,expMat2))
+            n_dep_gens = self.n_dep_gens + other.n_dep_gens
+            # if other is a zonotope
+        elif isinstance(other,zp.zonotope): # exact Plus
+            n_dep_gens, expMat, id = self.n_dep_gens, self.expMat, self.id
+            Z = torch.vstack((other.center-self.c, -self.G,other.generators,self.Grest))
+        return polyZonotope(Z,n_dep_gens,expMat,id)
     def __pos__(self):
         return self
     def __neg__(self):
@@ -202,7 +236,7 @@ class polyZonotope:
         '''
         
         # if other is a matrix
-        if isinstance(other, torch.Tensor):            
+        if isinstance(other, torch.Tensor):
             Z = self.Z@other.T 
         return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
                  
@@ -259,7 +293,7 @@ class polyZonotope:
             n_dg_red = 1
         return polyZonotope(ZRed,n_dg_red,expMatRed,idRed)
 
-    def reduce_dep(self,order,option='girard'):
+    def reduce_indep(self,order,option='girard'):
         # extract dimensions
         N = self.dimension
         Q = self.n_indep_gens
@@ -323,7 +357,7 @@ class polyZonotope:
     def slice_dep(self,id_slc,val_slc):
         '''
         Slice polynomial zonotpe in depdent generators
-        id_slc: id to dlice
+        id_slc: id to slice
         val_slc: indeterminant to slice
         '''
         if isinstance(id_slc,(int,list)):
@@ -374,7 +408,34 @@ class polyZonotope:
             return polyZonotope(c,0,expMat,id)
         else:
             return polyZonotope(torch.vstack((c,G,self.Grest)), G.shape[0],expMat,id)
+
     
+    
+    def slice_all_dep(self,id_slc,val_slc):
+        '''
+        Slice polynomial zonotpe in all depdent generators
+
+        
+        id_slc: id to slice
+        val_slc: indeterminant to slice
+        return,
+        c: <torch.Tensor>, shape [nx]
+        grad_c: <torch.Tensor>, shape [n_ids,nx]
+
+        '''
+
+        ##################################
+        n_ids= self.id.shape[0]
+        val_slc = val_slc[torch.argsort(self.id)]
+        c = self.c + torch.sum(self.G*torch.prod(val_slc**self.expMat,dim=-1).unsqueeze(-1),0)
+        expMat_red = self.expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
+        grad_c = (self.G*(self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-1)).sum(1).T
+        
+        return c
+
+
+
+
     def deleteZerosGenerators(self,eps=0):
         expMat, G = removeRedundantExponents(self.expMat,self.G,eps)
         ind = torch.sum(expMat,1) == 0

@@ -143,10 +143,17 @@ class batchMatZonotope():
     def reduce(self,order,option='girard'):
         if option == 'girard':
             Z = self.deleteZerosGenerators()
-            center, Gunred, Gred = pickedBatchGenerators(Z,order)
-            d = torch.sum(abs(Gred),-3)
-            Gbox = torch.diag_embed(d)
-            ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gunred,Gbox),-3)
+            if order == 1:
+                center, G = Z.center, Z.generators
+                d = torch.sum(abs(G),-3).reshape(self.batch_shape+(-1,))
+                Gbox = torch.diag_embed(d).reshape(self.batch_shape+(-1,3,3))
+                ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gbox),-3)          
+            else:
+                center, Gunred, Gred = pickedBatchGenerators(Z,order)
+                d = torch.sum(abs(Gred),-3).reshape(self.batch_shape+(-1,))
+                Gbox = torch.diag_embed(d).reshape(self.batch_shape+(-1,3,3))
+                ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gunred,Gbox),-3)
+            #import pdb;pdb.set_trace()
             return batchMatZonotope(ZRed)
         else:
             assert False, 'Invalid reduction option'

@@ -253,7 +253,7 @@ class matPolyZonotope():
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
         return matPolyZonotope(ZRed,n_dg_red,expMatRed,idRed)
 
-    def reduce_dep(self,order,option='girard'):
+    def reduce_indep(self,order,option='girard'):
         # extract dimensions
         N = self.n_rows * self.n_cols
         P = self.n_dep_gens 

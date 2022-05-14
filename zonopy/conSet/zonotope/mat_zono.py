@@ -127,10 +127,16 @@ class matZonotope():
     def reduce(self,order,option='girard'):
         if option == 'girard':
             Z = self.deleteZerosGenerators()
-            center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
-            d = torch.sum(abs(Gred),0).reshape(-1)
-            Gbox = torch.diag(d).reshape(-1,self.n_rows,self.n_cols)
-            ZRed = torch.cat((center.reshape(-1,self.n_rows,self.n_cols),Gunred,Gbox),0)
+            if order == 1:
+                center, G = Z.center,Z.generators
+                d = torch.sum(abs(G),0).reshape(-1)
+                Gbox = torch.diag(d).reshape(-1,self.n_rows,self.n_cols)
+                ZRed = torch.cat((center.reshape(-1,self.n_rows,self.n_cols),Gbox),0)
+            else:
+                center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
+                d = torch.sum(abs(Gred),0).reshape(-1)
+                Gbox = torch.diag(d).reshape(-1,self.n_rows,self.n_cols)
+                ZRed = torch.cat((center.reshape(-1,self.n_rows,self.n_cols),Gunred,Gbox),0)
             return matZonotope(ZRed)
         else:
             assert False, 'Invalid reduction option'

@@ -121,18 +121,15 @@ def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
 def gen_rot_from_q(q,rot_axis):
     if isinstance(q,(int,float)):
         q = torch.tensor(q,dtype=torch.float)
-        device= DEFAULT_OPTS.DEVICE
-    else:
-        device = q.device
 
     cosq = torch.cos(q)
     sinq = torch.sin(q)
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],device=device)
+    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]])
     # Rodrigues' rotation formula
-    Rot = torch.eye(3,device=device) + sinq*w_hat + (1-cosq)*w_hat@w_hat
+    Rot = torch.eye(3) + sinq*w_hat + (1-cosq)*w_hat@w_hat
     return Rot
 
 if __name__ == '__main__':

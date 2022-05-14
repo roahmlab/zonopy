@@ -156,7 +156,7 @@ class batchZonotope:
         '''   
         assert isinstance(other, torch.Tensor), f'The other object should be torch tensor, but {type(other)}.'
         Z = self.Z@other.transpose(-2,-1)
-        return batchZonotope(Z)
+        return batchZonotope(Z) 
 
     def slice(self,slice_dim,slice_pt):
         '''
@@ -217,6 +217,7 @@ class batchZonotope:
 
     def polygon(self):
         '''
+        NOTE: this is unstable for zero generators
         converts a 2-d zonotope into a polygon as vertices
         self: <zonotope>
 
@@ -251,20 +252,18 @@ class batchZonotope:
         comb
         isDeg
         '''
-
-        #z = self.deleteZerosGenerators()
         c = self.center
         G = torch.clone(self.generators)
         h = torch.linalg.vector_norm(G,dim=-1)
         h_sort, indicies = torch.sort(h,dim=-1,descending=True)
 
+        G = G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))
         h_zero = ((h_sort > 1e-6).sum(tuple(range(1))) ==0)
         if torch.any(h_zero):
             first_reduce_idx = torch.nonzero(h_zero).squeeze(-1)[0]
-            G = G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
-        
-        n_gens, dim = G.shape[-2:]
-          
+            G=G[self.batch_idx_all+(slice(None,first_reduce_idx),)]
+
+        n_gens, dim = G.shape[-2:] 
         if dim == 1:
             C = G/torch.linalg.vector_norm(G,dim=-1).unsqueeze(-1)
         elif dim == 2:      
@@ -293,6 +292,7 @@ class batchZonotope:
         d = (C@c.unsqueeze(-1)).squeeze(-1)
         PA = torch.cat((C,-C),dim=-2)
         Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)
+        # NOTE: torch.nan_to_num()
         return PA, Pb
 
     def deleteZerosGenerators(self,sorted=False,sort=False):
@@ -339,10 +339,16 @@ class batchZonotope:
     def reduce(self,order,option='girard'):
         if option == 'girard':
             Z = self.deleteZerosGenerators()
-            center, Gunred, Gred = pickedBatchGenerators(Z,order)
-            d = torch.sum(abs(Gred),-2)
-            Gbox = torch.diag_embed(d)
-            ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gunred,Gbox),-2)
+            if order == 1:
+                center, G = Z.center, Z.generators
+                d = torch.sum(abs(G),-2)
+                Gbox = torch.diag_embed(d)
+                ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gbox),-2)
+            else:
+                center, Gunred, Gred = pickedBatchGenerators(Z,order)
+                d = torch.sum(abs(Gred),-2)
+                Gbox = torch.diag_embed(d)
+                ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gunred,Gbox),-2)
             return batchZonotope(ZRed)
         else:
             assert False, 'Invalid reduction option'
