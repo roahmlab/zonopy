@@ -227,9 +227,7 @@ class batchMatPolyZonotope():
         # number of gens kept (N gens will be added back after reudction)
         K = int(N*order-N)
         # check if the order need to be reduced
-        if Q > N*order and K >=0:
-            print('reduce!')
-            
+        if Q > N*order and K >=0:            
             G = self.Grest
             # caculate the length of the gens with a special metric
             len = torch.sum(G**2,(-1,-2)) # NOTE -1
