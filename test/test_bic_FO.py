@@ -56,7 +56,7 @@ if plot_on:
         ax = fig.gca()
         for j in range(N_joints):
             for t in range(100):
-                if t%10==1:
+                if t%1==0:
                     FO_link1[j][i,t].to_zonotope().plot(ax)
                     FO_link2[i][j][t].to_zonotope().plot(ax,edgecolor='red')
                     FO_link3[i][t][j].to_zonotope().plot(ax,edgecolor='blue')

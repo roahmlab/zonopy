@@ -274,9 +274,7 @@ class batchZonotope:
             C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
         elif dim == 3:
             # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
-            t1 = time.time()
             comb = torch.combinations(torch.arange(n_gens),r=dim-1)
-            print(time.time()-t1)
             Q = torch.cat((G[self.batch_idx_all+(comb[:,0],)],G[self.batch_idx_all+(comb[:,1],)]),dim=-1)
             temp1 = (Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),4)]).unsqueeze(-1)
             temp2 = (-Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
@@ -344,7 +342,7 @@ class batchZonotope:
             Z = self.deleteZerosGenerators()
             if order == 1:
                 center, G = Z.center, Z.generators
-                d = torch.sum(abs(G),-2)
+                d = torch.sum(abs(G.to(dtype=torch.float64)),-2).to(dtype=self.dtype)
                 Gbox = torch.diag_embed(d)
                 ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gbox),-2)
             else:

@@ -145,7 +145,7 @@ class batchMatZonotope():
             Z = self.deleteZerosGenerators()
             if order == 1:
                 center, G = Z.center, Z.generators
-                d = torch.sum(abs(G),-3).reshape(self.batch_shape+(-1,))
+                d = torch.sum(abs(G.to(dtype=torch.float64)),-3).reshape(self.batch_shape+(-1,)).to(dtype=self.dtype)
                 Gbox = torch.diag_embed(d).reshape(self.batch_shape+(-1,3,3))
                 ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gbox),-3)          
             else:
