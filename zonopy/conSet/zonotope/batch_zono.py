@@ -342,7 +342,7 @@ class batchZonotope:
             Z = self.deleteZerosGenerators()
             if order == 1:
                 center, G = Z.center, Z.generators
-                d = torch.sum(abs(G.to(dtype=torch.float64)),-2).to(dtype=self.dtype)
+                d = torch.sum(abs(G),-2)
                 Gbox = torch.diag_embed(d)
                 ZRed= torch.cat((center.unsqueeze(self.batch_dim),Gbox),-2)
             else:

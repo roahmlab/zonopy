@@ -56,7 +56,6 @@ def get_rotato_from_jrs_trig(PZ_JRS_trig,joint_axes,R0=None):
             rotato.append(R@R0[i])
     return rotato
 def gen_batch_rotatotope_from_jrs_trig(bPZ,rot_axis):
-    rot_axis = rot_axis.to(dtype=torch.float32)
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
@@ -74,7 +73,6 @@ def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     polyZono: <polyZonotope>
     rot_axis: <torch.Tensor>
     '''
-    rot_axis = rot_axis.to(dtype=torch.float32)
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
