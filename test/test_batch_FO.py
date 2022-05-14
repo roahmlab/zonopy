@@ -23,7 +23,7 @@ print(t-t_start)
 t_start = t
 
 for i in range(N_joints):
-    FO_link1[i].polytope()
+    FO_link1[i].to_batchZonotope().polytope()
 
 t =  time.time()
 print(t-t_start)
