@@ -1,6 +1,24 @@
 import torch
 
-def collision_constraint(FO_link,obs,ka):
+def collision_constraint(Acon,bcon):
+    '''
+    ex.
+    @collision_constraint(Acon=A,bcon=b)
+    def constraints(ka):
+        
+
+
+    '''
+    def decorator(func):
+        func.__Acon__ = Acon 
+        func.__bcon__ = bcon
+        return func
+    
+
+    return decorator 
+
+
+
     n_joints = len(FO_link)
     n_obs = len(obs)
     
