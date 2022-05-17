@@ -269,12 +269,11 @@ class matPolyZonotope():
             # determine the smallest gens to remove            
             ind = torch.argsort(len,descending=True)
             ind_red,ind_rem = ind[:K], ind[K:]
-            # construct a zonotope from the gens that are removed
-            Ztemp = zp.matZonotope(torch.vstack((torch.zeros(1,self.n_rows,self.n_cols),G[ind_rem])))
-            # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
-            zonoRed = Ztemp.reduce(1,option)
+            # reduce the generators with the reducetion techniques for linear zonotopes            
+            d = torch.sum(abs(G[ind_rem]),0).reshape(-1)
+            Gbox = torch.diag(d).reshape(-1,self.n_rows,self.n_cols)
             # add the reduced gens as new indep gens
-            ZRed = torch.vstack(((self.C + zonoRed.center).unsqueeze(0),self.G,G[ind_red],zonoRed.generators))
+            ZRed = torch.vstack((self.C .unsqueeze(0),self.G,G[ind_red],Gbox))
         else:
             ZRed = self.Z
         n_dg_red = self.n_dep_gens

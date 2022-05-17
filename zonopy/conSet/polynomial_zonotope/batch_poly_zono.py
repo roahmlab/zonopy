@@ -233,13 +233,12 @@ class batchPolyZonotope:
             len = torch.sum(G**2,-1) # NOTE -1
             # determine the smallest gens to remove            
             ind = torch.argsort(len,dim=-1,descending=True).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape)
-            ind_red, ind_rem = ind[self.batch_idx_all+(slice(K),)], ind[self.batch_idx_all+(slice(K,None),)]
-            # construct a zonotope from the gens that are removed
-            Ztemp = zp.batchZonotope(torch.cat((torch.zeros(self.batch_shape+(1,self.dimension)),G.gather(-2,ind_rem)),dim=-2))
-            # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
-            zonoRed = Ztemp.reduce(1,option)
+            ind_rem, ind_red = ind[self.batch_idx_all+(slice(K),)], ind[self.batch_idx_all+(slice(K,None),)]
+            # reduce the generators with the reducetion techniques for linear zonotopes
+            d = torch.sum(abs(G.gather(-2,ind_red)),-2)
+            Gbox = torch.diag_embed(d)
             # add the reduced gens as new indep gens
-            ZRed = torch.cat(((self.c + zonoRed.center).unsqueeze(-2),self.G,G.gather(-2,ind_red),zonoRed.generators),dim=-2)
+            ZRed = torch.cat((self.c.unsqueeze(-2),self.G,G.gather(-2,ind_rem),Gbox),dim=-2)
         else:
             ZRed = self.Z
         n_dg_red = self.n_dep_gens
@@ -363,11 +362,12 @@ class batchPolyZonotope:
 
         ##################################
  
-        n_ids = self.id.shape[0]
-        val_slc = val_slc[self.batch_idx_all + (torch.argsort(self.id),)].unsqueeze(-2)
-        c = self.c + torch.sum(self.G*torch.prod(val_slc**self.expMat,dim=-1).unsqueeze(-1),-2)
-        expMat_red = self.expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
-        grad_c = (self.G.unsqueeze(-2)*(self.expMat.T*torch.prod(val_slc.unsqueeze(-2)**expMat_red,dim=-1)).unsqueeze(-1)).sum(-2).transpose(-1,-2)                
+        n_ids = self.id.shape[0]     
+        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2)
+        expMat = self.expMat[torch.argsort(self.id)]
+        c = self.c + torch.sum(self.G*torch.prod(val_slc**expMat,dim=-1).unsqueeze(-1),-2)
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
+        grad_c = (self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc.unsqueeze(-2)**expMat_red,dim=-1)).unsqueeze(-1)).sum(-2).transpose(-1,-2)                
         return c        
 
 

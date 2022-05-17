@@ -233,13 +233,12 @@ class batchMatPolyZonotope():
             len = torch.sum(G**2,(-1,-2)) # NOTE -1
             # determine the smallest gens to remove 
             ind = torch.argsort(len,dim=-1,descending=True).unsqueeze(-1).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape)
-            ind_red, ind_rem = ind[self.batch_idx_all+(slice(K),)], ind[self.batch_idx_all+(slice(K,None),)]
-            # construct a zonotope from the gens that are removed
-            Ztemp = zp.batchMatZonotope(torch.cat((torch.zeros(self.batch_shape+(1,)+self.shape),G.gather(-3,ind_rem)),dim=-3))
-            # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
-            zonoRed = Ztemp.reduce(1,option)
+            ind_rem, ind_red = ind[self.batch_idx_all+(slice(K),)], ind[self.batch_idx_all+(slice(K,None),)]
+            # reduce the generators with the reducetion techniques for linear zonotopes
+            d = torch.sum(abs(G.gather(-3,ind_red)),-3).reshape(self.batch_shape+(-1,))
+            Gbox = torch.diag_embed(d).reshape(self.batch_shape+(-1,3,3))
             # add the reduced gens as new indep gens
-            ZRed = torch.cat(((self.C + zonoRed.center).unsqueeze(-3),self.G,G.gather(-3,ind_red),zonoRed.generators),dim=-3)
+            ZRed = torch.cat((self.C.unsqueeze(-3),self.G,G.gather(-3,ind_rem),Gbox),dim=-3)
         else:
             ZRed = self.Z
         n_dg_red = self.n_dep_gens

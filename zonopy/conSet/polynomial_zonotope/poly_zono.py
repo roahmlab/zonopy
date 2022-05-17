@@ -259,39 +259,40 @@ class polyZonotope:
             len = torch.sum(G**2,1)
             # determine the smallest gens to remove            
             ind = torch.argsort(len,descending=True)
-            ind_red,ind_rem = ind[:K], ind[K:]
+            ind_rem,ind_red = ind[:K], ind[K:]
             # split the indices into the ones for dependent and independent
-            indDep = ind_rem[ind_rem < P]
-            ind_REM = torch.hstack((indDep, ind_rem[ind_rem >= P]))
-            indDep_red = ind_red[ind_red < P]
-            ind_RED = torch.hstack((indDep_red,ind_red[ind_red >= P]))
+            indDep_red = ind_red[ind_red< P]
+            ind_RED = torch.hstack((indDep_red, ind_red[ind_red >= P]))
+
+            indDep_rem = ind_rem[ind_rem < P]
+            ind_REM = torch.hstack((indDep_rem,ind_rem[ind_rem >= P]))
             # construct a zonotope from the gens that are removed
-            n_dg_rem = indDep.shape[0]
-            Erem = self.expMat[indDep]
-            Ztemp = torch.vstack((torch.zeros(N),G[ind_REM]))
-            pZtemp = polyZonotope(Ztemp,n_dg_rem,Erem,self.id) # NOTE: ID???
+            n_dg_red = indDep_red.shape[0]
+            Ered = self.expMat[indDep_red]
+            Ztemp = torch.vstack((torch.zeros(N),G[ind_RED]))
+            pZtemp = polyZonotope(Ztemp,n_dg_red,Ered,self.id) # NOTE: ID???
             zono = pZtemp.to_zonotope() # zonotope over-approximation
             # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
-            zonoRed = zono.reduce(1,option)
+            zonoRem = zono.reduce(1,option)
             
             # remove the gens that got reduce from the gen matrices
-            expMatRed = self.expMat[indDep_red]  
-            n_dg_red = indDep_red.shape[0]
+            expMatRem = self.expMat[indDep_rem]  
+            n_dg_rem = indDep_rem.shape[0]
             # add the reduced gens as new indep gens
-            ZRed = torch.vstack((self.c + zonoRed.center,G[ind_RED],zonoRed.generators))
+            ZRed = torch.vstack((self.c + zonoRem.center,G[ind_REM],zonoRem.generators))
         else:
             ZRed = self.Z
-            n_dg_red = self.n_dep_gens
-            expMatRed = self.expMat
+            n_dg_rem = self.n_dep_gens
+            expMatRem = self.expMat
         # remove all exponent vector dimensions that have no entries
-        ind = torch.sum(expMatRed,0)>0
+        ind = torch.sum(expMatRem,0)>0
         #ind = temp.nonzero().reshape(-1)
-        expMatRed = expMatRed[:,ind]
-        idRed = self.id[ind]
+        expMatRem = expMatRem[:,ind]
+        idRem = self.id[ind]
         if self.dimension == 1:
             ZRed = torch.vstack((ZRed[0],ZRed[1:n_dg_red+1].sum(0),ZRed[n_dg_red+1:]))
-            n_dg_red = 1
-        return polyZonotope(ZRed,n_dg_red,expMatRed,idRed)
+            n_dg_rem = 1
+        return polyZonotope(ZRed,n_dg_rem,expMatRem,idRem)
 
     def reduce_indep(self,order,option='girard'):
         # extract dimensions
@@ -307,13 +308,12 @@ class polyZonotope:
             len = torch.sum(G**2,1)
             # determine the smallest gens to remove            
             ind = torch.argsort(len,descending=True)
-            ind_red,ind_rem = ind[:K], ind[K:]
-            # construct a zonotope from the gens that are removed
-            Ztemp = zp.zonotope(torch.vstack((torch.zeros(N),G[ind_rem])))
-            # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
-            zonoRed = Ztemp.reduce(1,option)
+            ind_rem,ind_red = ind[:K], ind[K:]
+            # reduce the generators with the reducetion techniques for linear zonotopes
+            d = torch.sum(abs(G[ind_red]),0)
+            Gbox = torch.diag(d)
             # add the reduced gens as new indep gens
-            ZRed = torch.vstack((self.c + zonoRed.center,self.G,G[ind_red],zonoRed.generators))
+            ZRed = torch.vstack((self.c,self.G,G[ind_rem],Gbox))
         else:
             ZRed = self.Z
         n_dg_red = self.n_dep_gens
@@ -426,10 +426,11 @@ class polyZonotope:
 
         ##################################
         n_ids= self.id.shape[0]
-        val_slc = val_slc[torch.argsort(self.id)]
-        c = self.c + torch.sum(self.G*torch.prod(val_slc**self.expMat,dim=-1).unsqueeze(-1),0)
-        expMat_red = self.expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
-        grad_c = (self.G*(self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-1)).sum(1).T
+        val_slc = val_slc[:n_ids]
+        expMat = self.expMat[torch.argsort(self.id)]
+        c = self.c + torch.sum(self.G*torch.prod(val_slc**expMat,dim=-1).unsqueeze(-1),0)
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
+        grad_c = (self.G*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-1)).sum(1).T
         
         return c
 
