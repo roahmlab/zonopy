@@ -5,7 +5,7 @@ Reference: Holmes, Patrick, et al. ARMTD
 """
 import torch
 from zonopy.transformations.rotation import gen_rotatotope_from_jrs_trig, gen_batch_rotatotope_from_jrs_trig
-from zonopy.transformations.homogeneous import gen_batch_H_from_jrs_trig
+#from zonopy.transformations.homogeneous import gen_batch_H_from_jrs_trig
 from zonopy import zonotope, polyZonotope, batchZonotope
 from scipy.io import loadmat
 import os
@@ -56,11 +56,13 @@ def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None):
         JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
         PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
 
+        '''
         delta_k = PZ_JRS.G[:,0,0,ka_dim]
         c_breaking = - qd_0[:,i]/T_fail_safe
         delta_breaking = - delta_k/T_fail_safe
         PZ_JRS.c[:,50:,acc_dim] = c_breaking.unsqueeze(-1)
         PZ_JRS.G[:,50:,0,acc_dim] = delta_breaking.unsqueeze(-1)
+        '''
         R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
         PZ_JRS_batch.append(PZ_JRS)
         R_batch.append(R_temp)
@@ -87,11 +89,13 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
         A = torch.block_diag(Rot_qpos,torch.eye(4))
         JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i])
         PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
+        '''
         delta_k = PZ_JRS.G[0,0,ka_dim]
         c_breaking = - qd_0[i]/T_fail_safe
         delta_breaking = - delta_k/T_fail_safe
         PZ_JRS.c[50:,acc_dim] = c_breaking
         PZ_JRS.G[50:,0,acc_dim] = delta_breaking
+        '''
         H_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
 
         PZ_JRS_batch.append(PZ_JRS)
@@ -153,6 +157,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
             JRS_zono_i = zonotope(torch.tensor(jrs_mats_load[t,0],dtype=qd_0.dtype).squeeze(0))
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qd_0[i])
             PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim,prop='k_trig'))
+            '''
             # fail safe
             if t == 0:
                 delta_k = PZ_JRS[0][i].G[0,ka_dim]
@@ -161,6 +166,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
             elif t >= int(n_time_steps/2):
                 PZ_JRS[t][i].c[acc_dim] = c_breaking
                 PZ_JRS[t][i].G[0,acc_dim] = delta_breaking
+            '''
             R_temp= gen_rotatotope_from_jrs_trig(PZ_JRS[t][i],joint_axes[i])
             R[t].append(R_temp)
     return PZ_JRS, R

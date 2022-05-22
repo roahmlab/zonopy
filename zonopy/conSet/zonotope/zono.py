@@ -302,8 +302,8 @@ class zonotope:
                         
         if dim == 1:
             C = G/torch.linalg.vector_norm(G,dim=1).reshape(-1,1)
-        elif dim == 2:      
-            C = torch.hstack((-G[:,1],G[:,0]))
+        elif dim == 2:
+            C = torch.hstack((-G[:,1:2],G[:,0:1]))
             C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
         elif dim == 3:
             # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
@@ -323,7 +323,7 @@ class zonotope:
         d = (C@c)
         PA = torch.vstack((C,-C))
         Pb = torch.hstack((d+deltaD,-d+deltaD))
-        return PA, Pb, C
+        return PA, Pb
         '''
         dim, n_gens = G.shape
         if torch.matrix_rank(G) >= dim:
@@ -375,6 +375,11 @@ class zonotope:
         non_zero_idxs = torch.any(abs(self.generators)>eps,axis=1)
         Z = torch.vstack((self.center,self.generators[non_zero_idxs]))
         return zonotope(Z)
+
+    def polygon_patch(self, alpha = .5, facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
+        z = self.project(dim)
+        p = z.polygon().to(device='cpu')
+        return patches.Polygon(p,alpha=alpha,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth)
 
     def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
         '''

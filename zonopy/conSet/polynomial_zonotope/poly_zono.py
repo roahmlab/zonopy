@@ -409,9 +409,20 @@ class polyZonotope:
         else:
             return polyZonotope(torch.vstack((c,G,self.Grest)), G.shape[0],expMat,id)
 
-    
-    
-    def slice_all_dep(self,id_slc,val_slc):
+    def center_slice_all_dep(self,val_slc):
+        n_ids= self.id.shape[0]
+        val_slc = val_slc[:n_ids]
+        expMat = self.expMat[:,torch.argsort(self.id)]
+        return self.c + torch.sum(self.G*torch.prod(val_slc**expMat,dim=-1).unsqueeze(-1),0)
+
+    def grad_center_slice_all_dep(self,val_slc):
+        n_ids= self.id.shape[0]
+        val_slc = val_slc[:n_ids]
+        expMat = self.expMat[:,torch.argsort(self.id)]
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
+        return (self.G*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-1)).sum(1).T
+
+    def slice_all_dep(self,val_slc):
         '''
         Slice polynomial zonotpe in all depdent generators
 
@@ -427,13 +438,9 @@ class polyZonotope:
         ##################################
         n_ids= self.id.shape[0]
         val_slc = val_slc[:n_ids]
-        expMat = self.expMat[torch.argsort(self.id)]
-        c = self.c + torch.sum(self.G*torch.prod(val_slc**expMat,dim=-1).unsqueeze(-1),0)
-        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
-        grad_c = (self.G*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-1)).sum(1).T
-        
-        return c
-
+        expMat = self.expMat[:,torch.argsort(self.id)]
+        c = self.c + torch.sum(self.G*torch.prod(val_slc**expMat,dim=-1).unsqueeze(-1),0) 
+        return zp.zonotope(torch.vstack((c,self.Grest)))
 
 
 

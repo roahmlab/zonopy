@@ -246,7 +246,7 @@ class batchZonotope:
         full_vertices = torch.cat((vertices_half,-vertices_half[self.batch_idx_all+(slice(1,None),)] + temp),dim=self.batch_dim) + c
         return full_vertices        
 
-    def polytope(self):
+    def polytope(self,combs=None):
         '''
         converts a zonotope from a G- to a H- representation
         P
@@ -257,19 +257,18 @@ class batchZonotope:
         G = torch.clone(self.generators)
         h = torch.linalg.vector_norm(G,dim=-1)
         h_sort, indicies = torch.sort(h,dim=-1,descending=True)
-
-        G = G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))
+ 
         h_zero = ((h_sort > 1e-6).sum(tuple(range(1))) ==0)
         if torch.any(h_zero):
             first_reduce_idx = torch.nonzero(h_zero).squeeze(-1)[0]
-            G=G[self.batch_idx_all+(slice(None,first_reduce_idx),)]
+            G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
 
         n_gens, dim = G.shape[-2:] 
         if dim == 1:
             C = G/torch.linalg.vector_norm(G,dim=-1).unsqueeze(-1)
-        elif dim == 2:      
-            x_idx = self.batch_idx_all+(slice(None),0)
-            y_idx = self.batch_idx_all+(slice(None),1)
+        elif dim == 2:
+            x_idx = self.batch_idx_all+(slice(None),slice(0,1))
+            y_idx = self.batch_idx_all+(slice(None),slice(1,2))
             C = torch.cat((-G[y_idx],G[x_idx]),-1)
             C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
         elif dim == 3:

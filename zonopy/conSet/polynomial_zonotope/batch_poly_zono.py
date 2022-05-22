@@ -79,6 +79,7 @@ class batchPolyZonotope:
             self.id = torch.tensor(id,dtype=torch.long)      
         else:
             assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
+
         self.Z = torch.cat((c.unsqueeze(-2),G,Grest),dim=-2)
         self.n_dep_gens = G.shape[-2]
 
@@ -348,9 +349,34 @@ class batchPolyZonotope:
             return polyZonotope(c,0,expMat,id)
         else:
             return polyZonotope(torch.vstack((c,G,self.Grest)), G.shape[0],expMat,id)
+    
 
+    def center_slice_all_dep(self,val_slc):
+        n_ids = self.id.shape[0] # n_ids
+        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
+        expMat = self.expMat[:,torch.argsort(self.id)] # n_dep_gens, n_ids
+        #val_slc**expMat: b1, b2, ..., n_dep_gens, n_ids
+        #torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2): b1, b2, ..., 1, n_dep_gens
+        #(torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2):b1, b2, ...,dim
+        return self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2) 
 
-    def slice_all_dep(self,id_slc,val_slc):
+    def grad_center_slice_all_dep(self,val_slc):        
+        n_ids = self.id.shape[0] 
+        n_short = val_slc.shape[-1] - n_ids
+        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2).unsqueeze(-2) # b1, b2,..., 1, 1, n_ids
+        expMat = self.expMat[:,torch.argsort(self.id)] # n_dep_gens, n_ids
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
+        #torch.prod(val_slc**expMat_red,dim=-1), b1, b2,..., n_ids,  n_dep_gens
+        #(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)), b1, b2,..., n_ids,  n_dep_gens
+        #self.G, b1, b2,..., n_dep_gens, dim
+        #(self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-3)), 
+        #res, b1, b2,..., 1, n_ids,  n_dep_gens
+        grad = ((expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num(0))@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
+        grad = torch.cat((grad,torch.zeros(self.batch_shape+self.shape+(n_short,))),-1)
+        return grad
+    
+    
+    def slice_all_dep(self,val_slc):
         '''
         Slice polynomial zonotpe in depdent generators
         id_slc: id to slice
@@ -362,14 +388,14 @@ class batchPolyZonotope:
 
         ##################################
  
-        n_ids = self.id.shape[0]     
-        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2)
-        expMat = self.expMat[torch.argsort(self.id)]
-        c = self.c + torch.sum(self.G*torch.prod(val_slc**expMat,dim=-1).unsqueeze(-1),-2)
-        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
-        grad_c = (self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc.unsqueeze(-2)**expMat_red,dim=-1)).unsqueeze(-1)).sum(-2).transpose(-1,-2)                
-        return c        
-
+        n_ids = self.id.shape[0] # n_ids
+        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
+        expMat = self.expMat[:,torch.argsort(self.id)] # n_dep_gens, n_ids
+        #val_slc**expMat: b1, b2, ..., n_dep_gens, n_ids
+        #torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2): b1, b2, ..., 1, n_dep_gens
+        #(torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2):b1, b2, ...,dim
+        c = self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2) 
+        return zp.batchZonotope(torch.cat((c.unsqueeze(-2),self.Grest),-2))
 
 
     def deleteZerosGenerators(self,eps=0):
@@ -388,3 +414,7 @@ class batchPolyZonotope:
             expMat = expMat[:,~ind]
             id = id[:,~ind]
         return polyZonotope(torch.vstack((c,G,self.Grest)),G.shape[0],expMat,id)
+
+    def project(self,dim=[0,1]):
+        Z = self.Z[self.batch_idx_all+(slice(None),dim)]
+        return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id)
