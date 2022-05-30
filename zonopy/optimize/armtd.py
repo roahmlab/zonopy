@@ -135,10 +135,10 @@ class ARMTD_planner():
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
     import time
-    n_links = 2
+    n_links = 7
     cyipopt.setLoggingLevel(1000)
     env = Arm_2D(n_links=n_links,n_obs=1)
-    env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),qvel= torch.zeros(n_links), qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),obs_pos=[torch.tensor([-1,-0.9])])
+    #env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),qvel= torch.zeros(n_links), qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),obs_pos=[torch.tensor([-1,-0.9])])
     #from zonopy.optimize.armtd import ARMTD_planner
     planner = ARMTD_planner(env)
     for _ in range(100):

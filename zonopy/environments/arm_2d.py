@@ -190,8 +190,9 @@ class Arm_2D:
                 g_ka = torch.minimum(torch.maximum(self.PI/24,abs(self.qvel/3)),self.PI/3)
                 self.FO_patches.remove()
                 for j in range(self.n_links): 
+                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
                     for t in range(100): 
-                        FO_patch = FO_link[j][t].slice_all_dep(self.ka/g_ka).polygon_patch(alpha=0.1,edgecolor='green')
+                        FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
                         FO_patches.append(FO_patch)
                 self.FO_patches = PatchCollection(FO_patches, match_original=True)
                 self.ax.add_collection(self.FO_patches)            
