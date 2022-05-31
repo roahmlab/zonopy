@@ -5,9 +5,12 @@ Reference: CORA
 """
 import torch
 import matplotlib.patches as patches
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
 from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
+from scipy.spatial import ConvexHull
+
 
 class zonotope:
     '''
@@ -219,6 +222,21 @@ class zonotope:
         full_vertices = torch.vstack((vertices_half,-vertices_half[1:] + vertices_half[0]+ vertices_half[-1])) + c
         return full_vertices
 
+    def polyhedron(self):
+        dim = 3
+        V = self.center[:dim]
+        for i in range(self.n_generators):
+            translation = self.Z[i+1,:dim]
+            V = torch.vstack((V+translation,V-translation))
+            if i > dim:
+                try:
+                    K = ConvexHull(V)
+                    V = V[K.vertices]
+                except:
+                    V = V
+                #    print(f'Convex hull failed in {i}-th trial')
+        return V
+
     def polytope2(self):
         '''
         converts a zonotope from a G- to a H- representation
@@ -381,6 +399,18 @@ class zonotope:
         p = z.polygon().to(device='cpu')
         return patches.Polygon(p,alpha=alpha,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth)
 
+    def polyhedron_patch(self,alpha = .5, facecolor='none',edgecolor='green',linewidth=.2):
+        dim = 3
+        V = self.center[:dim]
+        for i in range(self.n_generators):
+            translation = self.Z[i+1,:dim]
+            V = torch.vstack((V+translation,V-translation))
+            if dim < i < self.n_generators:
+                K = ConvexHull(V)
+                V = V[K.vertices]
+        K = ConvexHull(V)        
+        return Poly3DCollection([V[s] for s in K.simplices])
+
     def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
         '''
         plot 2 dimensional projection of a zonotope
@@ -441,9 +471,44 @@ class zonotope:
         return interval(leftLimit,rightLimit)
 
 if __name__ == '__main__':
+    
+    
     import matplotlib.pyplot as plt
+    #fig = plt.figure()
+    #ax = fig.add_subplot(111, projection="3d")
+    import mpl_toolkits.mplot3d as a3
+    fig = plt.figure()
+    ax = a3.Axes3D(fig)
+    z1 = zonotope([[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0.5,0.5,0]])
+    z2 = zonotope([[1,2,3],[3,2,4],[3,2,5],[4,5,9],[3,9,4],[8,0,3],[5,6,1],[3,4,5],[1,1,0]])
+    
+    #ax.dist=30
+    #ax.azim=-140
+    #ax.elev=20
+
+
+    #ax.set_xlim([-40,40])
+    #ax.set_ylim([-40,40])
+    #ax.set_zlim([-40,40])
+    patch = z2.polyhedron_patch()
+    patch.set_edgecolor('k')
+    patch.set_alpha(0.5)
+    ax.add_collection3d(patch)
+
+    for i, a in enumerate('xyz'):        
+        ub = patch._vec.max(1)[0]
+        lb = patch._vec.min(1)[0]
+        getattr(ax, f'set_{a}lim')([lb-10,ub+10])
+    #ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
+    plt.show()
+
+    import pdb;pdb.set_trace()
+    
+    ##
     fig = plt.figure()
     ax = fig.gca()
+
+
     z = zonotope([[0,0],[1,0],[0,1],[1,1]])
     z.plot(ax)
     plt.autoscale()
