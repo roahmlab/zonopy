@@ -3,7 +3,7 @@ from zonopy.environments.arm_2d import Arm_2D
 from zonopy.optimize.armtd import ARMTD_planner
 import pickle 
 
-test_flag = True 
+test_flag = False 
 n_links = 2
 n_test = 100
 N_OBS = torch.randint(1,5,(n_test,))
@@ -26,10 +26,10 @@ if test_flag:
             #if done:
             #    break
 
-    with open('results/test_armtd.pickle', 'wb') as handle:
+    with open('results/test_armtd2.pickle', 'wb') as handle:
         pickle.dump(collision_info, handle, protocol=pickle.HIGHEST_PROTOCOL)
        
 else:
-    with open('results/test_armtd.pickle', 'rb') as handle:
+    with open('results/test_armtd2.pickle', 'rb') as handle:
         collision_info = pickle.load(handle)
     import pdb;pdb.set_trace()
