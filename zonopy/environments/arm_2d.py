@@ -11,18 +11,19 @@ T_PLAN, T_FULL = 0.5, 1
 
 class Arm_2D:
     def __init__(self,
-            n_links=2,
-            n_obs=1,
-            T_len=50,
-            interpolate = True,
-            check_collision = True,
-            collision_threshold = 1e-6,
-            goal_threshold = 0.05,
-            hyp_effort = 0.2,
+            n_links=2, # number of links
+            n_obs=1, # number of obstacles
+            T_len=50, # number of discritization of time interval
+            interpolate = True, # flag for interpolation
+            check_collision = True, # flag for whehter check collision
+            check_collision_FO = True, # flag for whether check collision for FO rendering
+            collision_threshold = 1e-6, # collision threshold
+            goal_threshold = 0.05, # goal threshold
+            hyp_effort = 0.2, # hyperpara
             hyp_dist_to_goal = 1.0,
             hyp_collision = -50,
             hyp_success = 50,
-            reward_shaping=True
+            reward_shaping=True 
             ):
 
         self.dimension = 2
@@ -41,8 +42,11 @@ class Arm_2D:
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len)+1:] - T_PLAN
         
+        
+
         self.obs_buffer_length = torch.tensor([0.001,0.001])
         self.check_collision = check_collision
+        self.check_collision_FO = check_collision_FO
         self.collision_threshold = collision_threshold
         
         self.goal_threshold = goal_threshold
@@ -52,11 +56,14 @@ class Arm_2D:
         self.hyp_success = hyp_success
         self.reward_shaping = reward_shaping
 
+
         self.reset()
     def reset(self):
         self.qpos = torch.rand(self.n_links)*2*torch.pi - torch.pi
         self.qpos_int = torch.clone(self.qpos)
         self.qvel = torch.zeros(self.n_links)
+        self.qpos_prev = torch.clone(self.qpos)
+        self.qvel_prev = torch.clone(self.qvel)
         self.qgoal = torch.rand(self.n_links)*2*torch.pi - torch.pi
         self.fail_safe_count = 0
         if self.interpolate:
@@ -112,7 +119,10 @@ class Arm_2D:
 
     def set_initial(self,qpos,qvel,qgoal,obs_pos):
         self.qpos = qpos
+        self.qpos_int = torch.clone(self.qpos)
         self.qvel = qvel
+        self.qpos_prev = torch.clone(self.qpos)
+        self.qvel_prev = torch.clone(self.qvel)
         self.qgoal = qgoal
         self.fail_safe_count = 0
         if self.interpolate:
@@ -161,6 +171,8 @@ class Arm_2D:
     def step(self,ka,safe=0):
         self.safe = safe == 0
         self.ka = ka
+        self.qpos_prev = torch.clone(self.qpos)
+        self.qvel_prev = torch.clone(self.qvel)
         if self.interpolate:
             if self.safe:
                 self.fail_safe_count = 0
@@ -303,13 +315,31 @@ class Arm_2D:
         if FO_link is not None: 
             FO_patches = []
             if self.fail_safe_count != 1:
-                g_ka = torch.minimum(torch.maximum(self.PI/24,abs(self.qvel/3)),self.PI/3)
+                g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
+                print(f'lamdba:{self.ka/g_ka}') ###
+                self.safe_con = torch.zeros(100*self.n_links*self.n_obs)
                 self.FO_patches.remove()
                 for j in range(self.n_links): 
-                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
-                    for t in range(100): 
-                        FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
-                        FO_patches.append(FO_patch)
+                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
+                    if self.check_collision_FO:
+                        c_link_slc = FO_link[j].center_slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
+                        for o,obs in enumerate(self.obs_zonos):
+                            obs_Z = obs.Z[:,:self.dimension].unsqueeze(0).repeat(100,1,1)
+                            A, b = zp.batchZonotope(torch.cat((obs_Z,FO_link[j].Grest),-2)).polytope()
+                            cons, ind = torch.max((A@c_link_slc.unsqueeze(-1)).squeeze(-1) - b,-1)
+                            self.safe_con[(j+self.n_links*o)*100:(j+self.n_links*o+1)*100] = cons
+                            #A,b = (FO_link_slc-obs.project([0,1])).polytope() 
+                            for t in range(100):                            
+                                if cons[t] < 1e-6:
+                                    color = 'red'
+                                else:
+                                    color = 'green'
+                                FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor=color)
+                                FO_patches.append(FO_patch)
+                    else:
+                        for t in range(100): 
+                            FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
+                            FO_patches.append(FO_patch)
                 self.FO_patches = PatchCollection(FO_patches, match_original=True)
                 self.ax.add_collection(self.FO_patches)            
 
