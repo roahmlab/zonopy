@@ -16,7 +16,7 @@ class Arm_2D:
             T_len=50, # number of discritization of time interval
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
-            check_collision_FO = True, # flag for whether check collision for FO rendering
+            check_collision_FO = False, # flag for whether check collision for FO rendering
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 0.2, # hyperpara
@@ -316,8 +316,6 @@ class Arm_2D:
             FO_patches = []
             if self.fail_safe_count != 1:
                 g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
-                print(f'lamdba:{self.ka/g_ka}') ###
-                self.safe_con = torch.zeros(100*self.n_links*self.n_obs)
                 self.FO_patches.remove()
                 for j in range(self.n_links): 
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
@@ -326,9 +324,7 @@ class Arm_2D:
                         for o,obs in enumerate(self.obs_zonos):
                             obs_Z = obs.Z[:,:self.dimension].unsqueeze(0).repeat(100,1,1)
                             A, b = zp.batchZonotope(torch.cat((obs_Z,FO_link[j].Grest),-2)).polytope()
-                            cons, ind = torch.max((A@c_link_slc.unsqueeze(-1)).squeeze(-1) - b,-1)
-                            self.safe_con[(j+self.n_links*o)*100:(j+self.n_links*o+1)*100] = cons
-                            #A,b = (FO_link_slc-obs.project([0,1])).polytope() 
+                            cons, _ = torch.max((A@c_link_slc.unsqueeze(-1)).squeeze(-1) - b,-1)
                             for t in range(100):                            
                                 if cons[t] < 1e-6:
                                     color = 'red'

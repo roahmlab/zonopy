@@ -39,18 +39,12 @@ class ARMTD_2D_planner():
         self.g_ka = torch.maximum(self.PI/24,abs(qvel/3))
         
         for j in range(self.n_links):
-            if self.dimension == 2:
-                self.FO_link[j] = self.FO_link[j].project([0,1])
-                eval_slc_c_k = lambda ka:self.FO_link[j].center_slice_all_dep(ka/self.g_ka) # c_k: n_timesteps, dimension 
-                grad_slc_c_k = lambda ka:self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)@torch.diag(1/self.g_ka) # c_k: n_timesteps, dimension, n_joints 
-                self.eval_slc_c_k.append(eval_slc_c_k)
-                self.grad_slc_c_k.append(grad_slc_c_k)
+            self.FO_link[j] = self.FO_link[j].project([0,1])
             for o in range(self.n_obs):                
                 obs_Z = obstacles[o].Z[:,:self.dimension].unsqueeze(0).repeat(self.n_timesteps,1,1)
                 A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope(self.combs) # A: n_timesteps,*,dimension  
                 self.A[j].append(A)
                 self.b[j].append(b)
-
         self.qpos = qpos
         self.qvel = qvel
 
@@ -68,7 +62,6 @@ class ARMTD_2D_planner():
                 return (2*qplan_grad*(qplan-qgoal)).numpy()
 
             def constraints(p,x): 
-
                 ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
                 if (p.x_prev!=x).any():                
                     cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links)                   
@@ -81,17 +74,14 @@ class ARMTD_2D_planner():
                         for o in range(self.n_obs):
                             cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
                             grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
-                            #import pdb;pdb.set_trace()
                             cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
                             grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
                     p.cons_obs = cons_obs.numpy()
                     p.grad_cons_obs = grad_cons_obs.numpy()
-
                     p.x_prev = np.copy(x)                
                 return p.cons_obs
 
             def jacobian(p,x):
-
                 ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
                 if (p.x_prev!=x).any():                
                     cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links)                   
@@ -104,12 +94,10 @@ class ARMTD_2D_planner():
                         for o in range(self.n_obs):
                             cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
                             grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
-                            #import pdb;pdb.set_trace()
                             cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
                             grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
                     p.cons_obs = cons_obs.numpy()
                     p.grad_cons_obs = grad_cons_obs.numpy()
-
                     p.x_prev = np.copy(x)                   
                 return p.grad_cons_obs
             
@@ -139,13 +127,14 @@ class ARMTD_2D_planner():
         k_opt, info = nlp.solve(ka_0)
         #print(f'opt time: {time.time()-ts}')
 
+        '''
         Problem = nlp_setup()
         self.safe_con = Problem.constraints(k_opt)[:-self.n_links]
         safe = self.safe_con>1e-6
         print(f'safe: {not any(~safe)}')
         print(f'safe distance: {self.safe_con.min()}')
         print(info['status'])
-        '''
+
         if any(~safe):
             import pdb;pdb.set_trace()
         '''
@@ -179,6 +168,6 @@ if __name__ == '__main__':
             import pdb;pdb.set_trace()
             break
         '''
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         #(env.safe_con.numpy() - planner.safe_con > 1e-2).any()
     import pdb;pdb.set_trace()
