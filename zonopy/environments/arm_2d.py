@@ -3,10 +3,28 @@ import zonopy as zp
 import matplotlib.pyplot as plt 
 from matplotlib.collections import PatchCollection
 
+
+def wrap_to_pi(phases):
+    return (phases + torch.pi) % (2 * torch.pi) - torch.pi
+
 T_PLAN, T_FULL = 0.5, 1
 
 class Arm_2D:
-    def __init__(self,n_links=2,n_obs=1,T_len=50,intermediate = True):
+    def __init__(self,
+            n_links=2,
+            n_obs=1,
+            T_len=50,
+            interpolate = True,
+            check_collision = True,
+            collision_threshold = 1e-6,
+            goal_threshold = 0.05,
+            hyp_effort = 0.2,
+            hyp_dist_to_goal = 1.0,
+            hyp_collision = -50,
+            hyp_success = 50,
+            reward_shaping=True
+            ):
+
         self.dimension = 2
         self.n_links = n_links
         self.n_obs = n_obs
@@ -15,21 +33,31 @@ class Arm_2D:
         self.R0 = [torch.eye(3)]*n_links
         self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links)
         self.fig_scale = 1
-        self.intermediate = intermediate
+        self.interpolate = interpolate
         self.PI = torch.tensor(torch.pi)
-        if intermediate:
+        if interpolate:
             self.T_len = T_len
             t_traj = torch.linspace(0,T_FULL,T_len+1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len)+1:] - T_PLAN
+        self.check_collision = check_collision
+        self.collision_threshold = collision_threshold
+        
+        self.goal_threshold = goal_threshold
+        self.hyp_effort = hyp_effort
+        self.hyp_dist_to_goal = hyp_dist_to_goal
+        self.hyp_collision = hyp_collision
+        self.hyp_success = hyp_success
+        self.reward_shaping = reward_shaping
 
         self.reset()
     def reset(self):
         self.qpos = torch.rand(self.n_links)*2*torch.pi - torch.pi
+        self.qpos_int = torch.clone(self.qpos)
         self.qvel = torch.zeros(self.n_links)
         self.qgoal = torch.rand(self.n_links)*2*torch.pi - torch.pi
         self.fail_safe_count = 0
-        if self.intermediate:
+        if self.interpolate:
             self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
             self.qvel_to_brake = torch.zeros(self.T_len,self.n_links)        
         else:
@@ -76,13 +104,14 @@ class Arm_2D:
                     break
         self.render_flag = True
         self.done = False
+        self.collision = False
 
     def set_initial(self,qpos,qvel,qgoal,obs_pos):
         self.qpos = qpos
         self.qvel = qvel
         self.qgoal = qgoal
         self.fail_safe_count = 0
-        if self.intermediate:
+        if self.interpolate:
             self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
             self.qvel_to_brake = torch.zeros(self.T_len,self.n_links)        
         else:
@@ -121,22 +150,25 @@ class Arm_2D:
 
         self.render_flag = True
         self.done = False
+        self.collision = False
 
     def step(self,ka,safe=0):
         self.safe = safe == 0
         self.ka = ka
-        if self.intermediate:
+        if self.interpolate:
             if self.safe:
                 self.fail_safe_count = 0
                 # to peak
-                self.qpos_to_peak = self.qpos + torch.outer(self.t_to_peak,self.qvel) + .5*torch.outer(self.t_to_peak**2,ka)
+                self.qpos_to_peak = wrap_to_pi(self.qpos + torch.outer(self.t_to_peak,self.qvel) + .5*torch.outer(self.t_to_peak**2,ka))
                 self.qvel_to_peak = self.qvel + torch.outer(self.t_to_peak,ka)
                 self.qpos = self.qpos_to_peak[-1]
                 self.qvel = self.qvel_to_peak[-1]
                 #to stop
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
-                self.qpos_to_brake = self.qpos + torch.outer(self.t_to_brake,self.qvel) + .5*torch.outer(self.t_to_brake**2,bracking_accel)
+                self.qpos_to_brake = wrap_to_pi(self.qpos + torch.outer(self.t_to_brake,self.qvel) + .5*torch.outer(self.t_to_brake**2,bracking_accel))
                 self.qvel_to_brake = self.qvel + torch.outer(self.t_to_brake,bracking_accel)
+                
+                self.collision = self.collision_check(torch.vstack((self.qpos_to_peak,self.qpos_to_brake)))
             else:
                 self.fail_safe_count +=1
                 self.qpos_to_peak = torch.clone(self.qpos_to_brake)
@@ -148,19 +180,97 @@ class Arm_2D:
         else:
             if self.safe:
                 self.fail_safe_count = 0
-                self.qpos += self.qvel*T_PLAN + 0.5*ka*T_PLAN**2
+                self.qpos += wrap_to_pi(self.qvel*T_PLAN + 0.5*ka*T_PLAN**2)
                 self.qvel += ka*T_PLAN
-                self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
+                self.qpos_brake = wrap_to_pi(self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN))
                 self.qvel_brake = torch.zeros(self.n_links)
+
+                self.collision = self.collision_check(torch.vstack((self.qpos,self.qpos_brake)))
             else:
                 self.fail_safe_count +=1
                 self.qpos = torch.clone(self.qpos_brake)
                 self.qvel = torch.clone(self.qvel_brake) 
-        goal_distance = torch.linalg.norm(self.qpos_to_peak-self.qgoal,dim=1)
+        
+        '''
+        goal_distance = torch.linalg.norm(wrap_to_pi(self.qpos_to_peak-self.qgoal),dim=1)
         self.done = goal_distance.min() < 0.05
         if self.done:
             self.until_goal = goal_distance.argmin()
-        return self.done
+        '''
+        reward = self.reward(ka)
+        self.done = self.success or self.collision
+        observations = self.get_observations()
+        info = self.get_info()
+        return observations, reward, self.done, info
+
+    def get_info(self):
+        info ={'collision':self.collision}
+        if self.collision:
+            collision_info = {
+                'qpos_collision':self.qpos_collision,
+                'qpos_init':self.qpos_int,
+                'qvel_int':torch.zeros(self.n_links),
+                'obs_pos':[self.obs_zonos[o].center[:2] for o in range(self.n_obs)],
+                'qgoal':self.qgoal
+            }
+            info['collision_info'] = collision_info
+        return info
+
+    def get_observations(self):
+        obstacle_pos = torch.vstack([self.obs_zonos[o].center[:2] for o in range(self.n_obs)])
+        obstacle_size = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
+        observation = {'qpos':self.qpos,'qvel':self.qvel,'qgoal':self.qgoal,'obstacle_pos':obstacle_pos,'obstacle_size':obstacle_size}
+        return observation
+
+    def collision_check(self,qs):
+        if self.check_collision:
+            R_q = self.rot(qs)
+            if len(R_q.shape) == 4:
+                time_steps = len(R_q)
+            else:
+                time_steps = 1
+            for t in range(time_steps):
+                R, P = torch.eye(3), torch.zeros(3)
+                for j in range(self.n_links):
+                    P = R@self.P0[j] + P
+                    R = R@self.R0[j]@R_q[t,j]
+                    link = (R@self.link_zonos[j]+P).to_zonotope()
+                    for o in range(self.n_obs):
+                        buff = link - self.obs_zonos[o]
+                        A,b = buff.project([0,1]).polytope()
+                        if max(A@torch.zeros(2)-b) < 1e-6:
+                            self.qpos_collision = qs[t]
+                            return True
+        return False
+
+    def reward(self, action, qpos=None, qgoal=None):
+        # Get the position and goal then calculate distance to goal
+        if qpos is None or qgoal is None:
+            qpos = self.qpos
+            qgoal = self.qgoal
+
+        goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
+        self.success = goal_dist < self.goal_threshold 
+        success = self.success.to(dtype=torch.get_default_dtype())
+        
+        reward = 0.0
+
+        # Return the sparse reward if using sparse_rewards
+        if not self.reward_shaping:
+            reward += self.hyp_collision * torch.tensor(self.collision,dtype=torch.get_default_dtype())
+            reward += success - 1 + self.hyp_success * success
+            return reward
+
+        # otherwise continue to calculate the dense reward
+        # reward for position term
+        reward -= self.hyp_dist_to_goal * goal_dist
+        # reward for effort
+        reward -= self.hyp_effort * torch.linalg.norm(action)
+        # Add collision if needed
+        reward += self.hyp_collision * torch.tensor(self.collision,dtype=torch.get_default_dtype())
+        # Add success if wanted
+        reward += self.hyp_success * success
+        return reward       
 
 
     def render(self,FO_link=None):
@@ -197,12 +307,15 @@ class Arm_2D:
                 self.FO_patches = PatchCollection(FO_patches, match_original=True)
                 self.ax.add_collection(self.FO_patches)            
 
-        if self.intermediate:
+        if self.interpolate:
             R_q = self.rot(self.qpos_to_peak)
+            time_steps = int(T_PLAN/T_FULL*self.T_len)
+            '''
             if not self.done:
                 time_steps = int(T_PLAN/T_FULL*self.T_len)
             else:
                 time_steps = self.until_goal
+            '''
             for t in range(time_steps):
                 R, P = torch.eye(3), torch.zeros(3)
                 link_patches = []
@@ -330,6 +443,7 @@ if __name__ == '__main__':
     env = Arm_2D()
     #from zonopy.optimize.armtd import ARMTD_planner
     #planner = ARMTD_planner(env)
+    import pdb;pdb.set_trace()
     for _ in range(50):
         #ka, flag = planner.plan(env.qpos,env.qvel,env.qgoal,env.obs_zonos,torch.zeros(2))
 

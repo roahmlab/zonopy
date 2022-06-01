@@ -48,7 +48,7 @@ def import_robot(urdf_file,gravity=True):
                 has_root[j] = False
     
     for i in range(n_joints):
-        if has_root[i]:
+        if has_root[i]: 
             base = link_map[joints[i].parent]
     robot = rigidBodyTree(robot_urdf.links,joints,base)
     return robot

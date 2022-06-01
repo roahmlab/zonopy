@@ -409,7 +409,7 @@ class zonotope:
                 K = ConvexHull(V)
                 V = V[K.vertices]
         K = ConvexHull(V)        
-        return Poly3DCollection([V[s] for s in K.simplices])
+        return [V[s] for s in K.simplices]
 
     def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
         '''
@@ -490,14 +490,19 @@ if __name__ == '__main__':
     #ax.set_xlim([-40,40])
     #ax.set_ylim([-40,40])
     #ax.set_zlim([-40,40])
-    patch = z2.polyhedron_patch()
-    patch.set_edgecolor('k')
-    patch.set_alpha(0.5)
-    ax.add_collection3d(patch)
+    
+    p1 = z1.polyhedron_patch()
+    p2 = z2.polyhedron_patch()
+    P = p1+p2
+    #patch = Poly3DCollection(z2.polyhedron_patch(),alpha = 0.1, facecolor='green',edgecolor='black')
+    
+    #ax.add_collection3d(patch)
+    patch1 = Poly3DCollection(P,alpha = 0.1, facecolor='red',edgecolor='black')
+    ax.add_collection3d(patch1)
 
     for i, a in enumerate('xyz'):        
-        ub = patch._vec.max(1)[0]
-        lb = patch._vec.min(1)[0]
+        ub = patch1._vec.max(1)[0]
+        lb = patch1._vec.min(1)[0]
         getattr(ax, f'set_{a}lim')([lb-10,ub+10])
     #ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
     plt.show()
