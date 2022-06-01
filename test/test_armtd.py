@@ -15,7 +15,7 @@ if test_flag:
         for _ in range(200):
             ka, flag = planner.plan(env,torch.zeros(n_links))
             observations, reward, done, info = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
-            env.render(planner.FO_link)
+            #env.render(planner.FO_link)
             if info['collision']:
                 collision_info.append(info['collision_info'])
 
