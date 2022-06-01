@@ -88,10 +88,12 @@ class ARMTD_planner_C():
             def constraints(p,x): 
 
                 ka = torch.tensor(ka,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
-                
+
                 if (p.x_prev!=x).any():                
-                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs)
-                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs,self.n_links)
+                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links)                   
+                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links,self.n_links)
+                    cons_obs[-self.n_links:] = self.qvel+x*T_PLAN
+                    grad_cons_obs[-self.n_links:] = torch.eye(self.n_links)*T_PLAN
                     for j in range(self.n_links):
                         for o in range(self.n_obs):                        
                             c_k = self.eval_slc_c_k[j][o](ka)
@@ -133,8 +135,9 @@ class ARMTD_planner_C():
                      d_norm, regularization_size, alpha_du, alpha_pr,
                      ls_trials):
                 pass
-
-        M = self.n_links*self.n_timesteps*self.n_obs
+        
+        M_obs = self.n_links*self.n_timesteps*self.n_obs
+        M = M_obs+self.n_links
 
         nlp = cyipopt.problem(
         n = self.n_links,
@@ -142,8 +145,8 @@ class ARMTD_planner_C():
         problem_obj=nlp_setup(),
         lb = (-self.g_ka).tolist(),
         ub = self.g_ka.tolist(),
-        cl = [1e-6]*M,
-        cu = [1e20]*M,
+        cl = [1e-6]*M_obs+[-torch.pi]*self.n_links,
+        cu = [1e20]*M_obs+[torch.pi]*self.n_links,
         )
         #nlp.add_option('mu_strategy', 'adaptive')
         #nlp.addOption('mu_strategy', 'adaptive')
@@ -223,46 +226,69 @@ class ARMTD_planner():
     def trajopt(self,qgoal,ka_0):
         # NOTE: torch OR numpy ?
         class nlp_setup():
-            def objective(p,ka):
-                qplan = self.qpos + self.qvel*T_PLAN + 0.5*ka*T_PLAN**2
+            x_prev = np.zeros(self.n_links)*np.nan
+            def objective(p,x):
+                qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
                 return torch.sum((qplan-qgoal)**2)
 
-            def gradient(p,ka):
-                qplan = self.qpos + self.qvel*T_PLAN + 0.5*ka*T_PLAN**2
+            def gradient(p,x):
+                qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
                 qplan_grad = 0.5*T_PLAN**2
                 return (2*qplan_grad*(qplan-qgoal)).numpy()
 
-            def constraints(p,ka): 
-                if isinstance(ka,np.ndarray):
-                    ka = torch.tensor(ka,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
-                cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs)
-                for j in range(self.n_links):
-                    for o in range(self.n_obs):
-                        c_k = self.eval_slc_c_k[j][o](ka)
-                        cons, _ = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
-                        cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons # shape: n_timsteps,
-                return cons_obs.numpy()
+            def constraints(p,x): 
 
-            def jacobian(p,ka):
-                if isinstance(ka,np.ndarray):
-                    ka = torch.tensor(ka,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
-                grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs,self.n_links)
-                for j in range(self.n_links):
-                    for o in range(self.n_obs):                        
-                        c_k = self.eval_slc_c_k[j][o](ka)
-                        _, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
-                        grad_c_k = self.grad_slc_c_k[j][o](ka)    
-                        grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
-                        #import pdb;pdb.set_trace()
-                        grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
-                return grad_cons_obs.numpy()
+                ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
+                if (p.x_prev!=x).any():                
+                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links)                   
+                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links,self.n_links)
+                    cons_obs[-self.n_links:] = self.qvel+x*T_PLAN
+                    grad_cons_obs[-self.n_links:] = torch.eye(self.n_links)*T_PLAN
+                    for j in range(self.n_links):
+                        for o in range(self.n_obs):                        
+                            c_k = self.eval_slc_c_k[j][o](ka)
+                            cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
+                            grad_c_k = self.grad_slc_c_k[j][o](ka)    
+                            grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                            #import pdb;pdb.set_trace()
+                            cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
+                            grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
+                    p.cons_obs = cons_obs.numpy()
+                    p.grad_cons_obs = grad_cons_obs.numpy()
+
+                p.x_prev = np.copy(x)                
+                return p.cons_obs
+
+            def jacobian(p,x):
+
+                ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
+                if (p.x_prev!=x).any():                
+                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links)                   
+                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links,self.n_links)
+                    cons_obs[-self.n_links:] = self.qvel+x*T_PLAN
+                    grad_cons_obs[-self.n_links:] = torch.eye(self.n_links)*T_PLAN
+                    for j in range(self.n_links):
+                        for o in range(self.n_obs):                        
+                            c_k = self.eval_slc_c_k[j][o](ka)
+                            cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
+                            grad_c_k = self.grad_slc_c_k[j][o](ka)    
+                            grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                            #import pdb;pdb.set_trace()
+                            cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
+                            grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
+                    p.cons_obs = cons_obs.numpy()
+                    p.grad_cons_obs = grad_cons_obs.numpy()
+
+                p.x_prev = np.copy(x)                   
+                return p.grad_cons_obs
             
             def intermediate(p, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
                      d_norm, regularization_size, alpha_du, alpha_pr,
                      ls_trials):
                 pass
-
-        M = self.n_links*self.n_timesteps*self.n_obs
+        
+        M_obs = self.n_links*self.n_timesteps*self.n_obs
+        M = M_obs+self.n_links
 
         nlp = cyipopt.problem(
         n = self.n_links,
@@ -270,8 +296,8 @@ class ARMTD_planner():
         problem_obj=nlp_setup(),
         lb = (-self.g_ka).tolist(),
         ub = self.g_ka.tolist(),
-        cl = [1e-6]*M,
-        cu = [1e20]*M,
+        cl = [1e-6]*M_obs+[-torch.pi]*self.n_links,
+        cu = [1e20]*M_obs+[torch.pi]*self.n_links,
         )
         #nlp.add_option('mu_strategy', 'adaptive')
         #nlp.addOption('mu_strategy', 'adaptive')
@@ -316,7 +342,7 @@ if __name__ == '__main__':
         print(env.qpos)
         print(time.time()-ts)
         #import pdb;pdb.set_trace()
-        done = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
+        observations, reward, done, info = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
         env.render(planner.FO_link)
         if done:
             import pdb;pdb.set_trace()

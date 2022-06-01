@@ -102,6 +102,8 @@ class Arm_2D:
                 if safe_flag:
                     self.obs_zonos.append(obs)
                     break
+
+        self.fail_safe_count = 0
         self.render_flag = True
         self.done = False
         self.collision = False
@@ -148,9 +150,11 @@ class Arm_2D:
                     assert False, 'given obstacle position is in collision with initial and goal configuration.'
             self.obs_zonos.append(obs)
 
+        self.fail_safe_count = 0
         self.render_flag = True
         self.done = False
         self.collision = False
+
 
     def step(self,ka,safe=0):
         self.safe = safe == 0
