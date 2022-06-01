@@ -3,7 +3,7 @@ from zonopy.environments.arm_2d import Arm_2D
 from zonopy.optimize.backup import ARMTD_2D_planner
 import pickle 
 
-test_flag = False 
+test_flag = True 
 n_links = 2
 n_test = 100
 N_OBS = torch.randint(1,5,(n_test,))
@@ -15,7 +15,7 @@ if test_flag:
         for _ in range(200):
             ka, flag = planner.plan(env,torch.zeros(n_links))
             observations, reward, done, info = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
-            #env.render(planner.FO_link)
+            env.render(planner.FO_link)
             if info['collision']:
                 collision_info.append(info['collision_info'])
 
