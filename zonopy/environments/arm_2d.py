@@ -40,6 +40,8 @@ class Arm_2D:
             t_traj = torch.linspace(0,T_FULL,T_len+1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len)+1:] - T_PLAN
+        
+        self.obs_buffer_length = torch.tensor([0.001,0.001])
         self.check_collision = check_collision
         self.collision_threshold = collision_threshold
         

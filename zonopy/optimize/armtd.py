@@ -296,7 +296,7 @@ class ARMTD_planner():
         problem_obj=nlp_setup(),
         lb = (-self.g_ka).tolist(),
         ub = self.g_ka.tolist(),
-        cl = [1e-6]*M_obs+[-torch.pi]*self.n_links,
+        cl = [1e-4]*M_obs+[-torch.pi]*self.n_links,
         cu = [1e20]*M_obs+[torch.pi]*self.n_links,
         )
         #nlp.add_option('mu_strategy', 'adaptive')
