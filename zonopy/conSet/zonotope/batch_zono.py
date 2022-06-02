@@ -98,7 +98,7 @@ class batchZonotope:
         return <polyZonotope>
         '''   
         if isinstance(other, torch.Tensor):
-            assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
+            #assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
             Z = torch.clone(self.Z)
             Z[self.batch_idx_all+(0,)] += other
         elif isinstance(other, zonotope): 
@@ -115,7 +115,7 @@ class batchZonotope:
     def __sub__(self,other):
         if isinstance(other, torch.Tensor):
             Z = torch.clone(self.Z)
-            assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
+            #assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
             Z[self.batch_idx_all+(0,)] -= other
         elif isinstance(other, zonotope): 
             assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
@@ -273,7 +273,10 @@ class batchZonotope:
             C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
         elif dim == 3:
             # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
-            comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            if combs is None or n_gens >= len(combs):
+                comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            else:
+                comb = combs[n_gens]
             Q = torch.cat((G[self.batch_idx_all+(comb[:,0],)],G[self.batch_idx_all+(comb[:,1],)]),dim=-1)
             temp1 = (Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),4)]).unsqueeze(-1)
             temp2 = (-Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)

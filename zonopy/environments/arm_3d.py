@@ -202,8 +202,9 @@ class Arm_3D:
                 g_ka = torch.minimum(torch.maximum(self.PI/24,abs(self.qvel/3)),self.PI/3)
                 self.FO_patches.remove()
                 for j in range(self.n_links): 
-                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
+                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)).reduce(4)
                     for t in range(100): 
+                        import pdb;pdb.set_trace()
                         FO_patch = FO_link_slc[t].polyhedron_patch()
                         FO_patches.extend(FO_patch)
                 self.FO_patches = Poly3DCollection(FO_patches,alpha=0.05,edgecolor='green',facecolor='green')

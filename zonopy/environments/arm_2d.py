@@ -246,24 +246,39 @@ class Arm_2D:
         return observation
 
     def collision_check(self,qs):
+
         if self.check_collision:
+            
             R_q = self.rot(qs)
             if len(R_q.shape) == 4:
                 time_steps = len(R_q)
-            else:
-                time_steps = 1
-            for t in range(time_steps):
                 R, P = torch.eye(3), torch.zeros(3)
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
-                    R = R@self.R0[j]@R_q[t,j]
+                    R = R@self.R0[j]@R_q[:,j]
+                    link =zp.batchZonotope(self.link_zonos[j].Z.unsqueeze(0).repeat(time_steps,1,1))
+                    link = R@link+P
+                    for o in range(self.n_obs):
+                        buff = link - self.obs_zonos[o]
+                        A,b = buff.project([0,1]).polytope()
+                        for t in range(time_steps):
+                            if max(A[t]@torch.zeros(2)-b[t]) < 1e-6:
+                                self.qpos_collision = qs[t]
+                                return True
+            else:
+                time_steps = 1
+                R, P = torch.eye(3), torch.zeros(3)
+                for j in range(self.n_links):
+                    P = R@self.P0[j] + P
+                    R = R@self.R0[j]@R_q
                     link = (R@self.link_zonos[j]+P).to_zonotope()
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
                         A,b = buff.project([0,1]).polytope()
                         if max(A@torch.zeros(2)-b) < 1e-6:
-                            self.qpos_collision = qs[t]
+                            self.qpos_collision = qs
                             return True
+  
         return False
 
     def reward(self, action, qpos=None, qgoal=None):
@@ -493,16 +508,20 @@ class Batch_Arm_2D:
 
 if __name__ == '__main__':
 
-    env = Arm_2D()
+    env = Arm_2D(n_obs=2)
     #from zonopy.optimize.armtd import ARMTD_planner
     #planner = ARMTD_planner(env)
     import pdb;pdb.set_trace()
     for _ in range(50):
         #ka, flag = planner.plan(env.qpos,env.qvel,env.qgoal,env.obs_zonos,torch.zeros(2))
 
-        env.step(torch.rand(2))
+        observations, reward, done, info = env.step(torch.rand(2))
         env.render()
+        if done:
+            import pdb;pdb.set_trace()
+            
     '''
+
     env = Batch_Arm_2D()
     for _ in range(50):
         env.step(torch.rand(env.n_batches,2))
