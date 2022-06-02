@@ -2,7 +2,7 @@ import torch
 import zonopy as zp
 import matplotlib.pyplot as plt 
 from matplotlib.collections import PatchCollection
-from .utils import locate_figure
+#from .utils import locate_figure
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi

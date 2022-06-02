@@ -1,6 +1,6 @@
 import matplotlib
 import matplotlib.pyplot as plt
-
+'''
 def locate_figure(f, x, y):
     """Move figure's upper left corner to pixel (x, y)"""
     backend = matplotlib.get_backend()
@@ -16,3 +16,5 @@ def locate_figure(f, x, y):
 f, ax = plt.subplots()
 locate_figure(f, 550, 150)
 plt.show()
+'''
+
