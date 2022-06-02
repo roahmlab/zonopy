@@ -56,7 +56,8 @@ class Arm_2D:
         self.hyp_success = hyp_success
         self.reward_shaping = reward_shaping
 
-
+        self.fig = None
+        self.render_flag = True
         self.reset()
     def reset(self):
         self.qpos = torch.rand(self.n_links)*2*torch.pi - torch.pi
@@ -113,10 +114,15 @@ class Arm_2D:
                     break
 
         self.fail_safe_count = 0
+        if self.render_flag == False:
+            self.one_time_patches.remove()
+            self.FO_patches.remove()
+            self.link_patches.remove()
         self.render_flag = True
         self.done = False
         self.collision = False
-        plt.close()
+        
+        
         return self.get_observations()
 
 
@@ -314,10 +320,14 @@ class Arm_2D:
     def render(self,FO_link=None):
         
         if self.render_flag:
-            plt.ion()
-            self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8])
-            self.ax = self.fig.gca()
+            if self.fig is None:
+                plt.ion()
+                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8])
+                self.fig.canvas.manager.window.move(100,400)
+                self.ax = self.fig.gca()
+
             self.render_flag = False
+            self.one_time_patches = self.ax.add_collection(PatchCollection([]))
             self.FO_patches = self.ax.add_collection(PatchCollection([]))
             self.link_patches = self.ax.add_collection(PatchCollection([]))
             one_time_patches = []
@@ -330,7 +340,8 @@ class Arm_2D:
                 R = R@self.R0[j]@R_q[j]
                 link_patch = (R@self.link_zonos[j]+P).to_zonotope().polygon_patch(edgecolor='gray',facecolor='gray')
                 one_time_patches.append(link_patch)
-            self.ax.add_collection(PatchCollection(one_time_patches, match_original=True))
+            self.one_time_patches = PatchCollection(one_time_patches, match_original=True)
+            self.ax.add_collection(self.one_time_patches)
 
         if FO_link is not None: 
             FO_patches = []
@@ -511,14 +522,14 @@ if __name__ == '__main__':
     env = Arm_2D(n_obs=2)
     #from zonopy.optimize.armtd import ARMTD_planner
     #planner = ARMTD_planner(env)
-    import pdb;pdb.set_trace()
-    for _ in range(50):
-        #ka, flag = planner.plan(env.qpos,env.qvel,env.qgoal,env.obs_zonos,torch.zeros(2))
-
-        observations, reward, done, info = env.step(torch.rand(2))
-        env.render()
-        if done:
-            import pdb;pdb.set_trace()
+    for _ in range(20):
+        for _ in range(4):
+            #ka, flag = planner.plan(env.qpos,env.qvel,env.qgoal,env.obs_zonos,torch.zeros(2))
+            observations, reward, done, info = env.step(torch.rand(2))
+            env.render()
+            if done:
+                env.reset()
+                break
             
     '''
 
