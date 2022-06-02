@@ -240,7 +240,7 @@ class Arm_2D:
         observation = {'qpos':self.qpos,'qvel':self.qvel,'qgoal':self.qgoal}
         if self.n_obs > 0:
             observation['obstacle_pos']= torch.vstack([self.obs_zonos[o].center[:2] for o in range(self.n_obs)])
-            observation[,'obstacle_size'] = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
+            observation['obstacle_size'] = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
         return observation
 
     def collision_check(self,qs):
