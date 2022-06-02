@@ -45,8 +45,8 @@ class Wrapper:
                 - (bool) whether the current episode is completed or not
                 - (dict) misc information
         """
-        ob_dict, reward, done, info = self.env.step(torch.tensor(action))
-        return dict_torch2np(ob_dict), reward, done, dict_torch2np(info)
+        ob_dict, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()))
+        return dict_torch2np(ob_dict), float(reward), done, dict_torch2np(info)
 
     def reset(self):
         """

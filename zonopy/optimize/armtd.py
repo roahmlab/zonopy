@@ -13,11 +13,12 @@ class ARMTD_2D_planner():
         self.eps = 1e-6
         self.zono_order = zono_order
         self.max_combs = max_combs
-        self.generate_combinations_upto()
+        #self.generate_combinations_upto()
         self.PI = torch.tensor(torch.pi)
 
     def wrap_env(self,env):
-        self.dimension = env.dimension
+        assert env.dimension == 2
+        self.dimension = 2
         self.n_links = env.n_links
         self.n_obs = env.n_obs
         self.link_zonos = env.link_zonos

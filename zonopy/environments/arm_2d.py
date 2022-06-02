@@ -19,7 +19,7 @@ class Arm_2D:
             check_collision_FO = False, # flag for whether check collision for FO rendering
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.05, # goal threshold
-            hyp_effort = 0.2, # hyperpara
+            hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
             hyp_collision = -50,
             hyp_success = 50,
@@ -237,9 +237,10 @@ class Arm_2D:
         return info
 
     def get_observations(self):
-        obstacle_pos = torch.vstack([self.obs_zonos[o].center[:2] for o in range(self.n_obs)])
-        obstacle_size = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
-        observation = {'qpos':self.qpos,'qvel':self.qvel,'qgoal':self.qgoal,'obstacle_pos':obstacle_pos,'obstacle_size':obstacle_size}
+        observation = {'qpos':self.qpos,'qvel':self.qvel,'qgoal':self.qgoal}
+        if self.n_obs > 0:
+            observation['obstacle_pos']= torch.vstack([self.obs_zonos[o].center[:2] for o in range(self.n_obs)])
+            observation[,'obstacle_size'] = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
         return observation
 
     def collision_check(self,qs):
