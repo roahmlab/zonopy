@@ -1,13 +1,15 @@
 '''
 Reference: robosuite gymwrapper
 '''
+from zonopy.environments.wrappers.wrapper import Wrapper
+from zonopy.environments.wrappers.utils import dict_torch2np
+import numpy as np
+import torch
+from gym import spaces
+from gym.core import Env
 
-import numpy as np 
-from gym import spaces 
-from gym.core import Env 
 
-
-class GymWrapper(Env):
+class GymWrapper(Wrapper, Env):
     def __init__(self, env, keys=None):
         # Run super method
         super().__init__(env=env)
@@ -23,8 +25,8 @@ class GymWrapper(Env):
         self.metadata = None
 
         # set up observation and action spaces
-        obs = self.env.reset()
-        self.modality_dims = {key: obs[key].shape for key in self.keys}
+        obs = self.env.get_observations()
+        self.modality_dims = {key: tuple(obs[key].shape) for key in self.keys}
         flat_ob = self._flatten_obs(obs)
         self.obs_dim = flat_ob.size
         high = np.inf * np.ones(self.obs_dim)
@@ -33,13 +35,11 @@ class GymWrapper(Env):
         low, high = self.env.action_spec
         self.action_space = spaces.Box(low=low, high=high)
 
-    def _flatten_obs(self, obs_dict, verbose=False):
+    def _flatten_obs(self, obs_dict):
         ob_lst = []
         for key in self.keys:
             if key in obs_dict:
-                if verbose:
-                    print("adding key: {}".format(key))
-                ob_lst.append(np.array(obs_dict[key]).flatten())
+                ob_lst.append(obs_dict[key].numpy().flatten())
         return np.concatenate(ob_lst)
 
     def reset(self):
@@ -52,8 +52,8 @@ class GymWrapper(Env):
         return self._flatten_obs(ob_dict)
 
     def step(self, action):
-        ob_dict, reward, done, info = self.env.step(action)
-        return self._flatten_obs(ob_dict), reward, done, info
+        ob_dict, reward, done, info = self.env.step(torch.tensor(action))
+        return self._flatten_obs(ob_dict), reward, done, dict_torch2np(info)
 
     def seed(self, seed=None):
         # Seed the generator

@@ -116,6 +116,8 @@ class Arm_2D:
         self.render_flag = True
         self.done = False
         self.collision = False
+        return self.get_observations()
+
 
     def set_initial(self,qpos,qvel,qgoal,obs_pos):
         self.qpos = qpos
@@ -166,7 +168,7 @@ class Arm_2D:
         self.render_flag = True
         self.done = False
         self.collision = False
-
+        return self.get_observations()
 
     def step(self,ka,safe=0):
         self.safe = safe == 0
@@ -317,7 +319,7 @@ class Arm_2D:
             if self.fail_safe_count != 1:
                 g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
                 self.FO_patches.remove()
-                for j in range(self.n_links): 
+                for j in range(self.n_links):
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
                     if self.check_collision_FO:
                         c_link_slc = FO_link[j].center_slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
@@ -390,6 +392,22 @@ class Arm_2D:
         w = (w@self.joint_axes.T).transpose(0,-1)
         q = q.reshape(q.shape+(1,1))
         return torch.eye(3) + torch.sin(q)*w + (1-torch.cos(q))*w@w
+    
+    @property
+    def action_spec(self):
+        pass
+    @property
+    def action_dim(self):
+        pass
+    @property 
+    def action_space(self):
+        pass 
+    @property 
+    def observation_space(self):
+        pass 
+    @property 
+    def obs_dim(self):
+        pass
 
 
 class Batch_Arm_2D:
