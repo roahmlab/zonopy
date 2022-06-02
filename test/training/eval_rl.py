@@ -128,11 +128,10 @@ if __name__ == '__main__':
         env = GymWrapper(env, keys = keys)
 
     # Evaluation
-    model.set_parameters("logs/best_model_obs1")
+    model.set_parameters(f"results/{trial_name}/models/best_model")
     for i in range(40):
         obs = env.reset()
         done = False 
-        env.render()
         for j in range(70):
             action,_states =model.predict(obs)
             obs, reward, done, info = env.step(action)

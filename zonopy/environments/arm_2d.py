@@ -2,7 +2,7 @@ import torch
 import zonopy as zp
 import matplotlib.pyplot as plt 
 from matplotlib.collections import PatchCollection
-
+from .utils import locate_figure
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
@@ -21,7 +21,7 @@ class Arm_2D:
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -50,
+            hyp_collision = -100,
             hyp_success = 50,
             reward_shaping=True 
             ):
@@ -116,6 +116,7 @@ class Arm_2D:
         self.render_flag = True
         self.done = False
         self.collision = False
+        plt.close()
         return self.get_observations()
 
 
@@ -178,6 +179,7 @@ class Arm_2D:
         if self.interpolate:
             if self.safe:
                 self.fail_safe_count = 0
+                
                 # to peak
                 self.qpos_to_peak = wrap_to_pi(self.qpos + torch.outer(self.t_to_peak,self.qvel) + .5*torch.outer(self.t_to_peak**2,ka))
                 self.qvel_to_peak = self.qvel + torch.outer(self.t_to_peak,ka)
@@ -295,6 +297,7 @@ class Arm_2D:
 
 
     def render(self,FO_link=None):
+        
         if self.render_flag:
             plt.ion()
             self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8])
@@ -313,8 +316,7 @@ class Arm_2D:
                 link_patch = (R@self.link_zonos[j]+P).to_zonotope().polygon_patch(edgecolor='gray',facecolor='gray')
                 one_time_patches.append(link_patch)
             self.ax.add_collection(PatchCollection(one_time_patches, match_original=True))
-        
-        
+
         if FO_link is not None: 
             FO_patches = []
             if self.fail_safe_count != 1:
