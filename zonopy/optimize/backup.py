@@ -4,6 +4,9 @@ import zonopy as zp
 from zonopy.kinematics.FO import forward_occupancy
 import cyipopt
 
+def wrap_to_pi(phases):
+    return (phases + torch.pi) % (2 * torch.pi) - torch.pi
+
 T_PLAN, T_FULL = 0.5, 1.0
 # NOTE: optimize ka instead of lambda
 class ARMTD_2D_planner():
@@ -43,7 +46,7 @@ class ARMTD_2D_planner():
             self.FO_link[j] = self.FO_link[j].project([0,1])
             for o in range(self.n_obs):                
                 obs_Z = obstacles[o].Z[:,:self.dimension].unsqueeze(0).repeat(self.n_timesteps,1,1)
-                A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope(self.combs) # A: n_timesteps,*,dimension  
+                A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope() # A: n_timesteps,*,dimension  
                 self.A[j].append(A)
                 self.b[j].append(b)
         self.qpos = qpos
@@ -55,12 +58,12 @@ class ARMTD_2D_planner():
             x_prev = np.zeros(self.n_links)*np.nan
             def objective(p,x):
                 qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
-                return torch.sum((qplan-qgoal)**2)
+                return torch.sum(wrap_to_pi(qplan-qgoal)**2)
 
             def gradient(p,x):
                 qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
                 qplan_grad = 0.5*T_PLAN**2
-                return (2*qplan_grad*(qplan-qgoal)).numpy()
+                return (2*qplan_grad*wrap_to_pi(qplan-qgoal)).numpy()
 
             def constraints(p,x): 
                 ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
@@ -120,10 +123,10 @@ class ARMTD_2D_planner():
         cu = [1e20]*M_obs+[torch.pi]*self.n_links,
         )
         #nlp.add_option('mu_strategy', 'adaptive')
-        #nlp.addOption('mu_strategy', 'adaptive')
-        
         #nlp.add_option('tol', 1e-7)
-        
+
+        nlp.addOption('sb', 'yes')
+        nlp.addOption('print_level', 0)
         #ts = time.time()
         k_opt, info = nlp.solve(ka_0)
         #print(f'opt time: {time.time()-ts}')
@@ -159,7 +162,7 @@ if __name__ == '__main__':
     for _ in range(100):
         ts = time.time()
         ka, flag = planner.plan(env,torch.zeros(n_links))
-        print(env.qpos)
+        #print(env.qpos)
         print(time.time()-ts)
         #import pdb;pdb.set_trace()
         observations, reward, done, info = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)

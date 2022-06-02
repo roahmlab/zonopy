@@ -47,11 +47,11 @@ for i = 1:n_bodies+1
     hold on
     title('kinova with bounding boxes')
 
-    %Points =TR.Points;
-    %xyz_M = max(TR.Points); xyz_m = min(TR.Points);
-    %Z = [(xyz_M+xyz_m)'/2,diag((xyz_M-xyz_m)/2)];
-    %filename = sprintf('link_zonotope_%i.mat', i-1);
-    %save(fullfile(save_path,filename),'Z');
+    Points =TR.Points;
+    xyz_M = max(TR.Points); xyz_m = min(TR.Points);
+    Z = [(xyz_M+xyz_m)'/2,diag((xyz_M-xyz_m)/2)]';
+    filename = sprintf('link_zonotope_%i.mat', i-1);
+    save(fullfile(save_path,filename),'Z');
     
 end
 axis("equal")

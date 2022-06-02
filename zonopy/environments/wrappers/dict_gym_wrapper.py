@@ -59,7 +59,7 @@ if __name__ == '__main__':
     from zonopy.environments.wrappers.wrapper import Wrapper
     from zonopy.environments.arm_2d import Arm_2D 
     env = Arm_2D()
-    env = DictGymWrapper(env,goal_state_key='qpos', acheived_state_key='qgoal',keys=['qpos'])
-
+    #env = DictGymWrapper(env,goal_state_key='qpos', acheived_state_key='qgoal',keys=['qpos'])
+    env = GymWrapper(env,keys=['qpos'])
     import pdb;pdb.set_trace()
 

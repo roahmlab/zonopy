@@ -17,8 +17,8 @@ class Arm_3D:
         params, _ = zp.load_sinlge_robot_arm_params('Kinova3')
         self.link_zonos = params['link_zonos'] # NOTE: zonotope, should it be poly zonotope?
         self.link_zonos = [self.link_zonos[j].to_polyZonotope() for j in range(n_links)]
-        self.P0 = params['R']
-        self.R0 = params['P']
+        self.P0 = params['P']
+        self.R0 = params['R']
         self.joint_axes = torch.vstack(params['joint_axes'])
         #### load
 
@@ -63,7 +63,7 @@ class Arm_3D:
 
         for _ in range(self.n_obs):
             while True:
-                obs_pos = torch.rand(3)*2*self.n_links-self.n_links
+                obs_pos = torch.rand(3)*2*0.8-0.8
                 obs = zp.zonotope(torch.vstack((obs_pos,0.1*torch.eye(3))))
                 safe_flag = True
                 for j in range(self.n_links):
@@ -163,7 +163,9 @@ class Arm_3D:
                 self.fail_safe_count +=1
                 self.qpos = torch.clone(self.qpos_brake)
                 self.qvel = torch.clone(self.qvel_brake) 
-        goal_distance = torch.linalg.norm(self.qpos_to_peak-self.qgoal,dim=1)
+
+        #goal_distance = torch.linalg.norm(self.qpos_to_peak-self.qgoal,dim=1)
+        goal_distance = torch.linalg.norm(self.qpos-self.qgoal)
         self.done = goal_distance.min() < 0.15
         if self.done:
             self.until_goal = goal_distance.argmin()
@@ -181,8 +183,8 @@ class Arm_3D:
 
             obs_patches = []
             for o in range(self.n_obs):
-                obs_patches.extend(self.obs_zonos[o].polyhedron_patch(edgecolor='red',facecolor='red'))
-            self.ax.add_collection3d(Poly3DCollection([obs_patches]))
+                obs_patches.extend(self.obs_zonos[o].polyhedron_patch())
+            self.ax.add_collection3d(Poly3DCollection(obs_patches,edgecolor='red',facecolor='red',alpha=0.2))
             
             goal_patches = []
             R_q = self.rot(self.qgoal)
@@ -190,9 +192,9 @@ class Arm_3D:
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[j]
-                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch(edgecolor='gray',facecolor='gray')
+                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
                 goal_patches.extend(link_patch)
-            self.ax.add_collection(Poly3DCollection(goal_patches))
+            self.ax.add_collection3d(Poly3DCollection(goal_patches,edgecolor='gray',facecolor='gray',alpha=0.15))
                 
         if FO_link is not None: 
             FO_patches = []
@@ -202,10 +204,10 @@ class Arm_3D:
                 for j in range(self.n_links): 
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
                     for t in range(100): 
-                        FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
-                        FO_patches.append(FO_patch)
-                self.FO_patches = PatchCollection(FO_patches, match_original=True)
-                self.ax.add_collection(self.FO_patches)            
+                        FO_patch = FO_link_slc[t].polyhedron_patch()
+                        FO_patches.extend(FO_patch)
+                self.FO_patches = Poly3DCollection(FO_patches,alpha=0.05,edgecolor='green',facecolor='green')
+                self.ax.add_collection3d(self.FO_patches)            
 
         if self.intermediate:
             R_q = self.rot(self.qpos_to_peak)
@@ -220,13 +222,13 @@ class Arm_3D:
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
                     R = R@self.R0[j]@R_q[t,j]
-                    link_patch = (R@self.link_zonos[j]+P).to_zonotope().polygon_patch(edgecolor='blue',facecolor='blue')
-                    link_patches.append(link_patch)            
-                self.link_patches = PatchCollection(link_patches, match_original=True)
+                    link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
+                    link_patches.extend(link_patch)            
+                self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2)
                 self.ax.add_collection(self.link_patches)
-                ax_scale = 1.2
-                axis_lim = ax_scale*self.n_links
-                plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
+                self.ax.set_xlim([-0.8,0.8])
+                self.ax.set_ylim([-0.8,0.8])
+                self.ax.set_zlim([-0.8,0.8])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
 
@@ -238,13 +240,14 @@ class Arm_3D:
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[j]
-                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polygon_patch(edgecolor='blue',facecolor='blue')
-                link_patches.append(link_patch)
-            self.link_patches = PatchCollection(link_patches, match_original=True)
-            self.ax.add_collection(self.link_patches)
-            ax_scale = 1.2
-            axis_lim = ax_scale*self.n_links
-            plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
+                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
+                link_patches.extend(link_patch)
+            self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2)
+            self.ax.add_collection3d(self.link_patches)
+            self.ax.set_xlim([-0.8,0.8])
+            self.ax.set_ylim([-0.8,0.8])
+            self.ax.set_zlim([-0.8,0.8])
+            #plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
@@ -259,17 +262,7 @@ class Arm_3D:
 
 if __name__ == '__main__':
 
-    env = Arm_2D()
-    #from zonopy.optimize.armtd import ARMTD_planner
-    #planner = ARMTD_planner(env)
-    for _ in range(50):
-        #ka, flag = planner.plan(env.qpos,env.qvel,env.qgoal,env.obs_zonos,torch.zeros(2))
-
-        env.step(torch.rand(2))
+    env = Arm_3D(n_obs=3,intermediate=True)
+    for _ in range(100):
+        env.step(torch.rand(7))
         env.render()
-    '''
-    env = Batch_Arm_2D()
-    for _ in range(50):
-        env.step(torch.rand(env.n_batches,2))
-        env.render()
-    '''    
