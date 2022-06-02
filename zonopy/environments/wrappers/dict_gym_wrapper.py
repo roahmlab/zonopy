@@ -39,7 +39,7 @@ class DictGymWrapper(GymWrapper):
     def step(self, action):
         obs, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()))
         info['action_taken'] = action
-        return self._create_obs_dict(obs), reward, done, dict_torch2np(info)
+        return self._create_obs_dict(obs), float(reward), done, dict_torch2np(info)
 
     # A lazy way to do this. if vectorizable (dependent on environment), this will dramatically speed up results.
     def compute_reward(self, achieved_goal, desired_goal, info):
@@ -47,9 +47,9 @@ class DictGymWrapper(GymWrapper):
         default_dtype = torch.get_default_dtype()
         for i,info_dict in enumerate(info):
             reward.append(
-                self.env.reward(action = torch.tensor(info_dict['action_taken'],dtype=default_dtype),
+                float(self.env.reward(action = torch.tensor(info_dict['action_taken'],dtype=default_dtype),
                                 qpos = torch.tensor(achieved_goal[i],dtype=default_dtype),
-                                qgoal = torch.tensor(desired_goal[i],dtype=default_dtype))
+                                qgoal = torch.tensor(desired_goal[i],dtype=default_dtype)))
             )
         
         return np.array(reward)
