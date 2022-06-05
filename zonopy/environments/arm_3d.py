@@ -184,7 +184,7 @@ class Arm_3D:
             obs_patches = []
             for o in range(self.n_obs):
                 obs_patches.extend(self.obs_zonos[o].polyhedron_patch())
-            self.ax.add_collection3d(Poly3DCollection(obs_patches,edgecolor='red',facecolor='red',alpha=0.2))
+            self.ax.add_collection3d(Poly3DCollection(obs_patches,edgecolor='red',facecolor='red',alpha=0.2,linewidths=0.2))
             
             goal_patches = []
             R_q = self.rot(self.qgoal)
@@ -194,7 +194,7 @@ class Arm_3D:
                 R = R@self.R0[j]@R_q[j]
                 link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
                 goal_patches.extend(link_patch)
-            self.ax.add_collection3d(Poly3DCollection(goal_patches,edgecolor='gray',facecolor='gray',alpha=0.15))
+            self.ax.add_collection3d(Poly3DCollection(goal_patches,edgecolor='gray',facecolor='gray',alpha=0.15,linewidths=0.5))
                 
         if FO_link is not None: 
             FO_patches = []
@@ -207,7 +207,7 @@ class Arm_3D:
                         import pdb;pdb.set_trace()
                         FO_patch = FO_link_slc[t].polyhedron_patch()
                         FO_patches.extend(FO_patch)
-                self.FO_patches = Poly3DCollection(FO_patches,alpha=0.05,edgecolor='green',facecolor='green')
+                self.FO_patches = Poly3DCollection(FO_patches,alpha=0.05,edgecolor='green',facecolor='green',linewidths=0.2)
                 self.ax.add_collection3d(self.FO_patches)            
 
         if self.intermediate:
@@ -225,7 +225,7 @@ class Arm_3D:
                     R = R@self.R0[j]@R_q[t,j]
                     link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
                     link_patches.extend(link_patch)            
-                self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2)
+                self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5)
                 self.ax.add_collection(self.link_patches)
                 self.ax.set_xlim([-0.8,0.8])
                 self.ax.set_ylim([-0.8,0.8])
@@ -243,7 +243,7 @@ class Arm_3D:
                 R = R@self.R0[j]@R_q[j]
                 link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
                 link_patches.extend(link_patch)
-            self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2)
+            self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5, linestyles=':')
             self.ax.add_collection3d(self.link_patches)
             self.ax.set_xlim([-0.8,0.8])
             self.ax.set_ylim([-0.8,0.8])
@@ -263,7 +263,7 @@ class Arm_3D:
 
 if __name__ == '__main__':
 
-    env = Arm_3D(n_obs=3,intermediate=True)
+    env = Arm_3D(n_obs=3,T_len=20,intermediate=True)
     for _ in range(100):
         env.step(torch.rand(7))
         env.render()

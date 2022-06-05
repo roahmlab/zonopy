@@ -29,7 +29,7 @@ class Arm_2D:
         self.dimension = 2
         self.n_links = n_links
         self.n_obs = n_obs
-        self.link_zonos = [zp.zonotope(torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]])).to_polyZonotope()]*n_links 
+        self.link_zonos = [zp.polyZonotope(torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]]),0)]*n_links 
         self.P0 = [torch.tensor([0.0,0.0,0.0])]+[torch.tensor([1.0,0.0,0.0])]*(n_links-1)
         self.R0 = [torch.eye(3)]*n_links
         self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links)
@@ -99,13 +99,13 @@ class Arm_2D:
                 safe_flag = True
                 for j in range(self.n_links):
                     buff = link_init[j]-obs
-                    A,b = buff.project([0,1]).polytope()
-                    if max(A@torch.zeros(2)-b) < 1e-6:
+                    _,b = buff.project([0,1]).polytope()
+                    if min(b) > 1e-6:
                         safe_flag = False
                         break
                     buff = link_goal[j]-obs
-                    A,b = buff.project([0,1]).polytope()
-                    if max(A@torch.zeros(2)-b) < 1e-6:
+                    _,b = buff.project([0,1]).polytope()
+                    if min(b) > 1e-6:
                         safe_flag = False
                         break
 
@@ -121,7 +121,6 @@ class Arm_2D:
         self.render_flag = True
         self.done = False
         self.collision = False
-        
         
         return self.get_observations()
 
@@ -162,16 +161,20 @@ class Arm_2D:
             obs = zp.zonotope(obs)
             for j in range(self.n_links):
                 buff = link_init[j]-obs
-                A,b = buff.project([0,1]).polytope()
-                if max(A@torch.zeros(2)-b) < 1e-6:
+                _,b = buff.project([0,1]).polytope()
+                if min(b) > 1e-6:
                     assert False, 'given obstacle position is in collision with initial and goal configuration.'
                 buff = link_goal[j]-obs
-                A,b = buff.project([0,1]).polytope()
-                if max(A@torch.zeros(2)-b) < 1e-6:
+                _,b = buff.project([0,1]).polytope()
+                if min(b) > 1e-6:
                     assert False, 'given obstacle position is in collision with initial and goal configuration.'
             self.obs_zonos.append(obs)
 
         self.fail_safe_count = 0
+        if self.render_flag == False:
+            self.one_time_patches.remove()
+            self.FO_patches.remove()
+            self.link_patches.remove()
         self.render_flag = True
         self.done = False
         self.collision = False
@@ -266,11 +269,12 @@ class Arm_2D:
                     link = R@link+P
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
-                        A,b = buff.project([0,1]).polytope()
-                        for t in range(time_steps):
-                            if max(A[t]@torch.zeros(2)-b[t]) < 1e-6:
-                                self.qpos_collision = qs[t]
-                                return True
+                        _,b = buff.project([0,1]).polytope()
+                        unsafe = b.min(dim=-1)[0]>1e-6
+                        if any(unsafe):
+                            self.qpos_collision = qs[unsafe]
+                            return True
+
             else:
                 time_steps = 1
                 R, P = torch.eye(3), torch.zeros(3)
@@ -280,8 +284,8 @@ class Arm_2D:
                     link = (R@self.link_zonos[j]+P).to_zonotope()
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
-                        A,b = buff.project([0,1]).polytope()
-                        if max(A@torch.zeros(2)-b) < 1e-6:
+                        _,b = buff.project([0,1]).polytope()
+                        if min(b) > 1e-6:
                             self.qpos_collision = qs
                             return True
   
