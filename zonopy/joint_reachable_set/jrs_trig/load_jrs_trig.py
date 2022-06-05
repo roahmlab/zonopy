@@ -33,6 +33,16 @@ acc_dim = 3
 kv_dim = 4
 time_dim = 5
 
+def preload_batch_JRS_trig():
+    jrs_tensor = []
+    for c_kv in JRS_KEY['c_kvi'][0]:
+        jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(c_kv,'.3f')+'.mat'
+        jrs_tensor_load = loadmat(jrs_filename)
+        jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype = torch.get_default_dtype()).unsqueeze(0))   
+    
+    return torch.cat(jrs_tensor,0) 
+
+
 def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None):
     jrs_key = torch.tensor(JRS_KEY['c_kvi'])
     n_batches, n_joints = qd_0.shape
@@ -74,7 +84,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
     jrs_key = torch.tensor(JRS_KEY['c_kvi'])
     n_joints = qd_0.shape[-1]
     PZ_JRS_batch = []
-    H_batch = []
+    R_batch = []
     if joint_axes is None:
         joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_joints)]
     for i in range(n_joints):
@@ -96,11 +106,11 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
         PZ_JRS.c[50:,acc_dim] = c_breaking
         PZ_JRS.G[50:,0,acc_dim] = delta_breaking
         '''
-        H_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
+        R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
 
         PZ_JRS_batch.append(PZ_JRS)
-        H_batch.append(H_temp)
-    return PZ_JRS_batch, H_batch
+        R_batch.append(R_temp)
+    return PZ_JRS_batch, R_batch
 
 
 def load_JRS_trig(q_0,qd_0,joint_axes=None):
@@ -217,4 +227,8 @@ def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None):
     # return q_des, qd_des, qdd_des, q, qd, qd_a, qdd_a, r, c_k, delta_k, id, id_names
     return q, qd, qd_a, qdd_a, R, R_t #, r, c_k, delta_k
 if __name__ == '__main__':
-    load_batch_JRS_trig(torch.tensor([0]),torch.tensor([0]))
+    import time 
+    ts = time.time()
+    Z = preload_batch_JRS_trig()
+    print(time.time()-ts) 
+    import pdb;pdb.set_trace()
