@@ -119,7 +119,7 @@ if __name__ == '__main__':
         interpolate = True
         check_collision = False
 
-    env = Arm_2D(n_links=n_links,n_obs=n_obs, interpolate = interpolate, check_collision = check_collision)
+    env = Arm_2D(n_links=n_links,n_obs=n_obs,T_len=10, interpolate = interpolate, check_collision = check_collision)
 
     if use_her:
         env = DictGymWrapper(env, goal_state_key, acheived_state_key, keys=keys)
@@ -129,10 +129,11 @@ if __name__ == '__main__':
 
     # Evaluation
     model.set_parameters(f"results/{trial_name}/models/best_model")
+    import pdb;pdb.set_trace()
     for i in range(40):
         obs = env.reset()
         done = False 
-        for j in range(70):
+        for j in range(30):
             action,_states =model.predict(obs)
             obs, reward, done, info = env.step(action)
             env.render()
