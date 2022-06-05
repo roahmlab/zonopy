@@ -181,7 +181,7 @@ class Arm_2D:
         return self.get_observations()
 
     def step(self,ka,safe=0):
-        self.safe = safe == 0
+        self.safe = safe <= 0
         self.ka = ka
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
@@ -327,7 +327,7 @@ class Arm_2D:
             if self.fig is None:
                 plt.ion()
                 self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8])
-                self.fig.canvas.manager.window.move(100,400)
+                #self.fig.canvas.manager.window.move(100,400)
                 self.ax = self.fig.gca()
 
             self.render_flag = False

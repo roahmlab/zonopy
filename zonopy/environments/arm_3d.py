@@ -16,7 +16,7 @@ class Arm_3D:
         #### load
         params, _ = zp.load_sinlge_robot_arm_params('Kinova3')
         self.link_zonos = params['link_zonos'] # NOTE: zonotope, should it be poly zonotope?
-        self.link_zonos = [self.link_zonos[j].to_polyZonotope() for j in range(n_links)]
+        self.link_zonos = [(10*self.link_zonos[j]).to_polyZonotope() for j in range(n_links)]
         self.P0 = params['P']
         self.R0 = params['R']
         self.joint_axes = torch.vstack(params['joint_axes'])
@@ -63,8 +63,8 @@ class Arm_3D:
 
         for _ in range(self.n_obs):
             while True:
-                obs_pos = torch.rand(3)*2*0.8-0.8
-                obs = zp.zonotope(torch.vstack((obs_pos,0.1*torch.eye(3))))
+                obs_pos = torch.rand(3)*2*8-8
+                obs = zp.zonotope(torch.vstack((obs_pos,torch.eye(3))))
                 safe_flag = True
                 for j in range(self.n_links):
                     buff = link_init[j]-obs
@@ -227,9 +227,9 @@ class Arm_3D:
                     link_patches.extend(link_patch)            
                 self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5)
                 self.ax.add_collection(self.link_patches)
-                self.ax.set_xlim([-0.8,0.8])
-                self.ax.set_ylim([-0.8,0.8])
-                self.ax.set_zlim([-0.8,0.8])
+                self.ax.set_xlim([-8,8])
+                self.ax.set_ylim([-8,8])
+                self.ax.set_zlim([-8,8])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
 
