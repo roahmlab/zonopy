@@ -67,3 +67,11 @@ class GymWrapper(Wrapper, Env):
 
     def compute_reward(self, achieved_goal, desired_goal, info):
         return float(self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype())))
+
+    
+
+if __name__ == '__main__':
+    from zonopy.environments.arm_2d import Arm_2D
+    env = Arm_2D()
+    env = GymWrapper(env,keys=['qpos','qvel','qgoal','obstacle_pos','obstacle_size'])
+    import pdb;pdb.set_trace()
