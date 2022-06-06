@@ -13,13 +13,12 @@ T_PLAN, T_FULL = 0.5, 1.0
 
 # batch
 
-def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
+def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
     jrs_tensor = preload_batch_JRS_trig()
     dimension = 2
     n_timesteps = 100
     ka_0 = torch.zeros(n_links)
     PI = torch.tensor(torch.pi)
-    joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links)
     zono_order=40
     g_ka = torch.pi/24
     class RTS_star_2D_Layer(torch.autograd.Function):
