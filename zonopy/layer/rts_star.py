@@ -28,7 +28,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
             
             lambd =lambd.reshape(-1,n_links) 
             ka = g_ka*lambd
-            observation = observation.reshape(-1,observation.shape[-1])
+            observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             
             n_batches = observation.shape[0]
             qpos = observation[:,:n_links]
@@ -39,7 +39,6 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
             #g_ka = torch.maximum(PI/24,abs(qvel/3))
 
-            
             _, R_trig = process_batch_JRS_trig_ic(jrs_tensor,qpos,qvel,joint_axes)
             FO_link,_,_ = forward_occupancy(R_trig,link_zonos,params)
             
