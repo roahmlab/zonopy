@@ -165,8 +165,8 @@ if __name__ == '__main__':
         print(time.time()-ts)
         #import pdb;pdb.set_trace()
         env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
-        env.render()
-        #env.render(planner.FO_link)
+        #env.render()
+        env.render(planner.FO_link)
         '''
         if done:
             import pdb;pdb.set_trace()
