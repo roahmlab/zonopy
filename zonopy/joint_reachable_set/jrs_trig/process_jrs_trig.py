@@ -13,15 +13,11 @@ acc_dim = 3
 kv_dim = 4
 time_dim = 5
 
-
-def process_batch_JRS_trig(jrs_tensor, q_0,qd_0,joint_axes=None):
+def process_batch_JRS_trig(jrs_tensor, q_0,qd_0,joint_axes):
     jrs_key = torch.tensor(JRS_KEY['c_kvi'])
     n_joints = qd_0.shape[-1]
     PZ_JRS_batch = []
     R_batch = []
-    if joint_axes is None:
-        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_joints)]
-
     for i in range(n_joints):
         closest_idx = torch.argmin(abs(qd_0[i]-jrs_key))
         JRS_batch_zono = batchZonotope(jrs_tensor[closest_idx])
@@ -44,36 +40,19 @@ def process_batch_JRS_trig(jrs_tensor, q_0,qd_0,joint_axes=None):
         R_batch.append(R_temp)
     return PZ_JRS_batch, R_batch
 
-def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None):
+def process_batch_JRS_trig_ic(jrs_tensor,q_0,qd_0,joint_axes):
     jrs_key = torch.tensor(JRS_KEY['c_kvi'])
-    n_batches, n_joints = qd_0.shape
+    n_joints = qd_0.shape[-1]
     PZ_JRS_batch = []
     R_batch = []
-    if joint_axes is None:
-        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_joints)]
     for i in range(n_joints):
         closest_idx = torch.argmin(abs(qd_0[:,i:i+1]-jrs_key),dim=-1)
-        jrs_tensor = []
-        for b in range(n_batches):
-            jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(jrs_key[0,closest_idx[b]],'.3f')+'.mat'
-            jrs_tensor_load = loadmat(jrs_filename)
-            jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype = qd_0.dtype).unsqueeze(0))
-            
-        
-        JRS_batch_zono = batchZonotope(torch.cat(jrs_tensor,0))
+        JRS_batch_zono = batchZonotope(jrs_tensor[closest_idx])
         c_qpos = torch.cos(q_0[:,i:i+1]).unsqueeze(-1)
         s_qpos = torch.sin(q_0[:,i:i+1]).unsqueeze(-1)
         A = c_qpos*torch.tensor([[1.0]+[0]*5,[0,1]+[0]*4]+[[0]*6]*4) + s_qpos*torch.tensor([[0,-1]+[0]*4,[1]+[0]*5]+[[0]*6]*4)+torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]])
         JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
         PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
-
-        '''
-        delta_k = PZ_JRS.G[:,0,0,ka_dim]
-        c_breaking = - qd_0[:,i]/T_fail_safe
-        delta_breaking = - delta_k/T_fail_safe
-        PZ_JRS.c[:,50:,acc_dim] = c_breaking.unsqueeze(-1)
-        PZ_JRS.G[:,50:,0,acc_dim] = delta_breaking.unsqueeze(-1)
-        '''
         R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
         PZ_JRS_batch.append(PZ_JRS)
         R_batch.append(R_temp)
@@ -89,16 +68,21 @@ if __name__ == '__main__':
     print(f'Elasped time for preload: {time.time()-ts}')
     t_load = 0 
     t_process = 0
+    qpos = 2*torch.pi*torch.rand(n_test,2)-torch.pi
+    qvel = 2*torch.pi*torch.rand(n_test,2)-torch.pi
+
+    t00 = time.time()
+    JRS0,_  = process_batch_JRS_trig_ic(jrs_tensor, qpos,qvel)
+    print(f'Elasped time for batch process:{time.time()-t00}')
     for i in range(n_test):
-        qpos = 2*torch.pi*torch.rand(2)-torch.pi
-        qvel = 2*torch.pi*torch.rand(2)-torch.pi
         t1 = time.time()
-        JRS1,_ = zp.load_batch_JRS_trig(qpos,qvel)
+        JRS1,_ = zp.load_batch_JRS_trig(qpos[i],qvel[i])
         t2 = time.time()
-        JRS2,_ = process_batch_JRS_trig(jrs_tensor, torch.tensor([0.0,0.0]),torch.tensor([0.0,0.0]))
+        JRS2,_ = process_batch_JRS_trig(jrs_tensor, qpos[i],qvel[i])
         t3 = time.time()
         t_load += t2-t1
         t_process += t3-t2
+    
 
     print(f'Elasped time for load: {t_load}')
     print(f'Elasped time for process: {t_process}')
