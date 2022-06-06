@@ -182,7 +182,9 @@ class Arm_2D:
 
     def step(self,ka,safe=0):
         self.safe = safe <= 0
-        self.ka = ka
+        # -torch.pi<qvel+k*T_PLAN < torch.pi
+        # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
+        self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         if self.interpolate:
