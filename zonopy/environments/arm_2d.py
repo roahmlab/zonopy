@@ -230,7 +230,7 @@ class Arm_2D:
         if self.done:
             self.until_goal = goal_distance.argmin()
         '''
-        reward = self.reward(ka)
+        reward = self.reward(ka) # NOTE: should it be ka or self.ka ??
         self.done = self.success or self.collision
         observations = self.get_observations()
         info = self.get_info()
