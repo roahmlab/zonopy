@@ -51,7 +51,6 @@ def process_batch_JRS_trig_ic(jrs_tensor,q_0,qd_0,joint_axes):
         c_qpos = torch.cos(q_0[:,i:i+1]).unsqueeze(-1)
         s_qpos = torch.sin(q_0[:,i:i+1]).unsqueeze(-1)
         A = c_qpos*torch.tensor([[1.0]+[0]*5,[0,1]+[0]*4]+[[0]*6]*4) + s_qpos*torch.tensor([[0,-1]+[0]*4,[1]+[0]*5]+[[0]*6]*4)+torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]])
-        print(any(abs(qd_0[:,i:i+1])>torch.pi))
         JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
         PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
         R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
