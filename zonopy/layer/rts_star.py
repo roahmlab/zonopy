@@ -21,12 +21,14 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
     PI = torch.tensor(torch.pi)
     joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links)
     zono_order=40
+    g_ka = torch.pi/24
     class RTS_star_2D_Layer(torch.autograd.Function):
         @staticmethod
-        def forward(ctx,ka,observation):
+        def forward(ctx,lambd,observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             
-            ka = ka.reshape(-1,n_links)
+            lambd =lambd.reshape(-1,n_links) 
+            ka = g_ka*lambd
             observation = observation.reshape(-1,observation.shape[-1])
             
             n_batches = observation.shape[0]
@@ -36,9 +38,8 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
             obstacle_size = observation[:,-2*n_obs:]
             qgoal = qpos + qvel*T_PLAN + 0.5*ka*T_PLAN**2
 
-            g_ka = torch.maximum(PI/24,abs(qvel/3))
+            #g_ka = torch.maximum(PI/24,abs(qvel/3))
 
-            
             
             _, R_trig = process_batch_JRS_trig_ic(jrs_tensor,qpos,qvel,joint_axes)
             FO_link,_,_ = forward_occupancy(R_trig,link_zonos,params)
@@ -46,7 +47,7 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
             As = [[] for _ in range(n_links)]
             bs = [[] for _ in range(n_links)]
 
-            lambda_to_slc = (ka/g_ka).reshape(n_batches,1,dimension).repeat(1,n_timesteps,1)
+            lambda_to_slc = lambd.reshape(n_batches,1,dimension).repeat(1,n_timesteps,1)
             
             unsafe_flag = torch.zeros(n_batches)
             for j in range(n_links):
@@ -81,8 +82,8 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
                             cons_obs[-n_links:] = qvel[i]+x*T_PLAN
                             grad_cons_obs[-n_links:] = torch.eye(n_links)*T_PLAN
                             for j in range(n_links):
-                                c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka[i])
-                                grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka[i])@torch.diag(1/g_ka[i])
+                                c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka)
+                                grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka)/g_ka
                                 for o in range(n_obs):
                                     cons, ind = torch.max((As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],-1) # shape: n_timsteps, SAFE if >=1e-6
                                     grad_cons = (As[j][o][i].gather(-2,ind.reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
@@ -101,8 +102,8 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
                             cons_obs[-n_links:] = qvel[i]+x*T_PLAN
                             grad_cons_obs[-n_links:] = torch.eye(n_links)*T_PLAN
                             for j in range(n_links):
-                                c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka[i])
-                                grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka[i])@torch.diag(1/g_ka[i])
+                                c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka)
+                                grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka)/g_ka
                                 for o in range(n_obs):
                                     cons, ind = torch.max((As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],-1) # shape: n_timsteps, SAFE if >=1e-6
                                     grad_cons = (As[j][o][i].gather(-2,ind.reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
@@ -122,8 +123,8 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
                 n = n_links,
                 m = M,
                 problem_obj=nlp_setup(),
-                lb = (-g_ka[i]).tolist(),
-                ub = g_ka[i].tolist(),
+                lb = [-g_ka]*n_links,
+                ub = [g_ka]*n_links,
                 cl = [1e-6]*M_obs+[-torch.pi]*n_links,
                 cu = [1e20]*M_obs+[torch.pi]*n_links,
                 )
@@ -135,7 +136,7 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
 
                 # NOTE: for training, dont care about fail-safe
                 if info['status'] == 0:
-                    ka[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())
+                    lambd[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())/g_ka
                     flags[i] = 0
                 else:
                     flags[i] = 1
@@ -149,7 +150,7 @@ def gen_RTS_star_2D_Layer(link_zonos,n_links,n_obs,params):
                     ka[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())
                     flags[i]=0
                 '''
-            return ka.squeeze(0), FO_link, flags
+            return lambd.squeeze(0), FO_link, flags
 
         @staticmethod 
         def backward(ctx,grad_ouput):
