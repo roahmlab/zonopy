@@ -142,6 +142,14 @@ class zonotope:
         assert isinstance(other, torch.Tensor), f'The other object should be torch tensor, but {type(other)}.'
         Z = self.Z@other.T
         return zonotope(Z)
+    def __mul__(self,other):
+        if isinstance(other,(float,int)):
+            Z = other*self.Z
+        return zonotope(Z)
+    def __rmul__(self,other):
+        if isinstance(other,(float,int)):
+            Z = other*self.Z
+        return zonotope(Z)
 
     def slice(self,slice_dim,slice_pt):
         '''

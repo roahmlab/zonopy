@@ -159,6 +159,12 @@ class batchZonotope:
         Z = self.Z@other.transpose(-2,-1)
         return batchZonotope(Z) 
 
+
+    def __mul__(self,other):
+        if isinstance(other,(float,int)):
+            Z = other*self.Z
+        return batchZonotope(Z)
+
     def slice(self,slice_dim,slice_pt):
         '''
         slice zonotope on specified point in a certain dimension
@@ -257,8 +263,7 @@ class batchZonotope:
         G = torch.clone(self.generators)
         h = torch.linalg.vector_norm(G,dim=-1)
         h_sort, indicies = torch.sort(h,dim=-1,descending=True)
- 
-        h_zero = ((h_sort > 1e-6).sum(tuple(range(1))) ==0)
+        h_zero = ((h_sort > 1e-6).sum(tuple(range(self.batch_dim))) ==0)
         if torch.any(h_zero):
             first_reduce_idx = torch.nonzero(h_zero).squeeze(-1)[0]
             G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
