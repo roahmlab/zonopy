@@ -61,6 +61,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+n_links
             flags = [-1]*n_batches # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            #print(f'rts_pass : {(unsafe_flag!=0).sum()}')
             for i in unsafe_flag.nonzero().reshape(-1):
                 class nlp_setup():
                     x_prev = np.zeros(n_links)*np.nan

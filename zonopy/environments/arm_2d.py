@@ -192,8 +192,8 @@ class Arm_2D:
                 self.fail_safe_count = 0
                 
                 # to peak
-                self.qpos_to_peak = wrap_to_pi(self.qpos + torch.outer(self.t_to_peak,self.qvel) + .5*torch.outer(self.t_to_peak**2,ka))
-                self.qvel_to_peak = self.qvel + torch.outer(self.t_to_peak,ka)
+                self.qpos_to_peak = wrap_to_pi(self.qpos + torch.outer(self.t_to_peak,self.qvel) + .5*torch.outer(self.t_to_peak**2,self.ka))
+                self.qvel_to_peak = self.qvel + torch.outer(self.t_to_peak,self.ka)
                 self.qpos = self.qpos_to_peak[-1]
                 self.qvel = self.qvel_to_peak[-1]
                 #to stop
@@ -213,8 +213,8 @@ class Arm_2D:
         else:
             if self.safe:
                 self.fail_safe_count = 0
-                self.qpos += wrap_to_pi(self.qvel*T_PLAN + 0.5*ka*T_PLAN**2)
-                self.qvel += ka*T_PLAN
+                self.qpos += wrap_to_pi(self.qvel*T_PLAN + 0.5*self.ka*T_PLAN**2)
+                self.qvel += self.ka*T_PLAN
                 self.qpos_brake = wrap_to_pi(self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN))
                 self.qvel_brake = torch.zeros(self.n_links)
 
