@@ -27,8 +27,9 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             
             lambd =lambd.reshape(-1,n_links) 
+            #observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
+            observation = observation.to(dtype=torch.get_default_dtype())
             ka = g_ka*lambd
-            observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             
             n_batches = observation.shape[0]
             qpos = observation[:,:n_links]
@@ -61,7 +62,6 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+n_links
             flags = [-1]*n_batches # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
-            #print(f'rts_pass : {(unsafe_flag!=0).sum()}')
             for i in unsafe_flag.nonzero().reshape(-1):
                 class nlp_setup():
                     x_prev = np.zeros(n_links)*np.nan
@@ -149,7 +149,8 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     ka[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())
                     flags[i]=0
                 '''
-            return lambd.squeeze(0), FO_link, flags
+            #lambd.squeeze(0)
+            return lambd, FO_link, flags
 
         @staticmethod 
         def backward(ctx,grad_ouput):
@@ -166,30 +167,35 @@ if __name__ == '__main__':
     
     t_armtd = 0
     params = {'n_joints':env.n_links, 'P':env.P0, 'R':env.R0}
-    RTS = gen_RTS_star_2D_Layer(env.link_zonos,env.n_links,env.n_obs,params)
+    joint_axes = [j for j in env.joint_axes]
+    RTS = gen_RTS_star_2D_Layer(env.link_zonos,joint_axes,env.n_links,env.n_obs,params)
 
     n_steps = 30
     for _ in range(n_steps):
         ts = time.time()
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys() ])
         #k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
-        k = torch.tensor([0.1,0.1])
-        ka, FO_link, flag = RTS(torch.vstack((k,k,k)),torch.vstack((observ_temp,observ_temp,observ_temp))) 
-
+        lam = torch.tensor([0.8,0.8])
+        lam, FO_link, flag = RTS(torch.vstack((lam,lam)),torch.vstack((observ_temp,observ_temp))) 
+        #ka, FO_link, flag = RTS(k,observ_temp)
+        print(f'action: {lam}')
+        print(f'flag: {flag}')
+            
         t_elasped = time.time()-ts
         print(f'Time elasped for ARMTD-2d:{t_elasped}')
         t_armtd += t_elasped
-        print(ka[0])
-        observation, reward, done, info = env.step(ka[0],flag[0])
-        #import pdb;pdb.set_trace()
-        env.render()
+        #print(ka[0])
+        observation, reward, done, info = env.step(lam[0]*torch.pi/24,flag[0])
+        
+        FO_link = [fo[0] for fo in FO_link]
+        env.render(FO_link)
         '''
         if done:
             import pdb;pdb.set_trace()
             break
         '''
-        #import pdb;pdb.set_trace()
-        #(env.safe_con.numpy() - planner.safe_con > 1e-2).any()
+
+
     print(f'Total time elasped for ARMTD-2d with {n_steps} steps: {t_armtd}')
     import pdb;pdb.set_trace()
 
