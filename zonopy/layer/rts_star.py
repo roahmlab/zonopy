@@ -150,6 +150,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     flags[i]=0
                 '''
             #lambd.squeeze(0)
+            #print(f'rts pass: {flags}')
             return lambd, FO_link, flags
 
         @staticmethod 
