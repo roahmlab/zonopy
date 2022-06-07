@@ -51,8 +51,8 @@ class GymWrapper(Wrapper, Env):
         ob_dict = self.env.reset()
         return self._flatten_obs(ob_dict)
 
-    def step(self, action):
-        ob_dict, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()))
+    def step(self, action, *args, **kwargs):
+        ob_dict, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), *args, **kwargs)
         info['action_taken'] = action
         return self._flatten_obs(ob_dict), float(reward), done, dict_torch2np(info)
 

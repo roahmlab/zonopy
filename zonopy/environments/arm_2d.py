@@ -93,7 +93,9 @@ class Arm_2D:
 
         for _ in range(self.n_obs):
             while True:
-                obs_pos = torch.rand(2)*2*self.n_links-self.n_links
+                r,th = torch.rand(2)
+                #obs_pos = torch.rand(2)*2*self.n_links-self.n_links
+                obs_pos = self.n_links*r*torch.tensor([torch.cos(2*torch.pi*th),torch.sin(2*torch.pi*th)])
                 obs = torch.hstack((torch.vstack((obs_pos,0.1*torch.eye(2))),torch.zeros(3,1)))
                 obs = zp.zonotope(obs)
                 safe_flag = True

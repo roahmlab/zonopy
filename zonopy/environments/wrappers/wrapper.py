@@ -33,7 +33,7 @@ class Wrapper:
             else:
                 break
 
-    def step(self, action):
+    def step(self, action, *args, **kwargs):
         """
         By default, run the normal environment step() function
         Args:
@@ -45,7 +45,7 @@ class Wrapper:
                 - (bool) whether the current episode is completed or not
                 - (dict) misc information
         """
-        ob_dict, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()))
+        ob_dict, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), *args, **kwargs)
         return dict_torch2np(ob_dict), float(reward), done, dict_torch2np(info)
 
     def reset(self):
@@ -57,13 +57,13 @@ class Wrapper:
         ob_dict = self.env.reset()
         return dict_torch2np(ob_dict)
 
-    def render(self, **kwargs):
+    def render(self, *args, **kwargs):
         """
         By default, run the normal environment render() function
         Args:
             **kwargs (dict): Any args to pass to environment render function
         """
-        return self.env.render(**kwargs)
+        return self.env.render(*args,**kwargs)
 
     def observation_spec(self):
         """
