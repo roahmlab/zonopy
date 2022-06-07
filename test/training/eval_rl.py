@@ -15,7 +15,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 import gym
 from gym import spaces
 from gym.wrappers import TimeLimit
-
+ 
 
 
 def make_env(n_links: int = 2, n_obs: int = 0, ep_len: int = 100, use_her: bool = True, rank: int = 0, seed: int = 0, render: bool = False) -> Callable:
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         print("Please provide {num_links} {num_obs} {num_workers} {gpu_id} {ep_len} {train_timesteps} {train_freq} {use_her=0,1} {action_noise} and {learn_rate} for training!")
         exit()
     
-    env = SubprocVecEnv([make_env(n_links,n_obs,ep_len,use_her,i) for i in range(num_workers)])
+    env = SubprocVecEnv([make_env(n_links,n_obs,ep_len,use_her,i) for i in range(1)])
 
     n_actions = env.action_space.shape[-1]
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=action_noise * np.ones(n_actions))
@@ -135,6 +135,7 @@ if __name__ == '__main__':
         done = False 
         for j in range(30):
             action,_states =model.predict(obs)
+            print(f'action: {action}')
             obs, reward, done, info = env.step(action)
             env.render()
             if done:
