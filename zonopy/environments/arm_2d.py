@@ -21,7 +21,7 @@ class Arm_2D:
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -200,
+            hyp_collision = -100,
             hyp_success = 50,
             reward_shaping=True 
             ):
@@ -303,8 +303,8 @@ class Arm_2D:
             qpos = self.qpos
             qgoal = self.qgoal
 
-        goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
-        self.success = goal_dist < self.goal_threshold 
+        self.goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
+        self.success = self.goal_dist < self.goal_threshold 
         success = self.success.to(dtype=torch.get_default_dtype())
         
         reward = 0.0
