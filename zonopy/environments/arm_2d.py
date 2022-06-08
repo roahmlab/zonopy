@@ -317,7 +317,7 @@ class Arm_2D:
 
         # otherwise continue to calculate the dense reward
         # reward for position term
-        reward -= self.hyp_dist_to_goal * goal_dist
+        reward -= self.hyp_dist_to_goal * self.goal_dist
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action)
         # Add collision if needed
