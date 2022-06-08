@@ -61,7 +61,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
 
             M_obs = n_timesteps*n_links*n_obs
-            M = M_obs+2*n_links
+            M = M_obs+n_links
             flags = [-1]*n_batches # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             for i in unsafe_flag.nonzero().reshape(-1):
                 class nlp_setup():
@@ -76,18 +76,11 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
                     def constraints(nlp,x): 
                         ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps,1)
-                        if (nlp.x_prev!=x).any():      
+                        if (nlp.x_prev!=x).any():                
                             cons_obs = torch.zeros(M)                   
                             grad_cons_obs = torch.zeros(M,n_links)
-                            # velocity min max constraints
-                            possible_max_min_q_dot = torch.vstack((qvel[i],qvel[i]+x*T_PLAN,torch.zeros_like(qvel[i])))
-                            q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
-                            q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
-                            grad_q_max = torch.diag(T_PLAN*(q_dot_max_idx%2))
-                            grad_q_min = torch.diag(T_PLAN*(q_dot_min_idx%2))
-                            cons_obs[-2*n_links:] = torch.hstack((q_dot_max,q_dot_min))
-                            grad_cons_obs[-2*n_links:] = torch.vstack((grad_q_max,grad_q_min))
-                            # velocity min max constraints 
+                            cons_obs[-n_links:] = qvel[i]+x*T_PLAN
+                            grad_cons_obs[-n_links:] = torch.eye(n_links)*T_PLAN
                             for j in range(n_links):
                                 c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka)
                                 grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka)/g_ka
@@ -104,17 +97,10 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     def jacobian(nlp,x):
                         ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps,1)
                         if (nlp.x_prev!=x).any():                
-                            cons_obs = torch.zeros(M)   
+                            cons_obs = torch.zeros(M)                   
                             grad_cons_obs = torch.zeros(M,n_links)
-                            # velocity min max constraints
-                            possible_max_min_q_dot = torch.vstack((qvel[i],qvel[i]+x*T_PLAN,torch.zeros_like(qvel[i])))
-                            q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
-                            q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
-                            grad_q_max = torch.diag(T_PLAN*(q_dot_max_idx%2))
-                            grad_q_min = torch.diag(T_PLAN*(q_dot_min_idx%2))
-                            cons_obs[-2*n_links:] = torch.hstack((q_dot_max,q_dot_min))
-                            grad_cons_obs[-2*n_links:] = torch.vstack((grad_q_max,grad_q_min))
-                            # velocity min max constraints 
+                            cons_obs[-n_links:] = qvel[i]+x*T_PLAN
+                            grad_cons_obs[-n_links:] = torch.eye(n_links)*T_PLAN
                             for j in range(n_links):
                                 c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka)
                                 grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka)/g_ka
@@ -139,8 +125,8 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                 problem_obj=nlp_setup(),
                 lb = [-g_ka]*n_links,
                 ub = [g_ka]*n_links,
-                cl = [1e-6]*M_obs+[-1e20]*n_links+[-torch.pi+1e-6]*n_links,
-                cu = [1e20]*M_obs+[torch.pi-1e-6]*n_links+[1e20]*n_links,
+                cl = [1e-6]*M_obs+[-torch.pi]*n_links,
+                cu = [1e20]*M_obs+[torch.pi]*n_links,
                 )
                 NLP.addOption('sb', 'yes')
                 NLP.addOption('print_level', 0)

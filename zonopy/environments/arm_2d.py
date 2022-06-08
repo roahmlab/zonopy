@@ -36,6 +36,8 @@ class Arm_2D:
         self.fig_scale = 1
         self.interpolate = interpolate
         self.PI = torch.tensor(torch.pi)
+
+
         if interpolate:
             self.T_len = T_len
             t_traj = torch.linspace(0,T_FULL,T_len+1)

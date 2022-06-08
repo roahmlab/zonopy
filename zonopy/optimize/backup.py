@@ -18,6 +18,7 @@ class ARMTD_2D_planner():
         self.max_combs = max_combs
         #self.generate_combinations_upto()
         self.PI = torch.tensor(torch.pi)
+        self.JRS_tensor = zp.preload_batch_JRS_trig()
 
     def wrap_env(self,env):
         assert env.dimension == 2
@@ -34,13 +35,12 @@ class ARMTD_2D_planner():
             self.combs.append(torch.combinations(torch.arange(i+1),2))
 
     def prepare_constraints(self,qpos,qvel,obstacles):
-        _, R_trig = zp.load_batch_JRS_trig(qpos,qvel)
-        self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params)
+        _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos,qvel,self.joint_axes)
+        #_, R_trig = zp.load_batch_JRS_trig(qpos,qvel)
+        self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
         self.A = [[] for _ in range(self.n_links)]
         self.b = [[] for _ in range(self.n_links)]
-        self.eval_slc_c_k = []
-        self.grad_slc_c_k = []
-        self.g_ka = torch.maximum(self.PI/24,abs(qvel/3))
+        self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
         
         for j in range(self.n_links):
             self.FO_link[j] = self.FO_link[j].project([0,1])
@@ -74,7 +74,7 @@ class ARMTD_2D_planner():
                     grad_cons_obs[-self.n_links:] = torch.eye(self.n_links)*T_PLAN
                     for j in range(self.n_links):
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
-                        grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)@torch.diag(1/self.g_ka)
+                        grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
                         for o in range(self.n_obs):
                             cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
                             grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
@@ -94,7 +94,7 @@ class ARMTD_2D_planner():
                     grad_cons_obs[-self.n_links:] = torch.eye(self.n_links)*T_PLAN
                     for j in range(self.n_links):
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
-                        grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)@torch.diag(1/self.g_ka)
+                        grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
                         for o in range(self.n_obs):
                             cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
                             grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
@@ -117,8 +117,8 @@ class ARMTD_2D_planner():
         n = self.n_links,
         m = M,
         problem_obj=nlp_setup(),
-        lb = (-self.g_ka).tolist(),
-        ub = self.g_ka.tolist(),
+        lb = [-self.g_ka]*n_links,
+        ub = [self.g_ka]*n_links,
         cl = [1e-6]*M_obs+[-torch.pi]*self.n_links,
         cu = [1e20]*M_obs+[torch.pi]*self.n_links,
         )
@@ -145,6 +145,7 @@ class ARMTD_2D_planner():
         return k_opt, info['status']
         
     def plan(self,env,ka_0):
+        zp.reset()
         self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
         k_opt, flag = self.trajopt(env.qgoal,ka_0)
         return k_opt, flag
@@ -154,16 +155,20 @@ if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
     import time
     n_links = 2
-    cyipopt.setLoggingLevel(1000)
+    #cyipopt.setLoggingLevel(1000)
     env = Arm_2D(n_links=n_links,n_obs=1)
-    #env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),qvel= torch.zeros(n_links), qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),obs_pos=[torch.tensor([-1,-0.9])])
+    env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),qvel= torch.zeros(n_links), qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),obs_pos=[torch.tensor([-1,-0.9])])
     #from zonopy.optimize.armtd import ARMTD_planner
+    t_armtd = 0
     planner = ARMTD_2D_planner(env)
-    for _ in range(100):
+    n_steps = 30
+    for _ in range(n_steps):
         ts = time.time()
         ka, flag = planner.plan(env,torch.zeros(n_links))
         #print(env.qpos)
-        print(time.time()-ts)
+        t_elasped = time.time()-ts
+        print(f'Time elasped for ARMTD-2d:{t_elasped}')
+        t_armtd += t_elasped
         #import pdb;pdb.set_trace()
         observations, reward, done, info = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
         env.render(planner.FO_link)
@@ -174,4 +179,6 @@ if __name__ == '__main__':
         '''
         #import pdb;pdb.set_trace()
         #(env.safe_con.numpy() - planner.safe_con > 1e-2).any()
+    print(f'Total time elasped for ARMTD-2d with {n_steps} steps: {t_armtd}')
     import pdb;pdb.set_trace()
+
