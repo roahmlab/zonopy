@@ -18,7 +18,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
     dimension = 2
     n_timesteps = 100
     ka_0 = torch.zeros(n_links)
-    PI = torch.tensor(torch.pi)
+    PI_vel = torch.tensor(torch.pi-1e-6)
     zono_order=40
     g_ka = torch.pi/24
     class RTS_star_2D_Layer(torch.autograd.Function):
@@ -48,7 +48,8 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
             lambda_to_slc = lambd.reshape(n_batches,1,dimension).repeat(1,n_timesteps,1)
             
-            unsafe_flag = torch.zeros(n_batches)
+            #unsafe_flag = torch.zeros(n_batches) 
+            unsafe_flag = (abs(qvel+lambd*g_ka*T_PLAN)>PI_vel).any(-1)#NOTE: this might not work on gpu, velocity lim check
             for j in range(n_links):
                 FO_link[j] = FO_link[j].project([0,1]) 
                 c_k = FO_link[j].center_slice_all_dep(lambda_to_slc).unsqueeze(-1) # FOR, safety check
@@ -57,7 +58,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     A_temp, b_temp = batchZonotope(torch.cat((obs_Z,FO_link[j].Grest),-2)).polytope() # A: n_timesteps,*,dimension                     
                     As[j].append(A_temp)
                     bs[j].append(b_temp)
-                    unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  # FOR, safety check
+                    unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
 
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+n_links
@@ -149,7 +150,6 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     ka[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())
                     flags[i]=0
                 '''
-            #lambd.squeeze(0)
             #print(f'rts pass: {flags}')
             return lambd, FO_link, flags
 
