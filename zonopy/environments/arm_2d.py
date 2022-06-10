@@ -241,7 +241,7 @@ class Arm_2D:
         return observations, reward, self.done, info
 
     def get_info(self):
-        info ={'collision':self.collision}
+        info ={'collision':self.collision,'safe_flag':self.safe}
         if self.collision:
             collision_info = {
                 'qpos_collision':self.qpos_collision,
@@ -448,7 +448,7 @@ class Arm_2D:
     def obs_dim(self):
         pass
 
-
+'''
 class Batch_Arm_2D:
     def __init__(self,n_links=2,n_obs=1,n_batches=4):
         self.n_batches = n_batches
@@ -527,6 +527,8 @@ class Batch_Arm_2D:
         q = self.qpos.reshape(self.n_batches,self.n_links,1,1)
         return torch.eye(3) + torch.sin(q)*w + (1-torch.cos(q))*w@w
 
+'''    
+
 if __name__ == '__main__':
 
     env = Arm_2D(n_obs=2)
@@ -548,3 +550,4 @@ if __name__ == '__main__':
         env.step(torch.rand(env.n_batches,2))
         env.render()
     '''    
+

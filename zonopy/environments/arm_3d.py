@@ -8,16 +8,16 @@ import mpl_toolkits.mplot3d as a3
 T_PLAN, T_FULL = 0.5, 1
 
 class Arm_3D:
-    def __init__(self,n_links=7,n_obs=1,T_len=50,intermediate = True):
+    def __init__(self,n_links=7,n_obs=1,T_len=50,intermediate = True, scale=10):
         self.dimension = 3
         self.n_links = n_links
         self.n_obs = n_obs
-
+        self.scale = scale
         #### load
         params, _ = zp.load_sinlge_robot_arm_params('Kinova3')
         self.link_zonos = params['link_zonos'] # NOTE: zonotope, should it be poly zonotope?
-        self.link_zonos = [(10*self.link_zonos[j]).to_polyZonotope() for j in range(n_links)]
-        self.P0 = params['P']
+        self.link_zonos = [(self.scale*self.link_zonos[j]).to_polyZonotope() for j in range(n_links)]
+        self.P0 = [self.scale*P for P in params['P']]
         self.R0 = params['R']
         self.joint_axes = torch.vstack(params['joint_axes'])
         #### load
@@ -30,7 +30,7 @@ class Arm_3D:
             t_traj = torch.linspace(0,T_FULL,T_len+1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len)+1:] - T_PLAN
-
+        self.FO_freq = 10
         self.reset()
     def reset(self):
         self.qpos = torch.rand(self.n_links)*2*torch.pi - torch.pi
@@ -204,9 +204,9 @@ class Arm_3D:
                 for j in range(self.n_links): 
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)).reduce(4)
                     for t in range(100): 
-                        import pdb;pdb.set_trace()
-                        FO_patch = FO_link_slc[t].polyhedron_patch()
-                        FO_patches.extend(FO_patch)
+                        if t % self.FO_freq == 0:
+                            FO_patch = FO_link_slc[t].polyhedron_patch()
+                            FO_patches.extend(FO_patch)
                 self.FO_patches = Poly3DCollection(FO_patches,alpha=0.05,edgecolor='green',facecolor='green',linewidths=0.2)
                 self.ax.add_collection3d(self.FO_patches)            
 
@@ -227,9 +227,9 @@ class Arm_3D:
                     link_patches.extend(link_patch)            
                 self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5)
                 self.ax.add_collection(self.link_patches)
-                self.ax.set_xlim([-8,8])
-                self.ax.set_ylim([-8,8])
-                self.ax.set_zlim([-8,8])
+                self.ax.set_xlim([-self.scale*0.8,self.scale*0.8])
+                self.ax.set_ylim([-self.scale*0.8,self.scale*0.8])
+                self.ax.set_zlim([-self.scale*0.8,self.scale*0.8])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
 
@@ -245,9 +245,9 @@ class Arm_3D:
                 link_patches.extend(link_patch)
             self.link_patches = Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5, linestyles=':')
             self.ax.add_collection3d(self.link_patches)
-            self.ax.set_xlim([-0.8,0.8])
-            self.ax.set_ylim([-0.8,0.8])
-            self.ax.set_zlim([-0.8,0.8])
+            self.ax.set_xlim([-self.scale*0.8,self.scale*0.8])
+            self.ax.set_ylim([-self.scale*0.8,self.scale*0.8])
+            self.ax.set_zlim([-self.scale*0.8,self.scale*0.8])
             #plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()

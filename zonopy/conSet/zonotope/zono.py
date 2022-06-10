@@ -414,8 +414,11 @@ class zonotope:
             translation = self.Z[i+1,:dim]
             V = torch.vstack((V+translation,V-translation))
             if dim < i < self.n_generators:
-                K = ConvexHull(V)
-                V = V[K.vertices]
+                try:
+                    K = ConvexHull(V)
+                    V = V[K.vertices]
+                except:
+                    V = V
         K = ConvexHull(V)        
         return [V[s] for s in K.simplices]
 

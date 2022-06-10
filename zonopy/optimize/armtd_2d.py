@@ -158,6 +158,8 @@ class ARMTD_2D_planner():
         if any(~safe):
             import pdb;pdb.set_trace()
         '''
+        #close()
+        import pdb;pdb.set_trace()
         return k_opt, info['status']
         
     def plan(self,env,ka_0):

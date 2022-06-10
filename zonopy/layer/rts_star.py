@@ -26,7 +26,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
         def forward(ctx,lambd,observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             
-            lambd =lambd.reshape(-1,n_links) 
+            lambd =lambd.reshape(-1,n_links).to(dtype=torch.get_default_dtype()) 
             #observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             observation = observation.to(dtype=torch.get_default_dtype())
             ka = g_ka*lambd
@@ -62,7 +62,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+2*n_links
-            flags = [-1]*n_batches # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             for i in unsafe_flag.nonzero().reshape(-1):
                 class nlp_setup():
                     x_prev = np.zeros(n_links)*np.nan
