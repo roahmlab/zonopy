@@ -21,7 +21,7 @@ class Arm_2D:
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -100,
+            hyp_collision = -200,
             hyp_success = 50,
             reward_shaping=True 
             ):
