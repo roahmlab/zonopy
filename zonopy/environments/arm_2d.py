@@ -23,7 +23,8 @@ class Arm_2D:
             hyp_dist_to_goal = 1.0,
             hyp_collision = -200,
             hyp_success = 50,
-            reward_shaping=True 
+            reward_shaping=True,
+            max_episode_steps = None
             ):
 
         self.dimension = 2
@@ -60,6 +61,10 @@ class Arm_2D:
 
         self.fig = None
         self.render_flag = True
+
+        self._max_episode_steps = max_episode_steps
+        self._elapsed_steps = None
+
         self.reset()
     def reset(self):
         self.qpos = torch.rand(self.n_links)*2*torch.pi - torch.pi
@@ -125,6 +130,8 @@ class Arm_2D:
         self.render_flag = True
         self.done = False
         self.collision = False
+
+        self._elapsed_steps = 0
         
         return self.get_observations()
 
@@ -182,6 +189,9 @@ class Arm_2D:
         self.render_flag = True
         self.done = False
         self.collision = False
+
+        self._elapsed_steps = 0
+
         return self.get_observations()
 
     def step(self,ka,safe=0):
@@ -234,6 +244,7 @@ class Arm_2D:
         if self.done:
             self.until_goal = goal_distance.argmin()
         '''
+        self._elapsed_steps += 1
         reward = self.reward(ka) # NOTE: should it be ka or self.ka ??
         self.done = self.success or self.collision
         observations = self.get_observations()
@@ -251,6 +262,9 @@ class Arm_2D:
                 'qgoal':self.qgoal
             }
             info['collision_info'] = collision_info
+        if self._elapsed_steps >= self._max_episode_steps:
+            info["TimeLimit.truncated"] = not self.done
+            self.done = True            
         return info
 
     def get_observations(self):
