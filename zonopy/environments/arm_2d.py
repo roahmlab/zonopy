@@ -241,7 +241,7 @@ class Arm_2D:
         return observations, reward, self.done, info
 
     def get_info(self):
-        info ={'collision':self.collision,'safe_flag':self.safe}
+        info ={'is_success':self.success,'collision':self.collision,'safe_flag':self.safe}
         if self.collision:
             collision_info = {
                 'qpos_collision':self.qpos_collision,

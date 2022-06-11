@@ -13,7 +13,7 @@ T_PLAN, T_FULL = 0.5, 1.0
 
 # batch
 
-def gen_RTS_star_fail_safe_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
+def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
     jrs_tensor = preload_batch_JRS_trig()
     dimension = 2
     n_timesteps = 100
@@ -21,7 +21,7 @@ def gen_RTS_star_fail_safe_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
     PI_vel = torch.tensor(torch.pi-1e-6)
     zono_order=40
     g_ka = torch.pi/24
-    class RTS_star_fail_safe_2D_Layer(torch.autograd.Function):
+    class grad_RTS_2D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx,lambd,observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
@@ -62,7 +62,7 @@ def gen_RTS_star_fail_safe_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+2*n_links
-            flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            ctx.flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             for i in unsafe_flag.nonzero().reshape(-1):
                 class nlp_setup():
                     x_prev = np.zeros(n_links)*np.nan
@@ -151,9 +151,9 @@ def gen_RTS_star_fail_safe_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                 # NOTE: for training, dont care about fail-safe
                 if info['status'] == 0:
                     lambd[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())/g_ka
-                    flags[i] = 0
+                    ctx.flags[i] = 0
                 else:
-                    flags[i] = qvel[i]/(T_FULL-T_PLAN)
+                    ctx.flags[i] = 1
 
                 '''
                 # NOTE: for training, dont care about fail-safe
@@ -165,13 +165,21 @@ def gen_RTS_star_fail_safe_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     flags[i]=0
                 '''
             #print(f'rts pass: {flags}')
-            return lambd, FO_link, flags
+            return lambd, FO_link, ctx.flags
 
         @staticmethod 
         def backward(ctx,grad_ouput):
+            for flag in ctx.flags:
+                if flag ==0:
+                    
+                    
+                else: 
+
+
+
             return grad_ouput
 
-    return RTS_star_2D_Layer.apply
+    return grad_RTS_2D_Layer.apply
 
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
@@ -183,7 +191,7 @@ if __name__ == '__main__':
     t_armtd = 0
     params = {'n_joints':env.n_links, 'P':env.P0, 'R':env.R0}
     joint_axes = [j for j in env.joint_axes]
-    RTS = gen_RTS_star_2D_Layer(env.link_zonos,joint_axes,env.n_links,env.n_obs,params)
+    RTS = gen_grad_RTS_2D_Layer(env.link_zonos,joint_axes,env.n_links,env.n_obs,params)
 
     n_steps = 30
     for _ in range(n_steps):

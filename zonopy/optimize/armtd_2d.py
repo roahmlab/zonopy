@@ -19,7 +19,7 @@ class ARMTD_2D_planner():
         #self.generate_combinations_upto()
         self.PI = torch.tensor(torch.pi)
         self.JRS_tensor = zp.preload_batch_JRS_trig()
-        self.joint_speed_limit = torch.vstack((torch.pi*torch.ones(n_links),-torch.pi*torch.ones(n_links)))
+        #self.joint_speed_limit = torch.vstack((torch.pi*torch.ones(n_links),-torch.pi*torch.ones(n_links)))
     
     def wrap_env(self,env):
         assert env.dimension == 2
@@ -129,12 +129,14 @@ class ARMTD_2D_planner():
         M_obs = self.n_links*self.n_timesteps*self.n_obs
         M = M_obs+2*self.n_links
 
+        
+
         nlp = cyipopt.problem(
         n = self.n_links,
         m = M,
         problem_obj=nlp_setup(),
-        lb = [-self.g_ka]*n_links,
-        ub = [self.g_ka]*n_links,
+        lb = [-self.g_ka]*self.n_links,
+        ub = [self.g_ka]*self.n_links,
         cl = [1e-6]*M_obs+[-1e20]*self.n_links+[-torch.pi+1e-6]*self.n_links,
         cu = [1e20]*M_obs+[torch.pi-1e-6]*self.n_links+[1e20]*self.n_links,
         )
@@ -144,7 +146,7 @@ class ARMTD_2D_planner():
         nlp.addOption('sb', 'yes')
         nlp.addOption('print_level', 0)
         #ts = time.time()
-        k_opt, info = nlp.solve(ka_0)
+        k_opt, self.info = nlp.solve(ka_0)
         #print(f'opt time: {time.time()-ts}')
 
         '''
@@ -159,8 +161,8 @@ class ARMTD_2D_planner():
             import pdb;pdb.set_trace()
         '''
         #close()
-        import pdb;pdb.set_trace()
-        return k_opt, info['status']
+        self.prob = nlp_setup()
+        return k_opt, self.info['status']
         
     def plan(self,env,ka_0):
         zp.reset()
