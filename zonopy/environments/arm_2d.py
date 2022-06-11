@@ -63,7 +63,7 @@ class Arm_2D:
         self.render_flag = True
 
         self._max_episode_steps = max_episode_steps
-        self._elapsed_steps = None
+        self._elapsed_steps = 0
 
         self.reset()
     def reset(self):
