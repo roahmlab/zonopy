@@ -24,7 +24,7 @@ class Arm_2D:
             hyp_collision = -200,
             hyp_success = 50,
             reward_shaping=True,
-            max_episode_steps = None
+            max_episode_steps = 100
             ):
 
         self.dimension = 2
