@@ -27,7 +27,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
-            ctx.lambd =lambd.reshape(-1,n_links).to(dtype=torch.get_default_dtype())             
+            ctx.lambd =lambd.clone().reshape(-1,n_links).to(dtype=torch.get_default_dtype())             
             #observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             observation = observation.to(dtype=torch.get_default_dtype())
             ka = g_ka*ctx.lambd
@@ -170,7 +170,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
         @staticmethod
         def backward(ctx,*grad_ouput):
-            direction = grad_ouput[0].clone()
+            direction = grad_ouput[0]
             rts_pass = (ctx.flags == 0).reshape(-1,1)
             k_lim = (abs(ctx.lambd)>=1-1e-6)
             vel_lim = (abs(ctx.qvel+ctx.lambd*g_ka*T_PLAN)>PI_vel-1e-6)
