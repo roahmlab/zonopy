@@ -170,7 +170,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
         @staticmethod
         def backward(ctx,*grad_ouput):
-            rts_pass = ctx.flags == 0
+            rts_pass = (ctx.flags == 0).reshape(-1,1)
             k_lim = (abs(ctx.lambd)>=1-1e-6)
             vel_lim = (abs(ctx.qvel+ctx.lambd*g_ka*T_PLAN)>PI_vel-1e-6)
             strongly_active = rts_pass*(k_lim+vel_lim)
@@ -196,8 +196,8 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys() ])
         #k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
         lam = torch.tensor([0.8,0.8])
-        bias1 = torch.full((2,1),0.0,requires_grad=True )
-        lam, FO_link, flag = RTS(torch.vstack((lam,lam))+bias1,torch.vstack((observ_temp,observ_temp))+bias1) 
+        bias1 = torch.full((3,1),0.0,requires_grad=True )
+        lam, FO_link, flag = RTS(torch.vstack((lam,lam,lam))+bias1,torch.vstack((observ_temp,observ_temp,observ_temp))+bias1) 
         lam.sum().backward()
 
         import pdb;pdb.set_trace()
