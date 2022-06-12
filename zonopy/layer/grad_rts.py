@@ -170,11 +170,12 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
         @staticmethod
         def backward(ctx,*grad_ouput):
+            direction = grad_ouput[0].clone()
             rts_pass = (ctx.flags == 0).reshape(-1,1)
             k_lim = (abs(ctx.lambd)>=1-1e-6)
             vel_lim = (abs(ctx.qvel+ctx.lambd*g_ka*T_PLAN)>PI_vel-1e-6)
             strongly_active = rts_pass*(k_lim+vel_lim)
-            grad_lambd = (grad_ouput[0].clone()*(~strongly_active)).reshape(ctx.lambd_shape)
+            grad_lambd = (direction*(~strongly_active)).reshape(ctx.lambd_shape)
             return (grad_lambd,torch.zeros(ctx.obs_shape))
     return grad_RTS_2D_Layer.apply
 
