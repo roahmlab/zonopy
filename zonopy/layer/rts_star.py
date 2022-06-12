@@ -25,7 +25,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
         @staticmethod
         def forward(ctx,lambd,observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            
+            ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             lambd =lambd.reshape(-1,n_links).to(dtype=torch.get_default_dtype()) 
             #observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             observation = observation.to(dtype=torch.get_default_dtype())
@@ -169,7 +169,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
         @staticmethod 
         def backward(ctx,grad_ouput):
-            return grad_ouput
+            return (torch.zeros(ctx.lambd_shape),torch.zeros(ctx.obs_shape))
 
     return RTS_star_2D_Layer.apply
 

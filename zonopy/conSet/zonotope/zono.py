@@ -404,14 +404,15 @@ class zonotope:
 
     def polygon_patch(self, alpha = .5, facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
         z = self.project(dim)
-        p = z.polygon().to(device='cpu')
+        p = z.polygon().cpu().detach()
         return patches.Polygon(p,alpha=alpha,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth)
 
     def polyhedron_patch(self,alpha = .5, facecolor='none',edgecolor='green',linewidth=.2):
         dim = 3
-        V = self.center[:dim]
+        Z = self.Z.cpu().detach()
+        V = Z[0,:dim]
         for i in range(self.n_generators):
-            translation = self.Z[i+1,:dim]
+            translation = Z[i+1,:dim]
             V = torch.vstack((V+translation,V-translation))
             if dim < i < self.n_generators:
                 try:
