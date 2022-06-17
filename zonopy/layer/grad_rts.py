@@ -213,7 +213,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     qp_cons4 = -EYE[:num_a_var] # lb
                     qp_cons5 = EYE[:num_a_var] # ub
                     qp_cons6 =  np.hstack((jac[-2*n_links:],np.zeros((2*n_links,num_smooth_var))))
-                    qp_cons = np.vstack((qp_cons1,qp_cons2,qp_cons3,qp_cons4,qp_cons5))
+                    qp_cons = np.vstack((qp_cons1,qp_cons2,qp_cons3,qp_cons4,qp_cons5,qp_cons6))
 
                     # compute duals for smooth constraints                
                     mult_smooth_cons1 = ctx.nlp_info[i]['mult_g'][:M_obs]*(ctx.nlp_info[i]['mult_g'][:M_obs]>tol)
@@ -227,7 +227,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     mult_smooth_cons5 = ctx.nlp_info[i]['mult_x_U']*(ctx.nlp_info[i]['mult_x_U']>tol)
                     mult_smooth_cons6 = ctx.nlp_info[i]['mult_g'][-2*n_links:]*(ctx.nlp_info[i]['mult_g'][-2*n_links:]>tol)
 
-                    mult_smooth = np.hstack((mult_smooth_cons1,mult_smooth_cons2,mult_smooth_cons3,mult_smooth_cons4,mult_smooth_cons5))
+                    mult_smooth = np.hstack((mult_smooth_cons1,mult_smooth_cons2,mult_smooth_cons3,mult_smooth_cons4,mult_smooth_cons5,mult_smooth_cons6))
                     
                     # compute smooth constraints     
                     smoother = np.zeros(num_smooth_var) # NOTE: we might wanna assign smoother value for inactive or weakly active as 1/2 instead of 1.
@@ -247,7 +247,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     smooth_cons4 = (- 1 - k_opt) * (- 1 - k_opt <-1e-6-tol)
                     smooth_cons5 = (k_opt - 1) * (k_opt - 1 <-1e-6-tol)
                     smooth_cons6 = cons[-2*n_links:]*(cons[-2*n_links:]<-1e-6-tol)
-                    smooth_cons = np.hstack((smooth_cons1,smooth_cons2,smooth_cons3,smooth_cons4,smooth_cons5))
+                    smooth_cons = np.hstack((smooth_cons1,smooth_cons2,smooth_cons3,smooth_cons4,smooth_cons5,smooth_cons6))
                     
                     # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
                     H = 0.5*sp.csr_matrix(([1.]*num_a_var,(range(num_a_var),range(num_a_var))),shape=(num_b_var,num_b_var))
