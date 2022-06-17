@@ -30,7 +30,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
         @staticmethod
 
 
-        def forward(ctx,lambd,observation,d):
+        def forward(ctx,lambd,observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
@@ -68,7 +68,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     bs[j].append(b_temp)
                     unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
 
-            unsafe_flag = torch.ones(n_batches,dtype=bool) # NOTE: activate rts all ways
+            #unsafe_flag = torch.ones(n_batches,dtype=bool) # NOTE: activate rts all ways
 
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+2*n_links
@@ -212,7 +212,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     qp_cons3 = EYE[num_a_var:] # lambda
                     qp_cons4 = -EYE[:num_a_var] # lb
                     qp_cons5 = EYE[:num_a_var] # ub
-                    qp_cons6 =  jac[-2*n_links:] # NOTE
+                    qp_cons6 =  np.hstack((jac[-2*n_links:],np.zeros((2*n_links,num_smooth_var))))
                     qp_cons = np.vstack((qp_cons1,qp_cons2,qp_cons3,qp_cons4,qp_cons5))
 
                     # compute duals for smooth constraints                
@@ -251,7 +251,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     
                     # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
                     H = 0.5*sp.csr_matrix(([1.]*num_a_var,(range(num_a_var),range(num_a_var))),shape=(num_b_var,num_b_var))
-                    f_d = sp.csr_matrix((-d,([0.]*num_a_var,range(num_a_var))),shape=(1,num_b_var))
+                    f_d = sp.csr_matrix((-direction[i].numpy(),([0.]*num_a_var,range(num_a_var))),shape=(1,num_b_var))
 
                     strongly_active = (mult_smooth > tol) * (smooth_cons >= -1e-6-tol)
                     weakly_active = (mult_smooth <= tol) * (smooth_cons >= -1e-6-tol)
@@ -259,7 +259,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
                     # QP API
                     qp = gp.Model("back_prop")
-                    qp.Params.LogToConsole = 0
+                    qp.Params.LogToConsole = 0 # turn off printing
                     z = qp.addMVar(shape=num_b_var, name="z",vtype=GRB.CONTINUOUS,ub=np.inf, lb=-np.inf)
                     qp.setObjective(z@H@z+f_d@z, GRB.MINIMIZE)
                     qp_eq_cons = sp.csr_matrix(qp_cons[strongly_active])
@@ -269,7 +269,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     qp.addConstr( qp_eq_cons @ z == rhs_eq, name="eq")
                     qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
                     qp.optimize()
-                    grad_input[i] = torch.tensor(z.X[:n_links])
+                    grad_input[i] = torch.tensor(z.X[:num_a_var],dtype = torch.get_default_dtype())
                     
                 # NOTE: for fail-safe, keep into zeros 
 

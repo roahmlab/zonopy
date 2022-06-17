@@ -180,6 +180,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                 tol = 1e-6
 
                 if True:
+                    scale = 2.0
                     # compute jacobian of each smooth constraint which will be constraints for QP
                     jac = ctx.nlp_obj.jacobian(k_opt)
                     cons = ctx.nlp_obj.cons
@@ -189,7 +190,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                         for o in range(n_obs):
                             A = As[j][o][i]
                             size_As[j,o] = A.shape[-2]
-                            a_at = 2*(A.gather(-2,ctx.nlp_obj.obs_cons_max_ind[j,o].reshape(n_timesteps,1,1).repeat(1,1,dimension))@A.transpose(-2,-1)).squeeze(-2)
+                            a_at = 2/scale*(A.gather(-2,ctx.nlp_obj.obs_cons_max_ind[j,o].reshape(n_timesteps,1,1).repeat(1,1,dimension))@A.transpose(-2,-1)).squeeze(-2)
                             A_AT.extend(list(a_at))
                     size_As = size_As.unsqueeze(-1).repeat(1,1,n_timesteps).flatten()
                     size_As = torch.hstack((torch.zeros(1,dtype=int),size_As)).cumsum(0)
@@ -198,49 +199,49 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     num_a_var = n_links # number of decision var. in armtd
                     num_b_var = num_a_var + num_smooth_var # number of decition var. in B-armtd
                     
-                    qp_cons1 = np.hstack((jac[:M_obs],- torch.block_diag(*ctx.nlp_obj.possible_obs_cons).numpy().reshape(M_obs,-1))) # [A*c(k)-b].T*lambda
-                    qp_cons2 = np.hstack((np.zeros((M_obs,n_links)),torch.block_diag(*A_AT).numpy())) # ||A.T*lambda||-1
+                    qp_cons1 = np.hstack((1/scale*jac[:M_obs],- torch.block_diag(*ctx.nlp_obj.possible_obs_cons).numpy().reshape(M_obs,-1))) # [A*c(k)-b].T*lambda
+                    qp_cons2 = np.hstack((np.zeros((M_obs,num_a_var)),torch.block_diag(*A_AT).numpy())) # ||A.T*lambda||-1
                     EYE = np.eye(num_b_var)
                     #qp_cons3 = sp.csr_matrix(([1.]*size_As[-1],(range(qp_cons1.shape[-1]-n_links),range(n_links,qp_cons1.shape[-1]))))
                     qp_cons3 = EYE[num_a_var:] # lambda
                     qp_cons4 = -EYE[:num_a_var] # lb
                     qp_cons5 = EYE[:num_a_var] # ub
-                    qp_cons6 =  jac[-2*n_links:] # NOTE
-                    qp_cons = np.vstack((qp_cons1,qp_cons2,qp_cons3,qp_cons4,qp_cons5))
+                    qp_cons6 =  np.hstack((jac[-2*n_links:],np.zeros((2*n_links,num_smooth_var))))
+                    qp_cons = np.vstack((qp_cons1,qp_cons2,qp_cons3,qp_cons4,qp_cons5,qp_cons6))
 
                     # compute duals for smooth constraints                
-                    mult_smooth_cons1 = info['mult_g'][:M_obs]*(info['mult_g'][:M_obs]>tol)
+                    mult_smooth_cons1 = scale * info['mult_g'][:M_obs]*(info['mult_g'][:M_obs]>tol)
                     mult_smooth_cons2 = np.zeros(M_obs)
                     mult_smooth_cons3 = np.zeros(num_smooth_var)
                     
-
+                    
                     for idx in range(M_obs):
                         mult_smooth_cons3[size_As[idx]:size_As[idx+1]] = -mult_smooth_cons1[idx]*ctx.nlp_obj.possible_obs_cons[idx] # NOTE
                     mult_smooth_cons4 = info['mult_x_L']*(info['mult_x_L']>tol)
                     mult_smooth_cons5 = info['mult_x_U']*(info['mult_x_U']>tol)
                     mult_smooth_cons6 = info['mult_g'][-2*n_links:]*(info['mult_g'][-2*n_links:]>tol)
 
-                    mult_smooth = np.hstack((mult_smooth_cons1,mult_smooth_cons2,mult_smooth_cons3,mult_smooth_cons4,mult_smooth_cons5))
+                    mult_smooth = np.hstack((mult_smooth_cons1,mult_smooth_cons2,mult_smooth_cons3,mult_smooth_cons4,mult_smooth_cons5,mult_smooth_cons6))
                     
                     # compute smooth constraints     
                     smoother = np.zeros(num_smooth_var) # NOTE: we might wanna assign smoother value for inactive or weakly active as 1/2 instead of 1.
                     obs_cons_max_inds = size_As[:-1]+ctx.nlp_obj.obs_cons_max_ind.flatten()
-                    smoother[obs_cons_max_inds] = 1
+                    smoother[obs_cons_max_inds] = 1/scale
                     
-                    smooth_cons1 = cons[:M_obs]*(cons[:M_obs]<-1e-6-tol)
-                    smooth_cons2 = np.zeros(M_obs)
-                    ''' 
-                    # This will result in all zero if all the nonzero element of smoother is 1
+                    smooth_cons1 = 1/scale * cons[:M_obs]*(cons[:M_obs]<-1e-6-tol)
+                    smooth_cons2 = ((1/scale)**2-1)*np.ones(M_obs)
+                    '''
+                    # This will result in all (1/scale)**2-1 if all the nonzero element of smoother is 1/scale
                     for j in range(n_links):
                         for o in range(n_obs):
                             A_smoother = As[j][o][i].gather(-2,ctx.nlp_obj.obs_cons_max_ind[j,o].reshape(n_timesteps,1,1).repeat(1,1,dimension)).squeeze(-2)
-                            smooth_cons2[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = torch.linalg.norm(A_smoother,dim=-1)**2-1        
-                    '''
+                            smooth_cons2[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = (torch.linalg.norm(A_smoother,dim=-1)/scale)**2-1        
+                    ''' 
                     smooth_cons3 = -smoother
                     smooth_cons4 = (- 1 - k_opt) * (- 1 - k_opt <-1e-6-tol)
                     smooth_cons5 = (k_opt - 1) * (k_opt - 1 <-1e-6-tol)
                     smooth_cons6 = cons[-2*n_links:]*(cons[-2*n_links:]<-1e-6-tol)
-                    smooth_cons = np.hstack((smooth_cons1,smooth_cons2,smooth_cons3,smooth_cons4,smooth_cons5))
+                    smooth_cons = np.hstack((smooth_cons1,smooth_cons2,smooth_cons3,smooth_cons4,smooth_cons5,smooth_cons6))
 
 
                     
