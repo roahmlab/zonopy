@@ -189,8 +189,8 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     # COMPUTE GRADIENT
                     tol = 1e-6
                     # compute jacobian of each smooth constraint which will be constraints for QP
-                    jac = ctx.ctx.nlp_obj[i].jacobian(k_opt)
-                    cons = ctx.ctx.nlp_obj[i].cons
+                    jac = ctx.nlp_obj[i].jacobian(k_opt)
+                    cons = ctx.nlp_obj[i].cons
                     A_AT = []
                     size_As = torch.zeros(n_links,n_obs,dtype=int)
                     for j in range(n_links):
