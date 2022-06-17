@@ -4,6 +4,7 @@ from zonopy.kinematics.FO import forward_occupancy
 from zonopy.joint_reachable_set.jrs_trig.process_jrs_trig import process_batch_JRS_trig_ic
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_trig
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
+import zonopy as zp
 import cyipopt
 
 import gurobipy as gp
@@ -32,7 +33,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
         def forward(ctx,lambd,observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            
+            zp.reset()
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             ctx.lambd =lambd.clone().reshape(-1,n_links).to(dtype=torch.get_default_dtype())             
             #observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
