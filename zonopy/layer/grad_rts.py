@@ -10,6 +10,7 @@ import cyipopt
 import gurobipy as gp
 from gurobipy import GRB
 import scipy.sparse as sp
+from scipy.linalg import block_diag
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
@@ -52,7 +53,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
             _, R_trig = process_batch_JRS_trig_ic(jrs_tensor,ctx.qpos,ctx.qvel,joint_axes)
             FO_link,_,_ = forward_occupancy(R_trig,link_zonos,params)
             
-            ctx.As = [[] for _ in range(n_links)]
+            As = [[] for _ in range(n_links)]
             bs = [[] for _ in range(n_links)]
 
             lambda_to_slc = ctx.lambd.reshape(n_batches,1,dimension).repeat(1,n_timesteps,1)
@@ -65,7 +66,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                 for o in range(n_obs):
                     obs_Z = torch.cat((obstacle_pos[:,2*o:2*(o+1)].unsqueeze(-2),torch.diag_embed(obstacle_size[:,2*o:2*(o+1)])),-2).unsqueeze(-3).repeat(1,n_timesteps,1,1)
                     A_temp, b_temp = batchZonotope(torch.cat((obs_Z,FO_link[j].Grest),-2)).polytope() # A: n_timesteps,*,dimension                     
-                    ctx.As[j].append(A_temp)
+                    As[j].append(A_temp)
                     bs[j].append(b_temp)
                     unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
 
@@ -89,9 +90,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
                     def constraints(nlp,x): 
                         ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps,1)
-                        if (nlp.x_prev!=x).any():                
-                            nlp.possible_obs_cons = []# NOTE
-                            nlp.obs_cons_max_ind = torch.zeros(n_links,n_obs,n_timesteps,dtype=int)# NOTE
+                        if (nlp.x_prev!=x).any():
                             Cons = torch.zeros(M)   
                             Jac = torch.zeros(M,n_links)
                             # velocity constraints
@@ -104,10 +103,8 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                                 c_k = FO_link[j][i].center_slice_all_dep(ka)
                                 grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka)
                                 for o in range(n_obs):
-                                    pos_obs_cons = (ctx.As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i]
-                                    nlp.possible_obs_cons.extend(list(pos_obs_cons))
-                                    cons, nlp.obs_cons_max_ind[j,o]= torch.max(pos_obs_cons,-1) # shape: n_timsteps, SAFE if >=1e-6
-                                    jac = (ctx.As[j][o][i].gather(-2,nlp.obs_cons_max_ind[j,o].reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                                    cons, ind= torch.max((As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],-1) # shape: n_timsteps, SAFE if >=1e-6
+                                    jac = (As[j][o][i].gather(-2,ind.reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
                                     Cons[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = - cons
                                     Jac[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = - jac
                             nlp.cons = Cons.numpy()
@@ -117,12 +114,10 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
 
                     def jacobian(nlp,x): 
                         ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps,1)
-                        if (nlp.x_prev!=x).any():                
-                            nlp.possible_obs_cons = []# NOTE
-                            nlp.obs_cons_max_ind = torch.zeros(n_links,n_obs,n_timesteps,dtype=int)# NOTE
+                        if (nlp.x_prev!=x).any():
                             Cons = torch.zeros(M)   
                             Jac = torch.zeros(M,n_links)
-                            # velocity constraints 
+                            # velocity constraints
                             q_peak = ctx.qvel[i]+g_ka*x*T_PLAN
                             grad_q_peak = g_ka*T_PLAN*torch.eye(n_links)
                             Cons[-2*n_links:] = torch.hstack((q_peak-torch.pi,-torch.pi-q_peak))
@@ -132,15 +127,13 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                                 c_k = FO_link[j][i].center_slice_all_dep(ka)
                                 grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka)
                                 for o in range(n_obs):
-                                    pos_obs_cons = (ctx.As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i]
-                                    nlp.possible_obs_cons.extend(list(pos_obs_cons))
-                                    cons, nlp.obs_cons_max_ind[j,o]= torch.max(pos_obs_cons,-1) # shape: n_timsteps, SAFE if >=1e-6
-                                    jac = (ctx.As[j][o][i].gather(-2,nlp.obs_cons_max_ind[j,o].reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                                    cons, ind= torch.max((As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],-1) # shape: n_timsteps, SAFE if >=1e-6
+                                    jac = (As[j][o][i].gather(-2,ind.reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
                                     Cons[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = - cons
                                     Jac[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = - jac
                             nlp.cons = Cons.numpy()
                             nlp.jac = Jac.numpy()
-                            nlp.x_prev = np.copy(x)            
+                            nlp.x_prev = np.copy(x)          
                         return nlp.jac
                     
                     def intermediate(nlp, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
@@ -156,8 +149,8 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                 problem_obj=ctx.nlp_obj[i],
                 lb = [-1]*n_links,
                 ub = [1]*n_links,
-                cl = [-1e20]*M_obs+[-1e20]*n_links+[-1e20]*n_links,
-                cu = [-1e-6]*M_obs+[-1e-6]*n_links+[-1e-6]*n_links,
+                cl = [-1e20]*M_obs+[-1e20]*2*n_links
+                cu = [-1e-6]*M_obs+[-1e-6]*2*n_links,
                 )
                 NLP.addOption('sb', 'yes')
                 NLP.addOption('print_level', 0)
@@ -178,102 +171,69 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
         def backward(ctx,*grad_ouput):
             direction = grad_ouput[0]
             grad_input = torch.zeros_like(direction)
+            # COMPUTE GRADIENT
+            tol = 1e-6
+            # direct pass
+            direct_pass = ctx.flags == -1
+            grad_input[direct_pass] = torch.tensor(direction)[direct_pass]
 
-            M_obs = n_timesteps*n_links*n_obs
-            for i, flag in enumerate(ctx.flags):
-                if flag == -1: # direct pass
-                    grad_input[i] = direction[i]
-                elif flag == 0: # rts success path. solve QP
 
-                    k_opt = ctx.lambd[i].numpy()
-                    # COMPUTE GRADIENT
-                    tol = 1e-6
+            rts_success_pass = (ctx.flags == 0).nonzero().reshape(-1)
+            n_batch = rts_success_pass.numel()
+            if n_batch > 0:
+                QP_EQ_CONS = []
+                QP_INEQ_CONS = []
+                for i in rts_success_pass:
+                    k_opt = ctx.lambd[i].cpu().numpy()
                     # compute jacobian of each smooth constraint which will be constraints for QP
                     jac = ctx.nlp_obj[i].jacobian(k_opt)
                     cons = ctx.nlp_obj[i].cons
-                    A_AT = []
-                    size_As = torch.zeros(n_links,n_obs,dtype=int)
-                    for j in range(n_links):
-                        for o in range(n_obs):
-                            A = ctx.As[j][o][i]
-                            size_As[j,o] = A.shape[-2]
-                            a_at = 2*(A.gather(-2,ctx.nlp_obj[i].obs_cons_max_ind[j,o].reshape(n_timesteps,1,1).repeat(1,1,dimension))@A.transpose(-2,-1)).squeeze(-2)
-                            A_AT.extend(list(a_at))
-                    size_As = size_As.unsqueeze(-1).repeat(1,1,n_timesteps).flatten()
-                    size_As = torch.hstack((torch.zeros(1,dtype=int),size_As)).cumsum(0)
-                    
-                    num_smooth_var = int(size_As[-1]) # full dimension of lambda
-                    num_a_var = n_links # number of decision var. in armtd
-                    num_b_var = num_a_var + num_smooth_var # number of decition var. in B-armtd
-                    
-                    qp_cons1 = np.hstack((jac[:M_obs],- torch.block_diag(*ctx.nlp_obj[i].possible_obs_cons).numpy().reshape(M_obs,-1))) # [A*c(k)-b].T*lambda
-                    qp_cons2 = np.hstack((np.zeros((M_obs,n_links)),torch.block_diag(*A_AT).numpy())) # ||A.T*lambda||-1
-                    EYE = np.eye(num_b_var)
-                    #qp_cons3 = sp.csr_matrix(([1.]*size_As[-1],(range(qp_cons1.shape[-1]-n_links),range(n_links,qp_cons1.shape[-1]))))
-                    qp_cons3 = EYE[num_a_var:] # lambda
-                    qp_cons4 = -EYE[:num_a_var] # lb
-                    qp_cons5 = EYE[:num_a_var] # ub
-                    qp_cons6 =  np.hstack((jac[-2*n_links:],np.zeros((2*n_links,num_smooth_var))))
-                    qp_cons = np.vstack((qp_cons1,qp_cons2,qp_cons3,qp_cons4,qp_cons5,qp_cons6))
+
+                    qp_cons1 = jac # [A*c(k)-b].T*lambda  and vel. lim # NOTE
+                    EYE = np.eye(n_links)
+                    qp_cons4 = -EYE# lb
+                    qp_cons5 = EYE # ub
+                    qp_cons = np.vstack((qp_cons1,qp_cons4,qp_cons5))
 
                     # compute duals for smooth constraints                
-                    mult_smooth_cons1 = ctx.nlp_info[i]['mult_g'][:M_obs]*(ctx.nlp_info[i]['mult_g'][:M_obs]>tol)
-                    mult_smooth_cons2 = np.zeros(M_obs)
-                    mult_smooth_cons3 = np.zeros(num_smooth_var)
-                    
-
-                    for idx in range(M_obs):
-                        mult_smooth_cons3[size_As[idx]:size_As[idx+1]] = -mult_smooth_cons1[idx]*ctx.nlp_obj[i].possible_obs_cons[idx] # NOTE
+                    mult_smooth_cons1 = ctx.nlp_info[i]['mult_g']*(ctx.nlp_info[i]['mult_g']>tol)
                     mult_smooth_cons4 = ctx.nlp_info[i]['mult_x_L']*(ctx.nlp_info[i]['mult_x_L']>tol)
                     mult_smooth_cons5 = ctx.nlp_info[i]['mult_x_U']*(ctx.nlp_info[i]['mult_x_U']>tol)
-                    mult_smooth_cons6 = ctx.nlp_info[i]['mult_g'][-2*n_links:]*(ctx.nlp_info[i]['mult_g'][-2*n_links:]>tol)
-
-                    mult_smooth = np.hstack((mult_smooth_cons1,mult_smooth_cons2,mult_smooth_cons3,mult_smooth_cons4,mult_smooth_cons5,mult_smooth_cons6))
+                    mult_smooth = np.hstack((mult_smooth_cons1,mult_smooth_cons4,mult_smooth_cons5))
                     
-                    # compute smooth constraints     
-                    smoother = np.zeros(num_smooth_var) # NOTE: we might wanna assign smoother value for inactive or weakly active as 1/2 instead of 1.
-                    obs_cons_max_inds = size_As[:-1]+ctx.nlp_obj[i].obs_cons_max_ind.flatten()
-                    smoother[obs_cons_max_inds] = 1
-                    
-                    smooth_cons1 = cons[:M_obs]*(cons[:M_obs]<-1e-6-tol)
-                    smooth_cons2 = np.zeros(M_obs)
-                    ''' 
-                    # This will result in all zero if all the nonzero element of smoother is 1
-                    for j in range(n_links):
-                        for o in range(n_obs):
-                            A_smoother = As[j][o][i].gather(-2,ctx.nlp_obj.obs_cons_max_ind[j,o].reshape(n_timesteps,1,1).repeat(1,1,dimension)).squeeze(-2)
-                            smooth_cons2[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = torch.linalg.norm(A_smoother,dim=-1)**2-1        
-                    '''
-                    smooth_cons3 = -smoother
+                    # compute smooth constraints
+                    smooth_cons1 = cons*(cons<-1e-6-tol)
                     smooth_cons4 = (- 1 - k_opt) * (- 1 - k_opt <-1e-6-tol)
                     smooth_cons5 = (k_opt - 1) * (k_opt - 1 <-1e-6-tol)
-                    smooth_cons6 = cons[-2*n_links:]*(cons[-2*n_links:]<-1e-6-tol)
-                    smooth_cons = np.hstack((smooth_cons1,smooth_cons2,smooth_cons3,smooth_cons4,smooth_cons5,smooth_cons6))
-                    
-                    # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
-                    H = 0.5*sp.csr_matrix(([1.]*num_a_var,(range(num_a_var),range(num_a_var))),shape=(num_b_var,num_b_var))
-                    f_d = sp.csr_matrix((-direction[i].numpy(),([0.]*num_a_var,range(num_a_var))),shape=(1,num_b_var))
+                    smooth_cons = np.hstack((smooth_cons1,smooth_cons4,smooth_cons5))
 
-                    strongly_active = (mult_smooth > tol) * (smooth_cons >= -1e-6-tol)
-                    weakly_active = (mult_smooth <= tol) * (smooth_cons >= -1e-6-tol)
-                    inactive = (smooth_cons < -1e-6-tol)
+                    active = (smooth_cons >= -1e-6-tol)
+                    strongly_active = (mult_smooth > tol) * active
+                    weakly_active = (mult_smooth <= tol) * active
 
-                    # QP API
-                    qp = gp.Model("back_prop")
-                    qp.Params.LogToConsole = 0 # turn off printing
-                    z = qp.addMVar(shape=num_b_var, name="z",vtype=GRB.CONTINUOUS,ub=np.inf, lb=-np.inf)
-                    qp.setObjective(z@H@z+f_d@z, GRB.MINIMIZE)
-                    qp_eq_cons = sp.csr_matrix(qp_cons[strongly_active])
-                    rhs_eq = np.zeros(strongly_active.sum())
-                    qp_ineq_cons = sp.csr_matrix(qp_cons[weakly_active])
-                    rhs_ineq = -0*np.ones(weakly_active.sum())
-                    qp.addConstr( qp_eq_cons @ z == rhs_eq, name="eq")
-                    qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
-                    qp.optimize()
-                    grad_input[i] = torch.tensor(z.X[:num_a_var],dtype = torch.get_default_dtype())
-                    
-                # NOTE: for fail-safe, keep into zeros 
+                    QP_EQ_CONS.append(qp_cons[strongly_active])
+                    QP_INEQ_CONS.append(qp_cons[weakly_active])
 
+                # reduced batch QP
+                # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
+                qp_size = n_batch*n_links
+                H = 0.5*sp.csr_matrix(([1.]*qp_size,(range(qp_size),range(qp_size))))            
+                f_d = sp.csr_matrix((-direction[rts_success_pass].flatten(),([0]*qp_size,range(qp_size))))
+
+                qp = gp.Model("back_prop_reduced")
+                qp.Params.LogToConsole = 0
+                z = qp.addMVar(shape=qp_size, name="z",vtype=GRB.CONTINUOUS,ub=np.inf, lb=-np.inf)
+                qp.setObjective(z@H@z+f_d@z, GRB.MINIMIZE)
+                qp_eq_cons = sp.csr_matrix(block_diag(*QP_EQ_CONS))
+                rhs_eq = np.zeros(qp_eq_cons.shape[0])
+                qp_ineq_cons = sp.csr_matrix(block_diag(*QP_INEQ_CONS))
+                rhs_ineq = -0*np.ones(qp_ineq_cons.shape[0])
+                qp.addConstr( qp_eq_cons @ z == rhs_eq, name="eq")
+                qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
+                qp.optimize()
+                grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch,n_links))
+                
+                # NOTE: for fail-safe, keep into zeros             
             return (grad_input.reshape(ctx.lambd_shape),torch.zeros(ctx.obs_shape))
     return grad_RTS_2D_Layer.apply
 

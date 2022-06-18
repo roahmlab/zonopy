@@ -3,7 +3,7 @@ import numpy as np
 import zonopy as zp
 from zonopy.kinematics.FO import forward_occupancy
 import cyipopt
-
+import time
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
