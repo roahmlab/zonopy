@@ -220,7 +220,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                 H = 0.5*sp.csr_matrix(([1.]*qp_size,(range(qp_size),range(qp_size))))            
                 f_d = sp.csr_matrix((-direction[rts_success_pass].flatten(),([0]*qp_size,range(qp_size))))
 
-                qp = gp.Model("back_prop_reduced")
+                qp = gp.Model("back_prop")
                 qp.Params.LogToConsole = 0
                 z = qp.addMVar(shape=qp_size, name="z",vtype=GRB.CONTINUOUS,ub=np.inf, lb=-np.inf)
                 qp.setObjective(z@H@z+f_d@z, GRB.MINIMIZE)
