@@ -16,7 +16,7 @@ for idx in range(N_test):
             'R': [torch.eye(3)]*2,
             'P': [torch.tensor([0.0,0.0,0.0]), torch.tensor([1.0,0.0,0.0])],
             'n_joints':2}
-    link_zonos = [zp.zonotope(torch.tensor([[0.5,0.5,0.0],[0.0,0.0,0.01],[0.0,0.0,0.0]])).to_polyZonotope()]*2
+    link_zonos = [zp.zonotope(torch.tensor([[0.5,0.5,0.0],[0.0,0.0,0.01],[0.0,0.0,0.0]]).T).to_polyZonotope()]*2
 
     t_start = time.time()
     _, R_trig = zp.load_JRS_trig(qpos,qvel)

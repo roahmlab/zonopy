@@ -114,7 +114,7 @@ for j = 1:n_JRS
     n_timestep = size(JRS,1);
     JRS_mat = cell(n_timestep,1);
     for i = 1:n_timestep
-        JRS_mat{i} = [JRS{i}.center JRS{i}.generators];
+        JRS_mat{i} = JRS{i}.Z';
     end
     save(filename, 'JRS_mat', 'options', 't_plan', 't_total', 'current_c_kvi');
 

@@ -6,22 +6,51 @@ Reference: CORA
 
 import torch
 
+
+def pickedBatchGenerators(bZ,order):
+    '''
+    selects generators to be reduced
+    '''
+    c = bZ.center
+    G = bZ.generators.sort(bZ.batch_dim,descending=True)[0]
+    dim = len(bZ.shape)
+    norm_dim = tuple(range(-1,-dim-1,-1))
+    nrOfGens = bZ.n_generators
+    if nrOfGens != 0:
+        d = torch.prod(torch.tensor(bZ.shape))
+        # only reduce if zonotope order is greater than the desired order
+        if nrOfGens > d*order:
+            
+            # compute metric of generators
+            h = torch.linalg.vector_norm(G,1,norm_dim) - torch.linalg.vector_norm(G,torch.inf,norm_dim) #NOTE: -1
+
+            # number of generators that are not reduced
+            nUnreduced = int(d*(order-1))
+            nReduced = nrOfGens - nUnreduced 
+            # pick generators with smallest h values to be reduced
+            
+            sorted_h = torch.argsort(h,-1).reshape(bZ.batch_shape+(bZ.n_generators,)+(1,)*dim).repeat((1,)*(bZ.batch_dim+1)+bZ.shape) #NOTE: -1
+            Gsorted = G.gather(bZ.batch_dim,sorted_h)
+            Gred = Gsorted[bZ.batch_idx_all+(slice(None,nReduced),)]
+            Gunred = Gsorted[bZ.batch_idx_all+(slice(nReduced,None),)]
+        else:
+            Gred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
+            Gunred = G
+    else:
+        Gred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
+        Gunred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
+    return c, Gunred, Gred
+
+
 def pickedGenerators(c,G,order):
     '''
     selects generators to be reduced
     '''
     dim = c.shape
-    dim_c = len(dim)
-    norm_dim = tuple(range(1,dim_c+1))
-    permute_order = (dim_c,) + tuple(range(dim_c))
-    reverse_order = norm_dim+(0,)
-    G = G.permute(permute_order)
-
-    Gunred = torch.tensor([]).reshape(dim+(0,))
-    Gred = torch.tensor([]).reshape(dim+(0,))
-    if G.numel() != 0:
+    norm_dim = tuple(range(1,len(dim)+1))
+    nrOfGens = G.shape[0]
+    if  nrOfGens != 0:
         d = torch.prod(torch.tensor(G.shape[1:]))
-        nrOfGens = G.shape[0]
         # only reduce if zonotope order is greater than the desired order
         if nrOfGens > d*order:
             
@@ -35,13 +64,15 @@ def pickedGenerators(c,G,order):
             sorted_h = torch.argsort(h)
             ind_red = sorted_h[:nReduced]
             ind_rem = sorted_h[nReduced:]
-            Gred = G[ind_red].permute(reverse_order)
+            Gred = G[ind_red]
             # unreduced generators
-            #Gunred = delete_column(G,ind_red)
-            Gunred = G[ind_rem].permute(reverse_order)
+            Gunred = G[ind_rem]
         else:
-            Gunred = G.permute(reverse_order)
-
+            Gred = torch.tensor([]).reshape((0,)+dim)
+            Gunred = G
+    else:
+        Gred = torch.tensor([]).reshape((0,)+dim)
+        Gunred = torch.tensor([]).reshape((0,)+dim)
     return c, Gunred, Gred
 
 

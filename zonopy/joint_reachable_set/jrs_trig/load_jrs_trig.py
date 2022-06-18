@@ -4,9 +4,10 @@ Author: Yongseok Kwon
 Reference: Holmes, Patrick, et al. ARMTD
 """
 import torch
-from zonopy.transformations.rotation import gen_rotatotope_from_jrs_trig
-from zonopy import zonotope, polyZonotope
-from mat4py import loadmat
+from zonopy.transformations.rotation import gen_rotatotope_from_jrs_trig, gen_batch_rotatotope_from_jrs_trig
+#from zonopy.transformations.homogeneous import gen_batch_H_from_jrs_trig
+from zonopy import zonotope, polyZonotope, batchZonotope
+from scipy.io import loadmat
 import os
 
 
@@ -14,8 +15,10 @@ T_fail_safe = 0.5
 
 dirname = os.path.dirname(__file__)
 jrs_path = os.path.join(dirname,'jrs_trig_mat_saved/')
+jrs_tensor_path = os.path.join(dirname,'jrs_trig_tensor_saved/')
+
 JRS_KEY = loadmat(jrs_path+'c_kvi.mat')
-JRS_KEY = torch.tensor(JRS_KEY['c_kvi'],dtype=torch.float)
+#JRS_KEY = torch.tensor(JRS_KEY['c_kvi'],dtype=torch.float)
 
 '''
 qjrs_path = os.path.join(dirname,'qjrs_mat_saved/')
@@ -29,6 +32,86 @@ ka_dim = 3
 acc_dim = 3 
 kv_dim = 4
 time_dim = 5
+
+def preload_batch_JRS_trig():
+    jrs_tensor = []
+    for c_kv in JRS_KEY['c_kvi'][0]:
+        jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(c_kv,'.3f')+'.mat'
+        jrs_tensor_load = loadmat(jrs_filename)
+        jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype = torch.get_default_dtype()).unsqueeze(0))   
+    
+    return torch.cat(jrs_tensor,0) 
+
+
+def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None):
+    jrs_key = torch.tensor(JRS_KEY['c_kvi'])
+    n_batches, n_joints = qd_0.shape
+    PZ_JRS_batch = []
+    R_batch = []
+    if joint_axes is None:
+        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_joints)]
+    for i in range(n_joints):
+        closest_idx = torch.argmin(abs(qd_0[:,i:i+1]-jrs_key),dim=-1)
+        jrs_tensor = []
+        for b in range(n_batches):
+            jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(jrs_key[0,closest_idx[b]],'.3f')+'.mat'
+            jrs_tensor_load = loadmat(jrs_filename)
+            jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype = qd_0.dtype).unsqueeze(0))
+            
+        
+        JRS_batch_zono = batchZonotope(torch.cat(jrs_tensor,0))
+        c_qpos = torch.cos(q_0[:,i:i+1]).unsqueeze(-1)
+        s_qpos = torch.sin(q_0[:,i:i+1]).unsqueeze(-1)
+        A = c_qpos*torch.tensor([[1.0]+[0]*5,[0,1]+[0]*4]+[[0]*6]*4) + s_qpos*torch.tensor([[0,-1]+[0]*4,[1]+[0]*5]+[[0]*6]*4)+torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]])
+        JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
+
+        '''
+        delta_k = PZ_JRS.G[:,0,0,ka_dim]
+        c_breaking = - qd_0[:,i]/T_fail_safe
+        delta_breaking = - delta_k/T_fail_safe
+        PZ_JRS.c[:,50:,acc_dim] = c_breaking.unsqueeze(-1)
+        PZ_JRS.G[:,50:,0,acc_dim] = delta_breaking.unsqueeze(-1)
+        '''
+        R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
+        PZ_JRS_batch.append(PZ_JRS)
+        R_batch.append(R_temp)
+
+    return PZ_JRS_batch, R_batch
+
+
+def load_batch_JRS_trig(q_0,qd_0,joint_axes=None):
+    jrs_key = torch.tensor(JRS_KEY['c_kvi'])
+    n_joints = qd_0.shape[-1]
+    PZ_JRS_batch = []
+    R_batch = []
+    if joint_axes is None:
+        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_joints)]
+    for i in range(n_joints):
+        closest_idx = torch.argmin(abs(qd_0[i]-jrs_key))
+        jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(jrs_key[0,closest_idx],'.3f')+'.mat'            
+        jrs_tensor_load = loadmat(jrs_filename)
+        jrs_tensor_load = torch.tensor(jrs_tensor_load['JRS_tensor'],dtype=qd_0.dtype)
+        JRS_batch_zono = batchZonotope(jrs_tensor_load)
+        c_qpos = torch.cos(q_0[i])
+        s_qpos = torch.sin(q_0[i])
+        Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]])
+        A = torch.block_diag(Rot_qpos,torch.eye(4))
+        JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i])
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
+        '''
+        delta_k = PZ_JRS.G[0,0,ka_dim]
+        c_breaking = - qd_0[i]/T_fail_safe
+        delta_breaking = - delta_k/T_fail_safe
+        PZ_JRS.c[50:,acc_dim] = c_breaking
+        PZ_JRS.G[50:,0,acc_dim] = delta_breaking
+        '''
+        R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
+
+        PZ_JRS_batch.append(PZ_JRS)
+        R_batch.append(R_temp)
+    return PZ_JRS_batch, R_batch
+
 
 def load_JRS_trig(q_0,qd_0,joint_axes=None):
     '''
@@ -56,19 +139,20 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
     5: t
 
     '''
-    jrs_key = JRS_KEY.to(device=q_0.device)
+    jrs_key = torch.tensor(JRS_KEY['c_kvi'])
     if isinstance(q_0,list):
-        q_0 = torch.tensor(q_0,dtype=torch.float)
+        q_0 = torch.tensor(q_0)
     if isinstance(qd_0,list):
-        qd_0 = torch.tensor(qd_0,dtype=torch.float)
-    assert len(q_0.shape) == 1 and len(qd_0.shape) == 1 
+        qd_0 = torch.tensor(qd_0)
+    assert len(q_0.shape) == len(qd_0.shape) == 1 
     n_joints = len(qd_0)
     assert len(q_0) == n_joints
     if joint_axes is None:
-        joint_axes = [torch.tensor([0,0,1],dtype=torch.float) for _ in range(n_joints)]
+        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_joints)]
     for i in range(n_joints):
         closest_idx = torch.argmin(abs(qd_0[i]-jrs_key))
-        jrs_filename = jrs_path+'jrs_trig_mat_'+format(jrs_key[closest_idx],'.3f')+'.mat'
+        jrs_filename = jrs_path+'jrs_trig_mat_'+format(jrs_key[0,closest_idx],'.3f')+'.mat'
+        
         jrs_mats_load = loadmat(jrs_filename)
         jrs_mats_load = jrs_mats_load['JRS_mat']
         n_time_steps = len(jrs_mats_load) # 100
@@ -78,20 +162,21 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None):
         for t in range(n_time_steps):
             c_qpos = torch.cos(q_0[i])
             s_qpos = torch.sin(q_0[i])
-            Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=torch.float)
+            Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]])
             A = torch.block_diag(Rot_qpos,torch.eye(4))
-            jrs_mat_load = torch.tensor(jrs_mats_load[t],dtype=torch.float)[0]
-            JRS_zono_i = zonotope(jrs_mat_load)
+            JRS_zono_i = zonotope(torch.tensor(jrs_mats_load[t,0],dtype=qd_0.dtype).squeeze(0))
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qd_0[i])
             PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim,prop='k_trig'))
+            '''
             # fail safe
             if t == 0:
-                delta_k = PZ_JRS[0][i].G[ka_dim,0]
+                delta_k = PZ_JRS[0][i].G[0,ka_dim]
                 c_breaking = - qd_0[i]/T_fail_safe
                 delta_breaking = - delta_k/T_fail_safe
             elif t >= int(n_time_steps/2):
                 PZ_JRS[t][i].c[acc_dim] = c_breaking
-                PZ_JRS[t][i].G[acc_dim] = delta_breaking
+                PZ_JRS[t][i].G[0,acc_dim] = delta_breaking
+            '''
             R_temp= gen_rotatotope_from_jrs_trig(PZ_JRS[t][i],joint_axes[i])
             R[t].append(R_temp)
     return PZ_JRS, R
@@ -141,5 +226,9 @@ def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None):
             R_t[t].append(R[t][i].T)
     # return q_des, qd_des, qdd_des, q, qd, qd_a, qdd_a, r, c_k, delta_k, id, id_names
     return q, qd, qd_a, qdd_a, R, R_t #, r, c_k, delta_k
-#if __name__ == '__main__':
-    #aa
+if __name__ == '__main__':
+    import time 
+    ts = time.time()
+    Z = preload_batch_JRS_trig()
+    print(time.time()-ts) 
+    import pdb;pdb.set_trace()

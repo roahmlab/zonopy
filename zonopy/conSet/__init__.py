@@ -64,7 +64,7 @@ class __Property_ID(object):
 
     def update(self,num,prop='None',device=DEFAULT_OPTS.DEVICE):
         if isinstance(prop,str):
-            new_id = torch.arange(num,dtype=torch.long,device=device) + self.offset
+            new_id = torch.arange(num,dtype=torch.long) + self.offset
             l_id = new_id.tolist()
             self.__ids = torch.hstack((self.__ids,new_id))
             if prop in self.__properties:

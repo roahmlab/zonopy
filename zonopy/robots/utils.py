@@ -9,8 +9,8 @@ def Euler_to_Rot(rpy):
     '''
     roll-pitch-yaw
     '''
-    C = [cos(th) for th in rpy]
-    S = [sin(th) for th in rpy]
+    C = [cos(tensor(th)) for th in rpy]
+    S = [sin(tensor(th)) for th in rpy]
     Rot = [[0,0,0],[0,0,0],[0,0,0]]
     Rot[0][0] = C[1]*C[2]
     Rot[0][1] = S[0]*S[1]*C[2] - C[0]*S[2] 

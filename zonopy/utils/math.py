@@ -3,7 +3,7 @@ from zonopy import interval, zonotope, matZonotope, polyZonotope, matPolyZonotop
 from zonopy.utils.utils import compare_permuted_gen, compare_permuted_dep_gen, sign_cs, sign_sn
 
 
-def close(zono1,zono2,eps = 1e-6):
+def close(zono1,zono2,eps = 1e-6,match_id=False):
     assert isinstance(zono1, type(zono2)) 
     if isinstance(zono1, zonotope):
         assert zono1.dimension == zono2.dimension
@@ -23,14 +23,26 @@ def close(zono1,zono2,eps = 1e-6):
         assert zono1.dimension == zono2.dimension
         eps = zono1.dimension**(0.5)*eps
         zono1, zono2 = zono1.deleteZerosGenerators(eps), zono2.deleteZerosGenerators(eps)
-        if torch.any(torch.sort(zono1.id).values != torch.sort(zono2.id).values):
-            return False
+        if match_id:
+            if torch.any(torch.sort(zono1.id).values != torch.sort(zono2.id).values):
+                return False
         if zono1.n_dep_gens != zono2.n_dep_gens or zono1.n_indep_gens != zono2.n_indep_gens or torch.norm(zono1.c-zono2.c) > eps:
             return False
         if not compare_permuted_gen(zono1.Grest,zono2.Grest,eps):
             return False
-        return compare_permuted_dep_gen(zono1.expMat[torch.argsort(zono1.id)],zono2.expMat[torch.argsort(zono2.id)],zono1.G,zono2.G,eps)
-
+        return compare_permuted_dep_gen(zono1.expMat[:,torch.argsort(zono1.id)],zono2.expMat[:,torch.argsort(zono2.id)],zono1.G,zono2.G,eps)
+    elif isinstance(zono1,matPolyZonotope):
+        assert zono1.n_rows == zono2.n_rows and zono1.n_cols == zono2.n_cols
+        eps = (zono1.n_rows*zono1.n_cols)**(0.5)*eps
+        zono1, zono2 = zono1.deleteZerosGenerators(eps), zono2.deleteZerosGenerators(eps)
+        if match_id:
+            if torch.any(torch.sort(zono1.id).values != torch.sort(zono2.id).values):
+                return False
+        if zono1.n_dep_gens != zono2.n_dep_gens or zono1.n_indep_gens != zono2.n_indep_gens or torch.norm(zono1.c-zono2.c) > eps:
+            return False
+        if not compare_permuted_gen(zono1.Grest,zono2.Grest,eps):
+            return False
+        return compare_permuted_dep_gen(zono1.expMat[:,torch.argsort(zono1.id)],zono2.expMat[:,torch.argsort(zono2.id)],zono1.G,zono2.G,eps)
     else:
         print('Other types are not implemented yet.')
     

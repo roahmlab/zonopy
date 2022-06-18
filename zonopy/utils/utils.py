@@ -3,9 +3,6 @@ def compare_permuted_gen(G1, G2,eps = 1e-6):
     assert G1.shape == G2.shape
 
     dim_G = len(G1.shape)
-    permute_order = [dim_G-1] + list(range(dim_G-1))
-    reverse_order = list(range(1,dim_G))+[0]
-    G1,G2 = G1.permute(permute_order), G2.permute(permute_order)
     n_gens,dims = G1.shape[0], list(G1.shape[1:])
     
     dim_mul = 1
@@ -26,17 +23,16 @@ def compare_permuted_gen(G1, G2,eps = 1e-6):
 
 def compare_permuted_dep_gen(expMat1, expMat2, G1, G2,eps = 1e-6):
     assert G1.shape == G2.shape and expMat1.shape == expMat2.shape
-    dim_G = len(G1.shape)
-    permute_order = [dim_G-1] + list(range(dim_G-1))
-    reverse_order = list(range(1,dim_G))+[0]
-    G1,G2 = G1.permute(permute_order), G2.permute(permute_order)
-    n_gens,dims = G1.shape[0], G1.shape[1:]
+    n_gens = G1.shape[0]
     for i in range(n_gens):
         diff_expMat = expMat1[:,i].reshape(-1,1)-expMat2
-        j = torch.sum(abs(diff_expMat),dim=0) == 0
+        j = torch.sum(abs(diff_expMat),dim=1) == 0
         assert sum(j) == 1
-        if torch.linalg.norm(G1[i]-G2[j]) > eps:
-            return False
+        try:
+            if torch.linalg.norm(G1[i]-G2[j]) > eps:
+                return False
+        except:
+            import pdb;pdb.set_trace()
     return True
 
 def sign_cs(order):

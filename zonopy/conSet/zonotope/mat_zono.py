@@ -5,85 +5,68 @@ Reference:
 """
 from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.zonotope.zono import zonotope
-from zonopy.conSet.utils import G_mul_c, G_mul_g, G_mul_C, G_mul_G
 from zonopy.conSet.zonotope.utils import pickedGenerators
 import torch
 
-EMPTY_TENSOR = torch.tensor([])
 class matZonotope():
     '''
     matZono: <matZonotope>, <torch.float64>
 
     Z: <torch.Tensor> center vector and generator matrix Z = [c,G]
-    , shape [nx, ny, N+1] OR [nx, ny], where N = 0
-    -> shape [nx, N+1]
+    , shape [N+1, nx, ny]
     center: <torch.Tensor> center matrix
-    , shape [nx,ny, 1] 
+    , shape [nx,ny] 
     generators: <torch.Tensor> generator tensor
-    , shape [nx, ny, N]
+    , shape [N, nx, ny]
     
     
     Eq. (coeff. a1,a2,...,aN \in [0,1])
-    G = [G1,G2,...,GN]
+    G = [[G1],[G2],...,[GN]]
     zono = C + a1*G1 + a2*G2 + ... + aN*GN
     '''
-    def __init__(self,Z=EMPTY_TENSOR,dtype=None,device=None):
-        if dtype is None:
-            dtype = DEFAULT_OPTS.DTYPE
-        if device is None:
-            device = DEFAULT_OPTS.DEVICE
+    def __init__(self,Z):
         if isinstance(Z,list):
             Z = torch.tensor(Z)
         assert isinstance(Z,torch.Tensor), f'The input matrix should be torch tensor, but {type(Z)}.'
-
-        assert len(Z.shape) == 2 or len(Z.shape) == 3, f'The dimension of Z input should be either 2 or 3, but {len(Z.shape)}.'
-        if len(Z.shape) == 2:
-            Z = Z.reshape(Z.shape[0],Z.shape[1],1)
-
-        self.__dtype = dtype
-        self.__device = device  
-        self.Z = Z.to(dtype=dtype,device=device)
-        self.__center = self.Z[:,:,0]
-        self.__generators = self.Z[:,:,1:]
+        assert len(Z.shape) == 3, f'The dimension of Z input should be either 2 or 3, but {len(Z.shape)}.'
+        self.Z = Z
     @property
     def dtype(self):
-        return self.__dtype
+        return self.Z.dtype
     @property
     def device(self):
-        return self.__device    
+        return self.Z.device   
     @property
     def center(self):
-        return self.__center
+        return self.Z[0]
     @center.setter
     def center(self,value):
-        self.Z[:,:,0] = self.__center  = value.to(dtype=self.__dtype,device=self.__device)
+        self.Z[0] = value
     @property
     def generators(self):
-        return self.__generators
+        return self.Z[1:]
     @generators.setter
     def generators(self,value):
-        value = value.to(dtype=self.__dtype,device=self.__device)
-        self.Z = torch.cat((self.__center.reshape(self.n_rows,self.n_cols,1),value),dim=-1)
-        self.__generators = value
+        self.Z[1:] = value
+    @property 
+    def shape(self):
+        return tuple(self.Z.shape[1:])
     @property
     def n_rows(self):
-        return self.Z.shape[0]
-    @property
-    def n_cols(self):
         return self.Z.shape[1]
     @property
+    def n_cols(self):
+        return self.Z.shape[2]
+    @property
     def n_generators(self):
-        return self.__generators.shape[-1]
+        return len(self.Z)-1
     @property
     def T(self):
-        return matZonotope(self.Z.permute(1,0,2),self.__dtype,self.__device)
+        return matZonotope(self.Z.transpose(1,2))
 
     def to(self,dtype=None,device=None):
-        if dtype is None:
-            dtype = self.dtype
-        if device is None:
-            device = self.device
-        return matZonotope(self.Z,dtype,device)
+        Z = self.Z.to(dtype=dtype,device=device)
+        return matZonotope(Z)
 
     def __matmul__(self,other):
         '''
@@ -98,20 +81,16 @@ class matZonotope():
         if isinstance(other, torch.Tensor):
             assert len(other.shape) == 1, 'The other object should be 1-D tensor.'  
             assert other.shape[0] == self.n_cols
-            z = G_mul_c(self.Z,other)    
-            return zonotope(z,self.device,self.dtype)
-    
+            z = self.Z@other
+            return zonotope(z) 
         elif isinstance(other,zonotope):
             assert self.n_cols == other.dimension
-            z = G_mul_g(self.Z,other.Z)
-            return zonotope(z,self.device,self.dtype)
-
+            z = self.Z.unsqueeze(1)@other.Z.unsqueeze(-1)
+            return zonotope(z.reshape(-1,self.n_rows))
         elif isinstance(other,matZonotope):
             assert self.n_cols == other.n_rows
-            dims = [self.n_rows, self.n_cols, other.n_cols]
-            Z = G_mul_G(self.Z,other.Z,dims)
-            return matZonotope(Z,self.device,self.dtype)
-
+            Z = self.Z.unsqueeze(1)@other.Z
+            return matZonotope(Z.reshape(-1,self.n_rows,other.n_cols))
         else:
             assert False, 'Invalid object for matrix multiplication with matrix zonotope.'
 
@@ -127,9 +106,9 @@ class matZonotope():
         '''
         if isinstance(other, torch.Tensor):
             assert len(other.shape) == 2, 'The other object should be 2-D tensor.'  
-            assert other.shape[1] == self.n_rows    
-            Z = other @ self.Z
-            return matZonotope(Z,self.device,self.dtype)
+            assert other.shape[1] == self.n_rows 
+            Z = other @ self.Z 
+            return matZonotope(Z)
         else:
             assert False, 'Invalid object for reversed matrix multiplication with matrix zonotope.'
 
@@ -141,20 +120,23 @@ class matZonotope():
 
         return <matZonotope>
         '''
-        non_zero_idxs = torch.any(torch.any(abs(self.generators)>eps,axis=0),axis=0)
-        Z_new = torch.zeros(self.n_rows,self.n_cols,sum(non_zero_idxs)+1)
-        Z_new[:,:,0] = self.center
-        Z_new[:,:,1:] = self.generators[:,:,non_zero_idxs]
-        return matZonotope(Z_new,self.__dtype,self.__device)
+        non_zero_idxs = torch.any(torch.any(abs(self.generators)>eps,axis=1),axis=1)
+        Z = torch.cat((self.center.unsqueeze(0),self.generators[non_zero_idxs]),0)
+        return matZonotope(Z)
 
     def reduce(self,order,option='girard'):
         if option == 'girard':
             Z = self.deleteZerosGenerators()
-            center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
-            d = torch.sum(abs(Gred),-1).reshape(-1)
-            Gbox = torch.diag(d).reshape(self.n_rows,self.n_cols,-1)
-            ZRed = torch.cat((center.reshape(self.n_rows,self.n_cols,-1),Gunred,Gbox),dim=-1)
-            return matZonotope(ZRed,self.__dtype,self.__device)
+            if order == 1:
+                center, G = Z.center,Z.generators
+                d = torch.sum(abs(G),0).reshape(-1)
+                Gbox = torch.diag(d).reshape(-1,self.n_rows,self.n_cols)
+                ZRed = torch.cat((center.reshape(-1,self.n_rows,self.n_cols),Gbox),0)
+            else:
+                center, Gunred, Gred = pickedGenerators(Z.center,Z.generators,order)
+                d = torch.sum(abs(Gred),0).reshape(-1)
+                Gbox = torch.diag(d).reshape(-1,self.n_rows,self.n_cols)
+                ZRed = torch.cat((center.reshape(-1,self.n_rows,self.n_cols),Gunred,Gbox),0)
+            return matZonotope(ZRed)
         else:
             assert False, 'Invalid reduction option'
-        return

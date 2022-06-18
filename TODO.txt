@@ -1,43 +1,4 @@
-check velocities of JRS has a hole
+============ Change on JRS generators ============
 
-
-__matmul__
-slice: slice all k-dep gens
-slice_to_pt: slice fully-k-sliceable gens
-reduce: based on reduceGirard.m in CORA
-stack: __add__
-generate_constraint (we may not need this)
-
-
-------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------
-
-robot
-robot.NumBodies
-robot.Gravity = [0 0 -9.81]
-
-[active_joints, fixed_joints] = get_joint_types(robot)
-robot.Bodies{i}.Mass
-robot.Bodies{i}.CenterOfMass
-robot.Bodies{i}.Inertia
-
-robot.Bodies{i}.Name
-robot.Bodies{i}.Joint.JointAxis
-
-params
-    params.mass = mass; Mass
-    params.com = com; Center of mass
-    params.G = G; spatial intertia: diag(I,mass*eye)
-    params.H = H; home transformation
-    params.I = I; Inertial wrt joint
-    params.M = M; orientation of com i in com i-1
-    params.S = S; twist: (w,v)
-    params.num_bodies = robot.NumBodies;
-    params.num_joints = num_joints;
-    params.active_joints = active_joints;
-    params.fixed_joints = fixed_joints;
-    params.joint_axes = joint_axes;
-    params.gravity = [0 0 -9.81];
-    params.use_interval = false;
 
 
