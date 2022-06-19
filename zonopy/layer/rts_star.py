@@ -20,11 +20,12 @@ T_PLAN, T_FULL = 0.5, 1.0
 
 NUM_PROCESSES = 48
 
-def solve_rts_star(FO_link, As, bs, n_links, n_obs, dimension, qpos, qvel, qgoal, n_timesteps, M_obs, M, g_ka, ka_0, lambda_i ,i):
-    # print(f"Solve rts star called! FO_link[0][i]={FO_link[0][i]}")
+
+def solve_rts_star(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, idx):
+    M_obs = n_timesteps*n_links*n_obs
+    M = M_obs+2*n_links
     class nlp_setup():
         x_prev = np.zeros(n_links) * np.nan
-        num_iter = 0
         def objective(nlp, x):
             qplan = qpos + qvel * T_PLAN + 0.5 * x * T_PLAN ** 2
             return torch.sum(wrap_to_pi(qplan - qgoal) ** 2)
@@ -48,14 +49,11 @@ def solve_rts_star(FO_link, As, bs, n_links, n_obs, dimension, qpos, qvel, qgoal
                 grad_cons_obs[-2 * n_links:] = torch.vstack((grad_q_max, grad_q_min))
                 # velocity min max constraints
                 for j in range(n_links):
-                    c_k = FO_link[j][i].center_slice_all_dep(ka / g_ka)
-                    grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka / g_ka) / g_ka
+                    c_k = FO_link[j][idx].center_slice_all_dep(ka / g_ka)
+                    grad_c_k = FO_link[j][idx].grad_center_slice_all_dep(ka / g_ka) / g_ka
                     for o in range(n_obs):
-                        cons, ind = torch.max((As[j][o][i] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],
-                                              -1)  # shape: n_timsteps, SAFE if >=1e-6
-                        grad_cons = (As[j][o][i].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1,
-                                                                                                  dimension)) @ grad_c_k).squeeze(
-                            -2)  # shape: n_timsteps, n_links safe if >=1e-6
+                        cons, ind = torch.max((As[j][o][idx] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][idx],-1)  # shape: n_timsteps, SAFE if >=1e-6
+                        grad_cons = (As[j][o][idx].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1, dimension)) @ grad_c_k).squeeze(-2)  # shape: n_timsteps, n_links safe if >=1e-6
                         cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = cons
                         grad_cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = grad_cons
                 nlp.cons_obs = cons_obs.numpy()
@@ -64,10 +62,6 @@ def solve_rts_star(FO_link, As, bs, n_links, n_obs, dimension, qpos, qvel, qgoal
             return nlp.cons_obs
 
         def jacobian(nlp, x):
-            nlp.num_iter += 1
-            #print(f"Curr num_iter={nlp.num_iter}")
-
-
             ka = torch.tensor(x, dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps, 1)
             if (nlp.x_prev != x).any():
                 cons_obs = torch.zeros(M)
@@ -82,17 +76,11 @@ def solve_rts_star(FO_link, As, bs, n_links, n_obs, dimension, qpos, qvel, qgoal
                 grad_cons_obs[-2 * n_links:] = torch.vstack((grad_q_max, grad_q_min))
                 # velocity min max constraints
                 for j in range(n_links):
-                    #print(multiprocessing.current_process())
-                    #print(f"j={j}, i={i}")
-                    #print(f"FO_link[j][i]:{FO_link[j][i]}")
-                    c_k = FO_link[j][i].center_slice_all_dep(ka / g_ka)
-                    grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka / g_ka) / g_ka
+                    c_k = FO_link[j][idx].center_slice_all_dep(ka / g_ka)
+                    grad_c_k = FO_link[j][idx].grad_center_slice_all_dep(ka / g_ka) / g_ka
                     for o in range(n_obs):
-                        cons, ind = torch.max((As[j][o][i] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],
-                                              -1)  # shape: n_timsteps, SAFE if >=1e-6
-                        grad_cons = (As[j][o][i].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1,
-                                                                                                  dimension)) @ grad_c_k).squeeze(
-                            -2)  # shape: n_timsteps, n_links safe if >=1e-6
+                        cons, ind = torch.max((As[j][o][idx] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][idx],-1)  # shape: n_timsteps, SAFE if >=1e-6
+                        grad_cons = (As[j][o][idx].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1, dimension)) @ grad_c_k).squeeze(-2)  # shape: n_timsteps, n_links safe if >=1e-6
                         cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = cons
                         grad_cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = grad_cons
                 nlp.cons_obs = cons_obs.numpy()
@@ -121,12 +109,12 @@ def solve_rts_star(FO_link, As, bs, n_links, n_obs, dimension, qpos, qvel, qgoal
 
     # NOTE: for training, dont care about fail-safe
     if info['status'] == 0:
-        l = torch.tensor(k_opt, dtype=torch.get_default_dtype()) / g_ka
+        lambd_opt = torch.tensor(k_opt, dtype=torch.get_default_dtype()) / g_ka
         flag = 0
     else:
-        l = lambda_i
+        lambd_opt = lambd_hat
         flag = 1
-    return l, flag
+    return lambd_opt, flag
 # batch
 
 def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_processes=NUM_PROCESSES):
@@ -140,10 +128,10 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_proces
     class RTS_star_2D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx,lambd,observation):
-            # zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
+            zp.reset()
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
-            lambd =lambd.reshape(-1,n_links).to(dtype=torch.get_default_dtype()) 
+            lambd =lambd.clone().reshape(-1,n_links).to(dtype=torch.get_default_dtype()) 
             #observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             observation = observation.to(dtype=torch.get_default_dtype())
             ka = g_ka*lambd
@@ -177,46 +165,40 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_proces
                     bs[j].append(b_temp)
                     unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
 
-            M_obs = n_timesteps*n_links*n_obs
-            M = M_obs+2*n_links
-            flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
-            nonzero_flag_indices = unsafe_flag.nonzero().reshape(-1)
 
-            num_problems = nonzero_flag_indices.numel()
-            # solve_rts_star(n_links, n_obs, dimension, qpos, qvel, qgoal, n_timesteps, M_obs, M, g_ka, As, bs, ka_0, FO_link, lambda_i)
+            flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
+
+            num_problems = rts_pass_indices.numel()
+            # solve_rts_star(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, rts_pass_indices)
             if num_problems > 0:
-                #print(f"Before mp call, FO link[0][{nonzero_flag_indices[0]}] is {FO_link[0][nonzero_flag_indices[0]]}")
-                #print(f"non zero flag indices: {nonzero_flag_indices}")
-                #print(f"unsafe flagas:{unsafe_flag}")
-                #print("Entered mp call...")
                 pool = Pool(processes=min(num_processes, num_problems))
-                results = pool.starmap(solve_rts_star,
-                                       [(FO_link, As, bs) + x for x in
-                                       zip([n_links] * num_problems,
-                                           [n_obs] * num_problems,
-                                           [dimension] * num_problems,
-                                           qpos[nonzero_flag_indices],
-                                           qvel[nonzero_flag_indices],
-                                           qgoal[nonzero_flag_indices],
-                                           [n_timesteps] * num_problems,
-                                           [M_obs] * num_problems,
-                                           [M] * num_problems,
-                                           [g_ka] * num_problems,
-                                           [ka_0] * num_problems,
-                                           lambd[nonzero_flag_indices],
-                                           nonzero_flag_indices
-                                           )
-                                    ]
-                                    )
-                #print("mp call succeeded")
-                nonzero_indices_lambdas = torch.cat([result[0] for result in results], 0).view(num_problems,dimension)
-                nonzero_indices_flags = torch.tensor([result[1] for result in results])
-                lambd[nonzero_flag_indices] = nonzero_indices_lambdas
-                flags[nonzero_flag_indices] = nonzero_indices_flags.to(flags.dtype)
+                results = pool.starmap(
+                                        solve_rts_star,
+                                        [(FO_link, As, bs) + x for x in
+                                        zip(
+                                            qpos[rts_pass_indices],
+                                            qvel[rts_pass_indices],
+                                            qgoal[rts_pass_indices],
+                                            [n_timesteps] * num_problems,
+                                            [n_links] * num_problems,
+                                            [n_obs] * num_problems,
+                                            [dimension] * num_problems,
+                                            [g_ka] * num_problems,
+                                            [ka_0] * num_problems,
+                                            lambd[rts_pass_indices],
+                                            rts_pass_indices
+                                            )
+                                        ]
+                                        )
+                rts_lambd_opt = torch.cat([result[0] for result in results], 0).view(num_problems,dimension)
+                rts_flags = torch.tensor([result[1] for result in results])
+                lambd[rts_pass_indices] = rts_lambd_opt
+                flags[rts_pass_indices] = rts_flags.to(flags.dtype)
             return lambd, FO_link, flags
 
         @staticmethod 
-        def backward(ctx,grad_ouput):
+        def backward(ctx,*grad_ouput):
             return (torch.zeros(ctx.lambd_shape),torch.zeros(ctx.obs_shape))
 
     return RTS_star_2D_Layer.apply
