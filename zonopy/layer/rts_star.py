@@ -5,15 +5,131 @@ from zonopy.joint_reachable_set.jrs_trig.process_jrs_trig import process_batch_J
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_trig
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
 import cyipopt
+import os
+from torch.multiprocessing import Process, Pool
+import multiprocessing
+from zonopy.conSet import PROPERTY_ID
+import zonopy as zp
+#torch.multiprocessing.set_start_method('spawn', force=True)
+os.environ['OMP_NUM_THREADS'] = '2'
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
 T_PLAN, T_FULL = 0.5, 1.0
 
+NUM_PROCESSES = 48
+
+def solve_rts_star(FO_link, As, bs, n_links, n_obs, dimension, qpos, qvel, qgoal, n_timesteps, M_obs, M, g_ka, ka_0, lambda_i ,i):
+    # print(f"Solve rts star called! FO_link[0][i]={FO_link[0][i]}")
+    class nlp_setup():
+        x_prev = np.zeros(n_links) * np.nan
+        num_iter = 0
+        def objective(nlp, x):
+            qplan = qpos + qvel * T_PLAN + 0.5 * x * T_PLAN ** 2
+            return torch.sum(wrap_to_pi(qplan - qgoal) ** 2)
+
+        def gradient(nlp, x):
+            qplan = qpos + qvel * T_PLAN + 0.5 * x * T_PLAN ** 2
+            return (T_PLAN ** 2 * wrap_to_pi(qplan - qgoal)).numpy()
+
+        def constraints(nlp, x):
+            ka = torch.tensor(x, dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps, 1)
+            if (nlp.x_prev != x).any():
+                cons_obs = torch.zeros(M)
+                grad_cons_obs = torch.zeros(M, n_links)
+                # velocity min max constraints
+                possible_max_min_q_dot = torch.vstack((qvel, qvel + x * T_PLAN, torch.zeros_like(qvel)))
+                q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
+                q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
+                grad_q_max = torch.diag(T_PLAN * (q_dot_max_idx % 2))
+                grad_q_min = torch.diag(T_PLAN * (q_dot_min_idx % 2))
+                cons_obs[-2 * n_links:] = torch.hstack((q_dot_max, q_dot_min))
+                grad_cons_obs[-2 * n_links:] = torch.vstack((grad_q_max, grad_q_min))
+                # velocity min max constraints
+                for j in range(n_links):
+                    c_k = FO_link[j][i].center_slice_all_dep(ka / g_ka)
+                    grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka / g_ka) / g_ka
+                    for o in range(n_obs):
+                        cons, ind = torch.max((As[j][o][i] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],
+                                              -1)  # shape: n_timsteps, SAFE if >=1e-6
+                        grad_cons = (As[j][o][i].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1,
+                                                                                                  dimension)) @ grad_c_k).squeeze(
+                            -2)  # shape: n_timsteps, n_links safe if >=1e-6
+                        cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = cons
+                        grad_cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = grad_cons
+                nlp.cons_obs = cons_obs.numpy()
+                nlp.grad_cons_obs = grad_cons_obs.numpy()
+                nlp.x_prev = np.copy(x)
+            return nlp.cons_obs
+
+        def jacobian(nlp, x):
+            nlp.num_iter += 1
+            #print(f"Curr num_iter={nlp.num_iter}")
+
+
+            ka = torch.tensor(x, dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps, 1)
+            if (nlp.x_prev != x).any():
+                cons_obs = torch.zeros(M)
+                grad_cons_obs = torch.zeros(M, n_links)
+                # velocity min max constraints
+                possible_max_min_q_dot = torch.vstack((qvel, qvel + x * T_PLAN, torch.zeros_like(qvel)))
+                q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
+                q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
+                grad_q_max = torch.diag(T_PLAN * (q_dot_max_idx % 2))
+                grad_q_min = torch.diag(T_PLAN * (q_dot_min_idx % 2))
+                cons_obs[-2 * n_links:] = torch.hstack((q_dot_max, q_dot_min))
+                grad_cons_obs[-2 * n_links:] = torch.vstack((grad_q_max, grad_q_min))
+                # velocity min max constraints
+                for j in range(n_links):
+                    #print(multiprocessing.current_process())
+                    #print(f"j={j}, i={i}")
+                    #print(f"FO_link[j][i]:{FO_link[j][i]}")
+                    c_k = FO_link[j][i].center_slice_all_dep(ka / g_ka)
+                    grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka / g_ka) / g_ka
+                    for o in range(n_obs):
+                        cons, ind = torch.max((As[j][o][i] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],
+                                              -1)  # shape: n_timsteps, SAFE if >=1e-6
+                        grad_cons = (As[j][o][i].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1,
+                                                                                                  dimension)) @ grad_c_k).squeeze(
+                            -2)  # shape: n_timsteps, n_links safe if >=1e-6
+                        cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = cons
+                        grad_cons_obs[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = grad_cons
+                nlp.cons_obs = cons_obs.numpy()
+                nlp.grad_cons_obs = grad_cons_obs.numpy()
+                nlp.x_prev = np.copy(x)
+            return nlp.grad_cons_obs
+
+        def intermediate(nlp, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
+                         d_norm, regularization_size, alpha_du, alpha_pr,
+                         ls_trials):
+            pass
+
+    NLP = cyipopt.Problem(
+        n=n_links,
+        m=M,
+        problem_obj=nlp_setup(),
+        lb=[-g_ka] * n_links,
+        ub=[g_ka] * n_links,
+        cl=[1e-6] * M_obs + [-1e20] * n_links + [-torch.pi + 1e-6] * n_links,
+        cu=[1e20] * M_obs + [torch.pi - 1e-6] * n_links + [1e20] * n_links,
+    )
+    NLP.add_option('sb', 'yes')
+    NLP.add_option('print_level', 0)
+
+    k_opt, info = NLP.solve(ka_0)
+
+    # NOTE: for training, dont care about fail-safe
+    if info['status'] == 0:
+        l = torch.tensor(k_opt, dtype=torch.get_default_dtype()) / g_ka
+        flag = 0
+    else:
+        l = lambda_i
+        flag = 1
+    return l, flag
 # batch
 
-def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
+def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_processes=NUM_PROCESSES):
     jrs_tensor = preload_batch_JRS_trig()
     dimension = 2
     n_timesteps = 100
@@ -24,6 +140,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
     class RTS_star_2D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx,lambd,observation):
+            # zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             lambd =lambd.reshape(-1,n_links).to(dtype=torch.get_default_dtype()) 
@@ -63,108 +180,39 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+2*n_links
             flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
-            for i in unsafe_flag.nonzero().reshape(-1):
-                class nlp_setup():
-                    x_prev = np.zeros(n_links)*np.nan
-                    def objective(nlp,x):
-                        qplan = qpos[i] + qvel[i]*T_PLAN + 0.5*x*T_PLAN**2
-                        return torch.sum(wrap_to_pi(qplan-qgoal[i])**2)
+            nonzero_flag_indices = unsafe_flag.nonzero().reshape(-1)
 
-                    def gradient(nlp,x):
-                        qplan = qpos[i] + qvel[i]*T_PLAN + 0.5*x*T_PLAN**2
-                        return (T_PLAN**2*wrap_to_pi(qplan-qgoal[i])).numpy()
-
-                    def constraints(nlp,x): 
-                        ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps,1)
-                        if (nlp.x_prev!=x).any():      
-                            cons_obs = torch.zeros(M)                   
-                            grad_cons_obs = torch.zeros(M,n_links)
-                            # velocity min max constraints
-                            possible_max_min_q_dot = torch.vstack((qvel[i],qvel[i]+x*T_PLAN,torch.zeros_like(qvel[i])))
-                            q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
-                            q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
-                            grad_q_max = torch.diag(T_PLAN*(q_dot_max_idx%2))
-                            grad_q_min = torch.diag(T_PLAN*(q_dot_min_idx%2))
-                            cons_obs[-2*n_links:] = torch.hstack((q_dot_max,q_dot_min))
-                            grad_cons_obs[-2*n_links:] = torch.vstack((grad_q_max,grad_q_min))
-                            # velocity min max constraints 
-                            for j in range(n_links):
-                                c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka)
-                                grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka)/g_ka
-                                for o in range(n_obs):
-                                    cons, ind = torch.max((As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],-1) # shape: n_timsteps, SAFE if >=1e-6
-                                    grad_cons = (As[j][o][i].gather(-2,ind.reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
-                                    cons_obs[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = cons
-                                    grad_cons_obs[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = grad_cons
-                            nlp.cons_obs = cons_obs.numpy()
-                            nlp.grad_cons_obs = grad_cons_obs.numpy()
-                            nlp.x_prev = np.copy(x)                
-                        return nlp.cons_obs
-
-                    def jacobian(nlp,x):
-                        ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps,1)
-                        if (nlp.x_prev!=x).any():                
-                            cons_obs = torch.zeros(M)   
-                            grad_cons_obs = torch.zeros(M,n_links)
-                            # velocity min max constraints
-                            possible_max_min_q_dot = torch.vstack((qvel[i],qvel[i]+x*T_PLAN,torch.zeros_like(qvel[i])))
-                            q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
-                            q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
-                            grad_q_max = torch.diag(T_PLAN*(q_dot_max_idx%2))
-                            grad_q_min = torch.diag(T_PLAN*(q_dot_min_idx%2))
-                            cons_obs[-2*n_links:] = torch.hstack((q_dot_max,q_dot_min))
-                            grad_cons_obs[-2*n_links:] = torch.vstack((grad_q_max,grad_q_min))
-                            # velocity min max constraints 
-                            for j in range(n_links):
-                                c_k = FO_link[j][i].center_slice_all_dep(ka/g_ka)
-                                grad_c_k = FO_link[j][i].grad_center_slice_all_dep(ka/g_ka)/g_ka
-                                for o in range(n_obs):
-                                    cons, ind = torch.max((As[j][o][i]@c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][i],-1) # shape: n_timsteps, SAFE if >=1e-6
-                                    grad_cons = (As[j][o][i].gather(-2,ind.reshape(n_timesteps,1,1).repeat(1,1,dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
-                                    cons_obs[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = cons
-                                    grad_cons_obs[(j+n_links*o)*n_timesteps:(j+n_links*o+1)*n_timesteps] = grad_cons
-                            nlp.cons_obs = cons_obs.numpy()
-                            nlp.grad_cons_obs = grad_cons_obs.numpy()
-                            nlp.x_prev = np.copy(x)                   
-                        return nlp.grad_cons_obs
-                    
-                    def intermediate(nlp, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
-                            d_norm, regularization_size, alpha_du, alpha_pr,
-                            ls_trials):
-                        pass
-                
-                NLP = cyipopt.problem(
-                n = n_links,
-                m = M,
-                problem_obj=nlp_setup(),
-                lb = [-g_ka]*n_links,
-                ub = [g_ka]*n_links,
-                cl = [1e-6]*M_obs+[-1e20]*n_links+[-torch.pi+1e-6]*n_links,
-                cu = [1e20]*M_obs+[torch.pi-1e-6]*n_links+[1e20]*n_links,
-                )
-                NLP.addOption('sb', 'yes')
-                NLP.addOption('print_level', 0)
-                
-                k_opt, info = NLP.solve(ka_0)
-
-
-                # NOTE: for training, dont care about fail-safe
-                if info['status'] == 0:
-                    lambd[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())/g_ka
-                    flags[i] = 0
-                else:
-                    flags[i] = 1
-
-                '''
-                # NOTE: for training, dont care about fail-safe
-                if info['status'] != 0:
-                    ka[i] = -qvel[i]/(T_FULL-T_PLAN)
-                    flags[i]=1
-                else:
-                    ka[i] = torch.tensor(k_opt,dtype = torch.get_default_dtype())
-                    flags[i]=0
-                '''
-            #print(f'rts pass: {flags}')
+            num_problems = nonzero_flag_indices.numel()
+            # solve_rts_star(n_links, n_obs, dimension, qpos, qvel, qgoal, n_timesteps, M_obs, M, g_ka, As, bs, ka_0, FO_link, lambda_i)
+            if num_problems > 0:
+                #print(f"Before mp call, FO link[0][{nonzero_flag_indices[0]}] is {FO_link[0][nonzero_flag_indices[0]]}")
+                #print(f"non zero flag indices: {nonzero_flag_indices}")
+                #print(f"unsafe flagas:{unsafe_flag}")
+                #print("Entered mp call...")
+                pool = Pool(processes=min(num_processes, num_problems))
+                results = pool.starmap(solve_rts_star,
+                                       [(FO_link, As, bs) + x for x in
+                                       zip([n_links] * num_problems,
+                                           [n_obs] * num_problems,
+                                           [dimension] * num_problems,
+                                           qpos[nonzero_flag_indices],
+                                           qvel[nonzero_flag_indices],
+                                           qgoal[nonzero_flag_indices],
+                                           [n_timesteps] * num_problems,
+                                           [M_obs] * num_problems,
+                                           [M] * num_problems,
+                                           [g_ka] * num_problems,
+                                           [ka_0] * num_problems,
+                                           lambd[nonzero_flag_indices],
+                                           nonzero_flag_indices
+                                           )
+                                    ]
+                                    )
+                #print("mp call succeeded")
+                nonzero_indices_lambdas = torch.cat([result[0] for result in results], 0).view(num_problems,dimension)
+                nonzero_indices_flags = torch.tensor([result[1] for result in results])
+                lambd[nonzero_flag_indices] = nonzero_indices_lambdas
+                flags[nonzero_flag_indices] = nonzero_indices_flags.to(flags.dtype)
             return lambd, FO_link, flags
 
         @staticmethod 
@@ -191,7 +239,7 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys() ])
         #k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
         lam = torch.tensor([0.8,0.8])
-        lam, FO_link, flag = RTS(torch.vstack((lam,lam)),torch.vstack((observ_temp,observ_temp))) 
+        lam, FO_link, flag = RTS(torch.vstack(([lam] * 40)),torch.vstack(([observ_temp]*40)))
         #ka, FO_link, flag = RTS(k,observ_temp)
         print(f'action: {lam}')
         print(f'flag: {flag}')
@@ -212,5 +260,4 @@ if __name__ == '__main__':
 
 
     print(f'Total time elasped for ARMTD-2d with {n_steps} steps: {t_armtd}')
-    import pdb;pdb.set_trace()
 
