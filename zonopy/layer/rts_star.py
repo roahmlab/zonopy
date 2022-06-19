@@ -6,9 +6,7 @@ from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
 import cyipopt
 import os
-from torch.multiprocessing import Process, Pool
-import multiprocessing
-from zonopy.conSet import PROPERTY_ID
+from torch.multiprocessing import Pool
 import zonopy as zp
 #torch.multiprocessing.set_start_method('spawn', force=True)
 os.environ['OMP_NUM_THREADS'] = '2'
@@ -21,7 +19,7 @@ T_PLAN, T_FULL = 0.5, 1.0
 NUM_PROCESSES = 48
 
 
-def solve_rts_star(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, idx):
+def rts_pass(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, idx):
     M_obs = n_timesteps*n_links*n_obs
     M = M_obs+2*n_links
     class nlp_setup():
@@ -169,32 +167,32 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_proces
             flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
 
-            num_problems = rts_pass_indices.numel()
-            # solve_rts_star(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, rts_pass_indices)
-            if num_problems > 0:
-                pool = Pool(processes=min(num_processes, num_problems))
+            n_problems = rts_pass_indices.numel()
+            # rts_pass(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, rts_pass_indices)
+            if n_problems > 0:
+                pool = Pool(processes=min(num_processes, n_problems))
                 results = pool.starmap(
-                                        solve_rts_star,
+                                        rts_pass,
                                         [(FO_link, As, bs) + x for x in
                                         zip(
                                             qpos[rts_pass_indices],
                                             qvel[rts_pass_indices],
                                             qgoal[rts_pass_indices],
-                                            [n_timesteps] * num_problems,
-                                            [n_links] * num_problems,
-                                            [n_obs] * num_problems,
-                                            [dimension] * num_problems,
-                                            [g_ka] * num_problems,
-                                            [ka_0] * num_problems,
+                                            [n_timesteps] * n_problems,
+                                            [n_links] * n_problems,
+                                            [n_obs] * n_problems,
+                                            [dimension] * n_problems,
+                                            [g_ka] * n_problems,
+                                            [ka_0] * n_problems,
                                             lambd[rts_pass_indices],
                                             rts_pass_indices
                                             )
                                         ]
                                         )
-                rts_lambd_opt = torch.cat([result[0] for result in results], 0).view(num_problems,dimension)
-                rts_flags = torch.tensor([result[1] for result in results])
+                rts_lambd_opt = torch.cat([result[0] for result in results], 0).view(n_problems,dimension)
+                rts_flags = torch.tensor([result[1] for result in results],dtype=int)
                 lambd[rts_pass_indices] = rts_lambd_opt
-                flags[rts_pass_indices] = rts_flags.to(flags.dtype)
+                flags[rts_pass_indices] = rts_flags
             return lambd, FO_link, flags
 
         @staticmethod 
