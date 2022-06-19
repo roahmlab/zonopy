@@ -65,13 +65,7 @@ class matPolyZonotope():
                 assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
                 self.id = id
             else:
-                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop)
-        elif isinstance(id, torch.Tensor) and id.shape[0] == 0:
-            self.expMat = torch.eye(0,dtype=torch.long)
-            self.id = id
-        elif isinstance(id, list) and id.shape[0] == 0:
-            self.expMat = torch.eye(0,dtype=torch.long)
-            self.id = torch.tensor(id,dtype=torch.long)      
+                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop)   
         else:
             assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
         self.Z = torch.vstack((C.unsqueeze(0),G,Grest))
