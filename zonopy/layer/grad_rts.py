@@ -101,9 +101,9 @@ def rts_pass(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, di
         )
     NLP.addOption('sb', 'yes')
     NLP.addOption('print_level', 0)
-    
+    print('ho!')    
     k_opt, nlp_info = NLP.solve(ka_0)
-
+    print('ho!!!')
 
     # NOTE: for training, dont care about fail-safe
     if nlp_info['status'] == 0:
@@ -167,7 +167,7 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_proces
                     bs[j].append(b_temp)
                     unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
 
-            #unsafe_flag = torch.ones(n_batches,dtype=bool) # NOTE: activate rts all ways
+            unsafe_flag = torch.ones(n_batches,dtype=bool) # NOTE: activate rts all ways
 
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+2*n_links
@@ -261,7 +261,6 @@ def gen_grad_RTS_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_proces
                 qp_size = n_batch*n_links
                 H = 0.5*sp.csr_matrix(([1.]*qp_size,(range(qp_size),range(qp_size))))            
                 f_d = sp.csr_matrix((-direction[rts_success_pass].flatten(),([0]*qp_size,range(qp_size))))
-
                 qp = gp.Model("back_prop")
                 qp.Params.LogToConsole = 0
                 z = qp.addMVar(shape=qp_size, name="z",vtype=GRB.CONTINUOUS,ub=np.inf, lb=-np.inf)
@@ -297,8 +296,8 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys() ])
         #k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
         lam = torch.tensor([0.8,0.8])
-        bias1 = torch.full((3,1),0.0,requires_grad=True )
-        lam, FO_link, flag = RTS(torch.vstack((lam,lam,lam))+bias1,torch.vstack((observ_temp,observ_temp,observ_temp))+bias1) 
+        bias1 = torch.full((30,1),0.0,requires_grad=True )
+        lam, FO_link, flag = RTS(torch.vstack([lam]*30)+bias1,torch.vstack([observ_temp]*30)+bias1) 
         lam.sum().backward()
 
         #ka, FO_link, flag = RTS(k,observ_temp)
