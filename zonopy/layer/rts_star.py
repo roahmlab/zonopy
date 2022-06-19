@@ -18,7 +18,7 @@ def wrap_to_pi(phases):
 
 T_PLAN, T_FULL = 0.5, 1.0
 
-NUM_PROCESSES = 32
+NUM_PROCESSES = 48
 
 def solve_rts_star(FO_link, As, bs, n_links, n_obs, dimension, qpos, qvel, qgoal, n_timesteps, M_obs, M, g_ka, ka_0, lambda_i ,i):
     # print(f"Solve rts star called! FO_link[0][i]={FO_link[0][i]}")
@@ -176,7 +176,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params, num_proces
                     As[j].append(A_temp)
                     bs[j].append(b_temp)
                     unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
-            unsafe_flag[:] = 1
+
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+2*n_links
             flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
