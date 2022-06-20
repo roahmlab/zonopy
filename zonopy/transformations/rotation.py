@@ -66,7 +66,7 @@ def gen_batch_rotatotope_from_jrs_trig(bPZ,rot_axis):
     cosq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(cos_dim,cos_dim+1))].unsqueeze(-1)
     sinq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(sin_dim,sin_dim+1))].unsqueeze(-1)
     G = sinq*w_hat - cosq*(w_hat@w_hat)
-    return batchMatPolyZonotope(torch.cat((C.unsqueeze(-3),G),-3),bPZ.n_dep_gens,bPZ.expMat,bPZ.id)
+    return batchMatPolyZonotope(torch.cat((C.unsqueeze(-3),G),-3),bPZ.n_dep_gens,bPZ.expMat,bPZ.id,compress=0)
 
 def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     '''
@@ -113,7 +113,7 @@ def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
     sinq = cos_sin_q.Grest[sin_dim]
     n_igens = len(cosq) 
     Grest = sinq*w_hat.repeat(n_igens,1,1).permute(1,2,0)-cosq*(w_hat@w_hat).repeat(n_igens,1,1).permute(1,2,0)
-    return matPolyZonotope(C,G,Grest,cos_sin_q.expMat,cos_sin_q.id,cos_sin_q.dtype,cos_sin_q.itype,cos_sin_q.device)
+    return matPolyZonotope(C,G,Grest,cos_sin_q.expMat,cos_sin_q.id,cos_sin_q.dtype,cos_sin_q.itype,cos_sin_q.device,compress=0)
 
 
 def gen_rot_from_q(q,rot_axis):

@@ -274,7 +274,7 @@ class polyZonotope:
             n_dg_red = indDep_red.shape[0]
             Ered = self.expMat[indDep_red]
             Ztemp = torch.vstack((torch.zeros(N),G[ind_RED]))
-            pZtemp = polyZonotope(Ztemp,n_dg_red,Ered,self.id) # NOTE: ID???
+            pZtemp = polyZonotope(Ztemp,n_dg_red,Ered,self.id,compress=1) # NOTE: ID???
             zono = pZtemp.to_zonotope() # zonotope over-approximation
             # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
             zonoRem = zono.reduce(1,option)
@@ -296,7 +296,7 @@ class polyZonotope:
         if self.dimension == 1:
             ZRed = torch.vstack((ZRed[0],ZRed[1:n_dg_red+1].sum(0),ZRed[n_dg_red+1:]))
             n_dg_rem = 1
-        return polyZonotope(ZRed,n_dg_rem,expMatRem,idRem)
+        return polyZonotope(ZRed,n_dg_rem,expMatRem,idRem,compress=1)
 
     def reduce_indep(self,order,option='girard'):
         # extract dimensions
@@ -324,7 +324,7 @@ class polyZonotope:
         if self.dimension == 1 and n_dg_red != 1:
             ZRed = torch.vstack((ZRed[0],ZRed[1:n_dg_red+1].sum(0),ZRed[n_dg_red+1:]))
             n_dg_red = 1
-        return polyZonotope(ZRed,n_dg_red,self.expMat,self.id)
+        return polyZonotope(ZRed,n_dg_red,self.expMat,self.id,compress=1)
 
     def exactCartProd(self,other):
         '''
@@ -463,13 +463,12 @@ class polyZonotope:
         if torch.any(ind):
             expMat = expMat[:,~ind]
             id = id[:,~ind]
-        return polyZonotope(torch.vstack((c,G,self.Grest)),G.shape[0],expMat,id)
-    '''
+        return polyZonotope(torch.vstack((c,G,self.Grest)),G.shape[0],expMat,id,compress=0)
+
+
     def project(self,dim=[0,1]):
-        c = self.c[dim,:]
-        G = self.G[dim,:]
-        Grest = self.Grest[dim,:]
-        return polyZonotope(c,G,Grest,self.expMat,self.id,self.__dtype,self.__itype,self.__device)
+        return polyZonotope(self.Z[:,dim],self.n_dep_gens,self.expMat,self.id,compress=1)
+    '''
     def plot(self,dim=[0,1]):
         pz = self.project(dim)
     '''

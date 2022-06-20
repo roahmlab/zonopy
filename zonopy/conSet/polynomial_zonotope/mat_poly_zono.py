@@ -132,9 +132,9 @@ class matPolyZonotope():
             assert other.shape[0] == self.n_cols
             Z = self.Z @ other
             if len(other.shape) == 1:
-                return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=0)
+                return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
             elif len(other.shape) == 2:
-                return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=0)
+                return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
 
         # NOTE: this is 'OVERAPPROXIMATED' multiplication for keeping 'fully-k-sliceables'
         # The actual multiplication should take
@@ -233,7 +233,7 @@ class matPolyZonotope():
             n_dg_rem = indDep.shape[0]
             Erem = self.expMat[indDep]
             Ztemp = torch.vstack((torch.zeros(1,self.n_rows,self.n_cols),G[ind_REM]))
-            pZtemp = matPolyZonotope(Ztemp,n_dg_rem,Erem,self.id) # NOTE: ID???
+            pZtemp = matPolyZonotope(Ztemp,n_dg_rem,Erem,self.id,compress=1) # NOTE: ID???
             zono = pZtemp.to_matZonotope() # zonotope over-approximation
             # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
             zonoRed = zono.reduce(1,option)
@@ -254,7 +254,7 @@ class matPolyZonotope():
         idRed = self.id[ind]
         if self.n_rows == 1 and self.n_cols == 1:
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
-        return matPolyZonotope(ZRed,n_dg_red,expMatRed,idRed)
+        return matPolyZonotope(ZRed,n_dg_red,expMatRed,idRed,compress=1)
 
     def reduce_indep(self,order,option='girard'):
         # extract dimensions
@@ -283,7 +283,7 @@ class matPolyZonotope():
         if self.n_rows == 1 == self.n_cols and n_dg_red != 1:
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
             n_dg_red = 1
-        return matPolyZonotope(ZRed,n_dg_red,self.expMat,self.id)
+        return matPolyZonotope(ZRed,n_dg_red,self.expMat,self.id,compress=1)
 
 if __name__ == '__main__':
     

@@ -60,15 +60,6 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
 
 
 def removeRedundantExponents(ExpMat,G):
-    if 'count' not in globals():
-        global count 
-        count = 0
-    else:
-        count +=1
-        if count%10 == 0:
-            print(count)
-
-
     '''
     add up all generators that belong to terms with identical exponents
     
