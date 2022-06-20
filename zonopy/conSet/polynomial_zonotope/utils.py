@@ -22,7 +22,7 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
     # NOTE: need to fix or maybe G should be zero tensor for empty
 
     batch_shape = G.shape[:-dim_N]
-    idxD = torch.sum(G!=0,tuple(range(len(batch_shape)))+tuple(range(-1,-dim_N,-1)))!=0
+    idxD = torch.sum(G!=0,tuple(range(len(batch_shape)))+tuple(range(-1,-dim_N,-1)))!=0 # non-zero generator index
     # skip if all non-zero OR G is non-empty 
     if not idxD.all() or G.shape[-dim_N] == 0:
         # if all generators are zero
@@ -59,8 +59,7 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
     return ExpMatNew, Gnew
 
 
-def removeRedundantExponents(ExpMat,G,eps=0):
-    '''
+def removeRedundantExponents(ExpMat,G):
     if 'count' not in globals():
         global count 
         count = 0
@@ -68,7 +67,7 @@ def removeRedundantExponents(ExpMat,G,eps=0):
         count +=1
         if count%10 == 0:
             print(count)
-    '''
+
 
     '''
     add up all generators that belong to terms with identical exponents
@@ -83,8 +82,9 @@ def removeRedundantExponents(ExpMat,G,eps=0):
     # True for non-zero generators
     # NOTE: need to fix or maybe G should be zero tensor for empty
 
-    dim_G = len(G.shape)    
-    idxD = torch.sum(abs(G)<=eps,tuple(range(-1,-dim_G,-1)))!=0
+    dim_G = len(G.shape)
+    idxD = torch.sum(G!=0,tuple(range(-1,-dim_G,-1)))!=0 # non-zero generator index
+
     '''
     idxD = torch.any(abs(G)>eps,)
     for _ in range(dim_G-2):

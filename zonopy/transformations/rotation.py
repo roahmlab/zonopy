@@ -85,7 +85,7 @@ def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     cosq = polyZono.Z[1:,cos_dim:cos_dim+1].unsqueeze(-1)
     sinq = polyZono.Z[1:,sin_dim:sin_dim+1].unsqueeze(-1)
     G = sinq*w_hat - cosq*(w_hat@w_hat)
-    return matPolyZonotope(torch.vstack((C,G)),polyZono.n_dep_gens,polyZono.expMat,polyZono.id)
+    return matPolyZonotope(torch.vstack((C,G)),polyZono.n_dep_gens,polyZono.expMat,polyZono.id,compress=0)
 
 
 def gen_rotatotope_from_jrs(q, rot_axis, deg=6, R0=None):
