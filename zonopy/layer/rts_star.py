@@ -164,25 +164,19 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             lambda_to_slc = lambd.reshape(n_batches, 1, dimension).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
-            unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(
-                -1)  # NOTE: this might not work on gpu, velocity lim check
+            unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(-1)  # NOTE: this might not work on gpu, velocity lim check
             for j in range(n_links):
                 FO_link[j] = FO_link[j].project([0, 1])
                 c_k = FO_link[j].center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
                 for o in range(n_obs):
-                    obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),
-                                       torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(
-                        1, n_timesteps, 1, 1)
-                    A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link[j].Grest),
-                                                             -2)).polytope()  # A: n_timesteps,*,dimension
+                    obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
+                    A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link[j].Grest),-2)).polytope()  # A: n_timesteps,*,dimension
                     As[j].append(A_temp)
                     bs[j].append(b_temp)
-                    unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(
-                        -1)  # NOTE: this might not work on gpu FOR, safety check
+                    unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
 
             unsafe_flag = torch.ones(n_batches)
-            flags = -torch.ones(
-                n_batches)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            flags = -torch.ones(n_batches)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
 
             n_problems = rts_pass_indices.numel()
