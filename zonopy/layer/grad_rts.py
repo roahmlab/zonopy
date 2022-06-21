@@ -55,11 +55,8 @@ def rts_pass(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, di
                     c_k = FO_link[j][idx].center_slice_all_dep(ka)
                     grad_c_k = FO_link[j][idx].grad_center_slice_all_dep(ka)
                     for o in range(n_obs):
-                        cons, ind = torch.max((As[j][o][idx] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][idx],
-                                              -1)  # shape: n_timsteps, SAFE if >=1e-6
-                        jac = (As[j][o][idx].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1,
-                                                                                              dimension)) @ grad_c_k).squeeze(
-                            -2)  # shape: n_timsteps, n_links safe if >=1e-6
+                        cons, ind = torch.max((As[j][o][idx] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][idx],-1)  # shape: n_timsteps, SAFE if >=1e-6
+                        jac = (As[j][o][idx].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1, dimension)) @ grad_c_k).squeeze(-2)  # shape: n_timsteps, n_links safe if >=1e-6
                         Cons[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = - cons
                         Jac[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = - jac
                 nlp.cons = Cons.numpy()
