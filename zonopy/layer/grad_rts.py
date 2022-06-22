@@ -15,6 +15,9 @@ from scipy.linalg import block_diag
 import os
 from torch.multiprocessing import Pool
 
+from zonopy.layer.nlp_setup import NLP_setup
+
+os.environ['OMP_NUM_THREADS'] = '2'
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
@@ -22,81 +25,13 @@ def wrap_to_pi(phases):
 
 T_PLAN, T_FULL = 0.5, 1.0
 
-NUM_PROCESSES = 48
+NUM_PROCESSES = 40
 
 
-def rts_pass(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, idx):
+def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat):
     M_obs = n_timesteps * n_links * n_obs
     M = M_obs + 2 * n_links
-
-    class nlp_setup():
-        x_prev = np.zeros(n_links) * np.nan
-
-        def objective(nlp, x):
-            qplan = qpos + qvel * T_PLAN + 0.5 * g_ka * x * T_PLAN ** 2
-            return torch.sum(wrap_to_pi(qplan - qgoal) ** 2)
-
-        def gradient(nlp, x):
-            qplan = qpos + qvel * T_PLAN + 0.5 * g_ka * x * T_PLAN ** 2
-            return (g_ka * T_PLAN ** 2 * wrap_to_pi(qplan - qgoal)).numpy()
-
-        def constraints(nlp, x):
-            ka = torch.tensor(x, dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps, 1)
-            if (nlp.x_prev != x).any():
-                Cons = torch.zeros(M)
-                Jac = torch.zeros(M, n_links)
-                # velocity constraints
-                q_peak = qvel + g_ka * x * T_PLAN
-                grad_q_peak = g_ka * T_PLAN * torch.eye(n_links)
-                Cons[-2 * n_links:] = torch.hstack((q_peak - torch.pi, -torch.pi - q_peak))
-                Jac[-2 * n_links:] = torch.vstack((grad_q_peak, -grad_q_peak))
-                # velocity constraints 
-                for j in range(n_links):
-                    c_k = FO_link[j][idx].center_slice_all_dep(ka)
-                    grad_c_k = FO_link[j][idx].grad_center_slice_all_dep(ka)
-                    for o in range(n_obs):
-                        cons, ind = torch.max((As[j][o][idx] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][idx],-1)  # shape: n_timsteps, SAFE if >=1e-6
-                        jac = (As[j][o][idx].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1, dimension)) @ grad_c_k).squeeze(-2)  # shape: n_timsteps, n_links safe if >=1e-6
-                        Cons[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = - cons
-                        Jac[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = - jac
-                nlp.cons = Cons.numpy()
-                nlp.jac = Jac.numpy()
-                nlp.x_prev = np.copy(x)
-            return nlp.cons
-
-        def jacobian(nlp, x):
-            ka = torch.tensor(x, dtype=torch.get_default_dtype()).unsqueeze(0).repeat(n_timesteps, 1)
-            if (nlp.x_prev != x).any():
-                Cons = torch.zeros(M)
-                Jac = torch.zeros(M, n_links)
-                # velocity constraints
-                q_peak = qvel + g_ka * x * T_PLAN
-                grad_q_peak = g_ka * T_PLAN * torch.eye(n_links)
-                Cons[-2 * n_links:] = torch.hstack((q_peak - torch.pi, -torch.pi - q_peak))
-                Jac[-2 * n_links:] = torch.vstack((grad_q_peak, -grad_q_peak))
-                # velocity constraints 
-                for j in range(n_links):
-                    c_k = FO_link[j][idx].center_slice_all_dep(ka)
-                    grad_c_k = FO_link[j][idx].grad_center_slice_all_dep(ka)
-                    for o in range(n_obs):
-                        cons, ind = torch.max((As[j][o][idx] @ c_k.unsqueeze(-1)).squeeze(-1) - bs[j][o][idx],
-                                              -1)  # shape: n_timsteps, SAFE if >=1e-6
-                        jac = (As[j][o][idx].gather(-2, ind.reshape(n_timesteps, 1, 1).repeat(1, 1,
-                                                                                              dimension)) @ grad_c_k).squeeze(
-                            -2)  # shape: n_timsteps, n_links safe if >=1e-6
-                        Cons[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = - cons
-                        Jac[(j + n_links * o) * n_timesteps:(j + n_links * o + 1) * n_timesteps] = - jac
-                nlp.cons = Cons.numpy()
-                nlp.jac = Jac.numpy()
-                nlp.x_prev = np.copy(x)
-            return nlp.jac
-
-        def intermediate(nlp, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
-                         d_norm, regularization_size, alpha_du, alpha_pr,
-                         ls_trials):
-            pass
-
-    nlp_obj = nlp_setup()
+    nlp_obj = NLP_setup(qpos,qvel,qgoal,n_timesteps,n_links,dimension,n_obs,g_ka,FO_link,A,b)
     NLP = cyipopt.Problem(
         n=n_links,
         m=M,
@@ -108,9 +43,7 @@ def rts_pass(FO_link, As, bs, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, di
     )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
-    print('ho!')
     k_opt, nlp_info = NLP.solve(ka_0)
-    print('ho!!!')
 
     # NOTE: for training, dont care about fail-safe
     if nlp_info['status'] == 0:
@@ -154,32 +87,28 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
             FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
 
-            As = [[] for _ in range(n_links)]
-            bs = [[] for _ in range(n_links)]
-
+            As = [[[] for _ in range(n_links)] for _ in range(n_batches)]
+            bs = [[[] for _ in range(n_links)] for _ in range(n_batches)]
+            FO_links = [[] for _ in range(n_batches)]
             lambda_to_slc = ctx.lambd.reshape(n_batches, 1, dimension).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
-            unsafe_flag = (abs(qvel + ctx.lambd * g_ka * T_PLAN) > PI_vel).any(
-                -1)  # NOTE: this might not work on gpu, velocity lim check
+            unsafe_flag = (abs(qvel + ctx.lambd * g_ka * T_PLAN) > PI_vel).any(-1)  # NOTE: this might not work on gpu, velocity lim check
+            lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/T_PLAN,(PI_vel-qvel)/T_PLAN)
             for j in range(n_links):
-                FO_link[j] = FO_link[j].project([0, 1])
-                c_k = FO_link[j].center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
+                FO_link_temp = FO_link[j].project([0, 1])
+                c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
                 for o in range(n_obs):
-                    obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),
-                                       torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(
-                        1, n_timesteps, 1, 1)
-                    A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link[j].Grest),
-                                                             -2)).polytope()  # A: n_timesteps,*,dimension
-                    As[j].append(A_temp)
-                    bs[j].append(b_temp)
-                    unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(
-                        -1)  # NOTE: this might not work on gpu FOR, safety check
+                    obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2), torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
+                    A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
+                    unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
+                    A_temp, b_temp = A_temp.cpu().numpy(), b_temp.cpu().numpy()
+                for b in range(n_batches):
+                    As[b][j].append(A_temp[b])
+                    bs[b][j].append(b_temp[b])
+                    FO_links[b].append(FO_link_temp[b])
+            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts all ways
 
-            unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts all ways
-
-            M_obs = n_timesteps * n_links * n_obs
-            M = M_obs + 2 * n_links
             ctx.flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             ctx.nlp_obj = [None for _ in range(n_batches)]
             ctx.nlp_info = [None for _ in range(n_batches)]
@@ -190,19 +119,20 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 with Pool(processes=min(num_processes, n_problems)) as pool:
                     results = pool.starmap(
                         rts_pass,
-                        [(FO_link, As, bs) + x for x in
-                         zip(
-                             qpos[rts_pass_indices],
-                             qvel[rts_pass_indices],
-                             qgoal[rts_pass_indices],
+                        [x for x in
+                         zip([As[idx] for idx in rts_pass_indices],
+                             [bs[idx] for idx in rts_pass_indices],
+                             [FO_links[idx] for idx in rts_pass_indices],
+                             qpos.cpu().numpy()[rts_pass_indices],
+                             qvel.cpu().numpy()[rts_pass_indices],
+                             qgoal.cpu().numpy()[rts_pass_indices],
                              [n_timesteps] * n_problems,
                              [n_links] * n_problems,
                              [n_obs] * n_problems,
                              [dimension] * n_problems,
                              [g_ka] * n_problems,
-                             [ka_0] * n_problems,
-                             ctx.lambd[rts_pass_indices],
-                             rts_pass_indices
+                             [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
+                             lambd[rts_pass_indices]
                          )
                          ]
                     )
@@ -309,9 +239,9 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys()])
         # k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
         lam = torch.tensor([0.8, 0.8])
-        bias1 = torch.full((30, 1), 0.0, requires_grad=True)
-        lam, FO_link, flag = RTS(torch.vstack([lam] * 30) + bias1, torch.vstack([observ_temp] * 30) + bias1)
-        lam.sum().backward()
+        #bias1 = torch.full((30, 1), 0.0, requires_grad=True)
+        lam, FO_link, flag = RTS(torch.vstack([lam] * 2), torch.vstack([observ_temp] * 2))
+        #lam.sum().backward()
 
         # ka, FO_link, flag = RTS(k,observ_temp)
         print(f'action: {lam}')

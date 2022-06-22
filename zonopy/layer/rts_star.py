@@ -19,7 +19,7 @@ def wrap_to_pi(phases):
 
 
 T_PLAN, T_FULL = 0.5, 1.0
-NUM_PROCESSES = 48
+NUM_PROCESSES = 40
 
 
 def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat):
@@ -32,8 +32,8 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
         problem_obj=nlp_obj,
         lb=[-g_ka] * n_links,
         ub=[g_ka] * n_links,
-        cl=[1e-6] * M_obs + [-1e20] * n_links + [-torch.pi + 1e-6] * n_links,
-        cu=[1e20] * M_obs + [torch.pi - 1e-6] * n_links + [1e20] * n_links,
+        cl=[-1e20] * M_obs + [-1e20] * 2 * n_links,
+        cu=[-1e-6] * M_obs + [-1e-6] * 2 * n_links,
     )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
@@ -42,7 +42,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
 
     # NOTE: for training, dont care about fail-safe
     if info['status'] == 0:
-        lambd_opt = torch.tensor(k_opt, dtype=torch.get_default_dtype()) / g_ka
+        lambd_opt = torch.tensor(k_opt, dtype=torch.get_default_dtype())
         flag = 0
     else:
         lambd_opt = lambd_hat
@@ -91,13 +91,13 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
             # unsafe_flag = torch.zeros(n_batches)
             unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(-1)  # NOTE: this might not work on gpu, velocity lim check
+            lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/T_PLAN,(PI_vel-qvel)/T_PLAN)
             for j in range(n_links):
                 FO_link_temp = batch_FO_link[j].project([0, 1])
                 c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
                 for o in range(n_obs):
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
                     A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
-
                     unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
                     A_temp, b_temp = A_temp.cpu().numpy(), b_temp.cpu().numpy()
                 for b in range(n_batches):
@@ -105,10 +105,8 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     bs[b][j].append(b_temp[b])
                     FO_links[b].append(FO_link_temp[b])
 
-
-
-            unsafe_flag = torch.ones(n_batches)
-            flags = -torch.ones(n_batches)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            #unsafe_flag = torch.ones(n_batches)
+            flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
 
             n_problems = rts_pass_indices.numel()
@@ -129,7 +127,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                              [n_obs] * n_problems,
                              [dimension] * n_problems,
                              [g_ka] * n_problems,
-                             [ka_0] * n_problems,
+                             [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
                              lambd[rts_pass_indices]
                          )
                          ]
@@ -168,7 +166,7 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys()])
         # k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
         lam = torch.tensor([0.8, 0.8])
-        lam, FO_link, flag = RTS(torch.vstack(([lam] * 2)), torch.vstack(([observ_temp] * 2)))
+        lam, FO_link, flag = RTS(torch.vstack(([lam] * 3)), torch.vstack(([observ_temp] * 3)))
         # ka, FO_link, flag = RTS(k,observ_temp)
         print(f'action: {lam}')
         print(f'flag: {flag}')

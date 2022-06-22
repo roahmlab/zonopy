@@ -83,8 +83,8 @@ class NLP_setup():
                 for o in range(self.n_obs):
                     h_obs = (self.A[j][o]@c_k).squeeze(-1) - self.b[j][o]
                     ind = np.argmax(h_obs,-1) 
-                    cons = np.take_along_axis(h_obs,ind.reshape(self.n_timesteps,1),axis=1).squeeze(-1) # shape: n_timsteps, SAFE if >=1e-6
-                    jac = (np.take_along_axis(self.A[j][o],ind.reshape(self.n_timesteps,1,1),axis=1)@grad_c_k).squeeze(-2)# shape: n_timsteps, n_links                    
+                    cons = - np.take_along_axis(h_obs,ind.reshape(self.n_timesteps,1),axis=1).squeeze(-1) # shape: n_timsteps, SAFE if <=-1e-6
+                    jac = - (np.take_along_axis(self.A[j][o],ind.reshape(self.n_timesteps,1,1),axis=1)@grad_c_k).squeeze(-2)# shape: n_timsteps, n_links                    
                     
                     self.cons[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
                     self.jac[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = jac
