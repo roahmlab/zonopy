@@ -91,7 +91,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
             # unsafe_flag = torch.zeros(n_batches)
             unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(-1)  # NOTE: this might not work on gpu, velocity lim check
-            lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/T_PLAN,(PI_vel-qvel)/T_PLAN)
+            lambd0 = lambd.clamp((-PI_vel-qvel)/T_PLAN,(PI_vel-qvel)/T_PLAN)
             for j in range(n_links):
                 FO_link_temp = batch_FO_link[j].project([0, 1])
                 c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
