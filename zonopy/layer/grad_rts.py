@@ -140,10 +140,9 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 for idx, res in enumerate(results):
                     rts_lambd_opt.append(res[0])
                     rts_flags.append(res[1])
-                    ctx.nlp_obj[rts_pass_indices[idx]] = res[2]
-                    ctx.nlp_info[rts_pass_indices[idx]] = res[3]
-
-                ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension)
+                    ctx.nlp_info[rts_pass_indices[idx]] = res[2]
+                    ctx.nlp_obj[rts_pass_indices[idx]] = res[3]
+                ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=ctx.lambd.dtype)
                 ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype)
 
             return ctx.lambd, FO_link, ctx.flags
@@ -210,7 +209,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 qp.addConstr(qp_eq_cons @ z == rhs_eq, name="eq")
                 qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
                 qp.optimize()
-                grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch, n_links))
+                grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch, n_links),dtype=grad_input.dtype)
 
                 # NOTE: for fail-safe, keep into zeros             
             return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape))
