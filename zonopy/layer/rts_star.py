@@ -132,7 +132,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                          )
                          ]
                     )
-                rts_lambd_opt = torch.cat([result[0] for result in results], 0).view(n_problems, dimension).to(dtype=ctx.lambd.dtype)
+                rts_lambd_opt = torch.cat([result[0] for result in results], 0).view(n_problems, dimension).to(dtype=lambd.dtype)
                 rts_flags = torch.tensor([result[1] for result in results], dtype=flags.dtype)
                 lambd[rts_pass_indices] = rts_lambd_opt
                 flags[rts_pass_indices] = rts_flags
