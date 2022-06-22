@@ -59,7 +59,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                     As[j].append(A_temp)
                     bs[j].append(b_temp)
                     unsafe_flag += (torch.max((A_temp@c_k).squeeze(-1)-b_temp,-1)[0]<1e-6).any(-1)  #NOTE: this might not work on gpu FOR, safety check
-
+            unsafe_flag = torch.ones(n_batches)
             M_obs = n_timesteps*n_links*n_obs
             M = M_obs+2*n_links
             flags = -torch.ones(n_batches) # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
@@ -133,7 +133,7 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                             ls_trials):
                         pass
                 
-                NLP = cyipopt.problem(
+                NLP = cyipopt.Problem(
                 n = n_links,
                 m = M,
                 problem_obj=nlp_setup(),
@@ -142,8 +142,8 @@ def gen_RTS_star_2D_Layer(link_zonos,joint_axes,n_links,n_obs,params):
                 cl = [1e-6]*M_obs+[-1e20]*n_links+[-torch.pi+1e-6]*n_links,
                 cu = [1e20]*M_obs+[torch.pi-1e-6]*n_links+[1e20]*n_links,
                 )
-                NLP.addOption('sb', 'yes')
-                NLP.addOption('print_level', 0)
+                NLP.add_option('sb', 'yes')
+                NLP.add_option('print_level', 0)
                 
                 k_opt, info = NLP.solve(ka_0)
 
@@ -191,7 +191,7 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys() ])
         #k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
         lam = torch.tensor([0.8,0.8])
-        lam, FO_link, flag = RTS(torch.vstack((lam,lam)),torch.vstack((observ_temp,observ_temp))) 
+        lam, FO_link, flag = RTS(torch.vstack(([lam]*2)),torch.vstack(([observ_temp]*2))) 
         #ka, FO_link, flag = RTS(k,observ_temp)
         print(f'action: {lam}')
         print(f'flag: {flag}')
