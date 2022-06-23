@@ -194,8 +194,9 @@ class Arm_2D:
 
         return self.get_observations()
 
-    def step(self,ka,safe=0):
-        self.safe = safe <= 0
+    def step(self,ka,flag=0):
+        self.step_flag = flag
+        self.safe = flag <= 0
         # -torch.pi<qvel+k*T_PLAN < torch.pi
         # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
         self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
@@ -245,14 +246,14 @@ class Arm_2D:
             self.until_goal = goal_distance.argmin()
         '''
         self._elapsed_steps += 1
-        reward = self.reward(ka) # NOTE: should it be ka or self.ka ??
+        self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
         self.done = self.success or self.collision
         observations = self.get_observations()
         info = self.get_info()
-        return observations, reward, self.done, info
+        return observations, self.reward, self.done, info
 
     def get_info(self):
-        info ={'is_success':self.success,'collision':self.collision,'safe_flag':self.safe}
+        info ={'is_success':self.success,'collision':self.collision,'safe_flag':self.safe,'step_flag':self.step_flag}
         if self.collision:
             collision_info = {
                 'qpos_collision':self.qpos_collision,
@@ -265,6 +266,7 @@ class Arm_2D:
         if self._elapsed_steps >= self._max_episode_steps:
             info["TimeLimit.truncated"] = not self.done
             self.done = True            
+        info['episode'] = {"r":self.reward,"l":self._elapsed_steps}
         return info
 
     def get_observations(self):
@@ -311,7 +313,7 @@ class Arm_2D:
   
         return False
 
-    def reward(self, action, qpos=None, qgoal=None):
+    def get_reward(self, action, qpos=None, qgoal=None):
         # Get the position and goal then calculate distance to goal
         if qpos is None or qgoal is None:
             qpos = self.qpos
