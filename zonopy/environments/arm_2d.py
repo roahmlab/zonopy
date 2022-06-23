@@ -58,6 +58,7 @@ class Arm_2D:
         self.hyp_collision = hyp_collision
         self.hyp_success = hyp_success
         self.reward_shaping = reward_shaping
+        self.discount = 1
 
         self.fig = None
         self.render_flag = True
@@ -133,6 +134,8 @@ class Arm_2D:
 
         self._elapsed_steps = 0
         
+        self.reward_com = 0
+
         return self.get_observations()
 
 
@@ -192,6 +195,8 @@ class Arm_2D:
 
         self._elapsed_steps = 0
 
+        self.reward_com = 0
+
         return self.get_observations()
 
     def step(self,ka,flag=0):
@@ -247,6 +252,8 @@ class Arm_2D:
         '''
         self._elapsed_steps += 1
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
+        self.reward_com *= self.discount
+        self.reward_com += self.reward
         self.done = self.success or self.collision
         observations = self.get_observations()
         info = self.get_info()
@@ -266,7 +273,7 @@ class Arm_2D:
         if self._elapsed_steps >= self._max_episode_steps:
             info["TimeLimit.truncated"] = not self.done
             self.done = True            
-        info['episode'] = {"r":self.reward,"l":self._elapsed_steps}
+        info['episode'] = {"r":self.reward_com,"l":self._elapsed_steps}
         return info
 
     def get_observations(self):
