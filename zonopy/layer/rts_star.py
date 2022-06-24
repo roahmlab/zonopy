@@ -47,7 +47,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
     else:
         lambd_opt = lambd_hat
         flag = 1
-    return lambd_opt, flag
+    return lambd_opt, flag, info
 
 
 # batch
@@ -107,6 +107,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
             #unsafe_flag = torch.ones(n_batches)
             flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            infos = [None for _ in range(n_batches)]
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
 
             n_problems = rts_pass_indices.numel()
@@ -132,11 +133,14 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                          )
                          ]
                     )
-                rts_lambd_opt = torch.cat([result[0] for result in results], 0).view(n_problems, dimension).to(dtype=lambd.dtype)
-                rts_flags = torch.tensor([result[1] for result in results], dtype=flags.dtype)
-                lambd[rts_pass_indices] = rts_lambd_opt
-                flags[rts_pass_indices] = rts_flags
-            return lambd, FO_links, flags
+                rts_lambd_opt, rts_flags = [], []
+                for idx, res in enumerate(results):
+                    rts_lambd_opt.append(res[0])
+                    rts_flags.append(res[1])
+                    infos[rts_pass_indices[idx]] = res[2]
+                lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=lambd.dtype)
+                flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype)
+            return lambd, FO_links, flags, infos
 
         @staticmethod
         def backward(ctx, *grad_ouput):

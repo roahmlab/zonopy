@@ -43,17 +43,20 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
     )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
-    k_opt, nlp_info = NLP.solve(ka_0)
+    k_opt, info = NLP.solve(ka_0)
 
     # NOTE: for training, dont care about fail-safe
-    if nlp_info['status'] == 0:
+    if info['status'] == 0:
         lambd_opt = torch.tensor(k_opt, dtype=torch.get_default_dtype())
         flag = 0
     else:
         lambd_opt = lambd_hat
         flag = 1
+    
+    info['jac_g'] = nlp_obj.jacobian(k_opt)
+    #nlp_info['cons'] = nlp_obj.cons
 
-    return lambd_opt, flag, nlp_info, nlp_obj
+    return lambd_opt, flag, info
 
 
 def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES):
@@ -110,8 +113,8 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts all ways
 
             ctx.flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
-            ctx.nlp_obj = [None for _ in range(n_batches)]
-            ctx.nlp_info = [None for _ in range(n_batches)]
+            ctx.infos = [None for _ in range(n_batches)]
+            #ctx.nlp_obj = [None for _ in range(n_batches)]
 
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
             n_problems = rts_pass_indices.numel()
@@ -140,12 +143,11 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 for idx, res in enumerate(results):
                     rts_lambd_opt.append(res[0])
                     rts_flags.append(res[1])
-                    ctx.nlp_info[rts_pass_indices[idx]] = res[2]
-                    ctx.nlp_obj[rts_pass_indices[idx]] = res[3]
+                    ctx.infos[rts_pass_indices[idx]] = res[2]
                 ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=ctx.lambd.dtype)
                 ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype)
 
-            return ctx.lambd, FO_link, ctx.flags
+            return ctx.lambd, FO_link, ctx.flags, ctx.infos
 
         @staticmethod
         def backward(ctx, *grad_ouput):
@@ -154,7 +156,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             # COMPUTE GRADIENT
             tol = 1e-6
             # direct pass
-            direct_pass = ctx.flags == -1
+            direct_pass = (ctx.flags == -1) + (ctx.flags == 1) # NOTE: (ctx.flags == -1)
             grad_input[direct_pass] = torch.tensor(direction)[direct_pass]
 
             rts_success_pass = (ctx.flags == 0).nonzero().reshape(-1)
@@ -165,8 +167,8 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 for i in rts_success_pass:
                     k_opt = ctx.lambd[i].cpu().numpy()
                     # compute jacobian of each smooth constraint which will be constraints for QP
-                    jac = ctx.nlp_obj[i].jacobian(k_opt)
-                    cons = ctx.nlp_obj[i].cons
+                    jac = ctx.infos[i]['jac_g']
+                    cons = ctx.infos[i]['g']
 
                     qp_cons1 = jac  # [A*c(k)-b].T*lambda  and vel. lim # NOTE
                     EYE = np.eye(n_links)
@@ -175,9 +177,9 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     qp_cons = np.vstack((qp_cons1, qp_cons4, qp_cons5))
 
                     # compute duals for smooth constraints                
-                    mult_smooth_cons1 = ctx.nlp_info[i]['mult_g'] * (ctx.nlp_info[i]['mult_g'] > tol)
-                    mult_smooth_cons4 = ctx.nlp_info[i]['mult_x_L'] * (ctx.nlp_info[i]['mult_x_L'] > tol)
-                    mult_smooth_cons5 = ctx.nlp_info[i]['mult_x_U'] * (ctx.nlp_info[i]['mult_x_U'] > tol)
+                    mult_smooth_cons1 = ctx.infos[i]['mult_g'] * (ctx.infos[i]['mult_g'] > tol)
+                    mult_smooth_cons4 = ctx.infos[i]['mult_x_L'] * (ctx.infos[i]['mult_x_L'] > tol)
+                    mult_smooth_cons5 = ctx.infos[i]['mult_x_U'] * (ctx.infos[i]['mult_x_U'] > tol)
                     mult_smooth = np.hstack((mult_smooth_cons1, mult_smooth_cons4, mult_smooth_cons5))
 
                     # compute smooth constraints

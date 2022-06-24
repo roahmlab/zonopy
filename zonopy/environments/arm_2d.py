@@ -23,6 +23,7 @@ class Arm_2D:
             hyp_dist_to_goal = 1.0,
             hyp_collision = -200,
             hyp_success = 50,
+            hyp_fail_safe = - 25,
             reward_shaping=True,
             max_episode_steps = 100
             ):
@@ -57,6 +58,7 @@ class Arm_2D:
         self.hyp_dist_to_goal = hyp_dist_to_goal
         self.hyp_collision = hyp_collision
         self.hyp_success = hyp_success
+        self.hyp_fail_safe = hyp_fail_safe
         self.reward_shaping = reward_shaping
         self.discount = 1
 
@@ -345,8 +347,11 @@ class Arm_2D:
         reward -= self.hyp_effort * torch.linalg.norm(action)
         # Add collision if needed
         reward += self.hyp_collision * torch.tensor(self.collision,dtype=torch.get_default_dtype())
+        # Add fail-safe if needed
+        reward += self.hyp_fail_safe * (1-bool(self.safe))
         # Add success if wanted
         reward += self.hyp_success * success
+
         return reward       
 
 
