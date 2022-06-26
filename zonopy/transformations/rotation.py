@@ -56,13 +56,14 @@ def get_rotato_from_jrs_trig(PZ_JRS_trig,joint_axes,R0=None):
             rotato.append(R@R0[i])
     return rotato
 def gen_batch_rotatotope_from_jrs_trig(bPZ,rot_axis):
+    dtype, device = bPZ.dtype, bPZ.device
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]])
+    w_hat = torch.tensor([[0,-w[2],w[1]],[w[2],0,-w[0]],[-w[1],w[0],0]],dtype=dtype,device=device)
     cosq = bPZ.c[bPZ.batch_idx_all+(slice(cos_dim,cos_dim+1),)].unsqueeze(-1)
     sinq = bPZ.c[bPZ.batch_idx_all+(slice(sin_dim,sin_dim+1),)].unsqueeze(-1)
-    C = torch.eye(3) + sinq*w_hat + (1-cosq)*w_hat@w_hat
+    C = torch.eye(3,dtype=dtype,device=device) + sinq*w_hat + (1-cosq)*w_hat@w_hat
     cosq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(cos_dim,cos_dim+1))].unsqueeze(-1)
     sinq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(sin_dim,sin_dim+1))].unsqueeze(-1)
     G = sinq*w_hat - cosq*(w_hat@w_hat)

@@ -80,7 +80,10 @@ class batchZonotope:
     def to(self,dtype=None,device=None):    
         Z = self.Z.to(dtype=dtype, device=device)
         return batchZonotope(Z)
-    
+    def cpu(self):
+        Z = self.Z.cpu()
+        return batchZonotope(Z)
+
     def __str__(self):
         zono_str = f"""center: \n{self.center} \n\nnumber of generators: {self.n_generators} 
             \ngenerators: \n{self.generators} \n\ndimension: {self.dimension}\ndtype: {self.dtype} \ndevice: {self.device}"""

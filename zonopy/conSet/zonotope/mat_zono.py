@@ -67,6 +67,9 @@ class matZonotope():
     def to(self,dtype=None,device=None):
         Z = self.Z.to(dtype=dtype,device=device)
         return matZonotope(Z)
+    def cpu(self):
+        Z = self.Z.cpu()
+        return matZonotope(Z)
 
     def __matmul__(self,other):
         '''

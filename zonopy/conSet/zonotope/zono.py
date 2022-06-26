@@ -70,7 +70,10 @@ class zonotope:
     def to(self,dtype=None,device=None):    
         Z = self.Z.to(dtype=dtype, device=device)
         return zonotope(Z)
-    
+    def cpu(self):
+        Z = self.Z.cpu()
+        return zonotope(Z)
+
     def __str__(self):
         zono_str = f"""center: \n{self.center} \n\nnumber of generators: {self.n_generators} 
             \ngenerators: \n{self.generators} \n\ndimension: {self.dimension}\ndtype: {self.dtype} \ndevice: {self.device}"""
@@ -162,14 +165,14 @@ class zonotope:
         return <zonotope>
         '''
         if isinstance(slice_dim, list):
-            slice_dim = torch.tensor(slice_dim,dtype=torch.long)
+            slice_dim = torch.tensor(slice_dim,dtype=torch.long,device=self.device)
         elif isinstance(slice_dim, int) or (isinstance(slice_dim, torch.Tensor) and len(slice_dim.shape)==0):
-            slice_dim = torch.tensor([slice_dim],dtype=torch.long)
+            slice_dim = torch.tensor([slice_dim],dtype=torch.long,device=self.device)
 
         if isinstance(slice_pt, list):
-            slice_pt = torch.tensor(slice_pt,dtype=self.dtype)
+            slice_pt = torch.tensor(slice_pt,dtype=self.dtype,device=self.device)
         elif isinstance(slice_pt, int) or isinstance(slice_pt, float) or (isinstance(slice_pt, torch.Tensor) and len(slice_pt.shape)==0):
-            slice_pt = torch.tensor([slice_pt],dtype=self.dtype)
+            slice_pt = torch.tensor([slice_pt],dtype=self.dtype,device=self.device)
 
         assert isinstance(slice_dim, torch.Tensor) and isinstance(slice_pt, torch.Tensor), 'Invalid type of input'
         assert len(slice_dim.shape) ==1, 'slicing dimension should be 1-dim component.'
@@ -224,7 +227,7 @@ class zonotope:
         angles = torch.atan2(G[:,1], G[:,0])
         ang_idx = torch.argsort(angles)
                 
-        vertices_half = torch.vstack((torch.zeros(dim),2*G[ang_idx].cumsum(axis=0)))
+        vertices_half = torch.vstack((torch.zeros(dim,device=self.device),2*G[ang_idx].cumsum(axis=0)))
         vertices_half[:,0] += x_max - torch.max(vertices_half[:,0])
         vertices_half[:,1] -= y_max
         full_vertices = torch.vstack((vertices_half,-vertices_half[1:] + vertices_half[0]+ vertices_half[-1])) + c
@@ -440,7 +443,7 @@ class zonotope:
         '''
         
         z = self.project(dim)
-        p = z.polygon().to(device='cpu')
+        p = z.polygon().cpu()
 
         return ax.add_patch(patches.Polygon(p,alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
 
