@@ -59,12 +59,12 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
     return lambd_opt, flag, info
 
 
-def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES):
-    jrs_tensor = preload_batch_JRS_trig()
+def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu'):
+    jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100
-    ka_0 = torch.zeros(n_links)
-    PI_vel = torch.tensor(torch.pi - 1e-6)
+    #ka_0 = np.zeros(n_links)
+    PI_vel = torch.tensor(torch.pi - 1e-6,dtype=dtype, device=device)
     g_ka = torch.pi / 24
 
     class grad_RTS_2D_Layer(torch.autograd.Function):
@@ -73,9 +73,9 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             zp.reset()
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
-            ctx.lambd = lambd.clone().reshape(-1, n_links).to(dtype=torch.get_default_dtype())
+            ctx.lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
-            observation = observation.to(dtype=torch.get_default_dtype())
+            observation = observation.to(dtype=dtype,device=device)
             ka = g_ka * ctx.lambd
 
             n_batches = observation.shape[0]
@@ -97,7 +97,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
             # unsafe_flag = torch.zeros(n_batches)
             unsafe_flag = (abs(qvel + ctx.lambd * g_ka * T_PLAN) > PI_vel).any(-1)  # NOTE: this might not work on gpu, velocity lim check
-            lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN))
+            lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
             for j in range(n_links):
                 FO_link_temp = FO_link[j].project([0, 1])
                 c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
@@ -111,7 +111,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     FO_links[b].append(FO_link_temp[b].cpu())
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts all ways
 
-            ctx.flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            ctx.flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             ctx.infos = [None for _ in range(n_batches)]
             #ctx.nlp_obj = [None for _ in range(n_batches)]
 
@@ -143,28 +143,29 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     rts_lambd_opt.append(res[0])
                     rts_flags.append(res[1])
                     ctx.infos[rts_pass_indices[idx]] = res[2]
-                ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=ctx.lambd.dtype)
-                ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype)
+                ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
+                ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
 
             return ctx.lambd, FO_links, ctx.flags, ctx.infos
 
         @staticmethod
         def backward(ctx, *grad_ouput):
             direction = grad_ouput[0]
-            grad_input = torch.zeros_like(direction)
+            grad_input = torch.zeros_like(direction,dtype=dtype,device=device)
             # COMPUTE GRADIENT
             tol = 1e-6
             # direct pass
             direct_pass = (ctx.flags == -1) + (ctx.flags == 1) # NOTE: (ctx.flags == -1)
-            grad_input[direct_pass] = torch.tensor(direction)[direct_pass]
+            grad_input[direct_pass] = direction[direct_pass]
 
             rts_success_pass = (ctx.flags == 0).nonzero().reshape(-1)
             n_batch = rts_success_pass.numel()
             if n_batch > 0:
                 QP_EQ_CONS = []
                 QP_INEQ_CONS = []
-                for i in rts_success_pass:
-                    k_opt = ctx.lambd[i].cpu().numpy()
+                lambd = ctx.lambd[rts_success_pass].cpu().numpy()
+                for j,i in enumerate(rts_success_pass):
+                    k_opt = lambd[j]
                     # compute jacobian of each smooth constraint which will be constraints for QP
                     jac = ctx.infos[i]['jac_g']
                     cons = ctx.infos[i]['g']
@@ -210,10 +211,10 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 qp.addConstr(qp_eq_cons @ z == rhs_eq, name="eq")
                 qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
                 qp.optimize()
-                grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch, n_links),dtype=grad_input.dtype)
+                grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch, n_links),dtype=dtype,device=device)
 
                 # NOTE: for fail-safe, keep into zeros             
-            return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape))
+            return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device))
 
     return grad_RTS_2D_Layer.apply
 

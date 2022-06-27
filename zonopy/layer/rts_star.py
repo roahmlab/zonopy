@@ -53,11 +53,11 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
 # batch
 
 def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu'):
-    jrs_tensor = preload_batch_JRS_trig(dtype=torch.float, device=device)
+    jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100
-    ka_0 = torch.zeros(n_links)
-    PI_vel = torch.tensor(torch.pi - 1e-6)
+    #ka_0 = np.zeros(n_links)
+    PI_vel = torch.tensor(torch.pi - 1e-6,dtype=dtype, device=device)
     zono_order = 40
     g_ka = torch.pi / 24
 
@@ -105,7 +105,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     FO_links[b].append(FO_link_temp[b].cpu())
 
             #unsafe_flag = torch.ones(n_batches)
-            flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             infos = [None for _ in range(n_batches)]
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
 
@@ -143,7 +143,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
         @staticmethod
         def backward(ctx, *grad_ouput):
-            return (torch.zeros(ctx.lambd_shape), torch.zeros(ctx.obs_shape))
+            return (torch.zeros(ctx.lambd_shape,dtype=dtype,device=device), torch.zeros(ctx.obs_shape,dtype=dtype,device=device))
 
     return RTS_star_2D_Layer.apply
 
