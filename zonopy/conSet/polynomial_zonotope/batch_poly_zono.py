@@ -73,7 +73,7 @@ class batchPolyZonotope:
             if id != None:
                 if isinstance(id, list):
                     id = torch.tensor(id,dtype=torch.long,device=Z.device)
-                if id.shape[0] !=0:
+                if id.numel() !=0:
                     assert prop == 'None', 'Either ID or property should not be defined.'
                     assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
                 assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'

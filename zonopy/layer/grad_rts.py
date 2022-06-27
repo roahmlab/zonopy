@@ -105,11 +105,10 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2), torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
                     A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
                     unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
-                    A_temp, b_temp = A_temp.cpu().numpy(), b_temp.cpu().numpy()
                 for b in range(n_batches):
-                    As[b][j].append(A_temp[b])
-                    bs[b][j].append(b_temp[b])
-                    FO_links[b].append(FO_link_temp[b])
+                    As[b][j].append(A_temp[b].cpu().numpy())
+                    bs[b][j].append(b_temp[b].cpu().numpy())
+                    FO_links[b].append(FO_link_temp[b].cpu())
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts all ways
 
             ctx.flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
@@ -147,7 +146,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=ctx.lambd.dtype)
                 ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype)
 
-            return ctx.lambd, FO_link, ctx.flags, ctx.infos
+            return ctx.lambd, FO_links, ctx.flags, ctx.infos
 
         @staticmethod
         def backward(ctx, *grad_ouput):

@@ -52,8 +52,8 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
 
 # batch
 
-def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES):
-    jrs_tensor = preload_batch_JRS_trig()
+def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu'):
+    jrs_tensor = preload_batch_JRS_trig(dtype=torch.float, device=device)
     dimension = 2
     n_timesteps = 100
     ka_0 = torch.zeros(n_links)
@@ -67,9 +67,9 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             zp.reset()
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
-            lambd = lambd.clone().reshape(-1, n_links).to(dtype=torch.get_default_dtype())
+            lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
-            observation = observation.to(dtype=torch.get_default_dtype())
+            observation = observation.to(dtype=dtype,device=device)
             ka = g_ka * lambd
 
             n_batches = observation.shape[0]
@@ -91,7 +91,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
             # unsafe_flag = torch.zeros(n_batches)
             unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(-1)  # NOTE: this might not work on gpu, velocity lim check
-            lambd0 = lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN))
+            lambd0 = lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
             for j in range(n_links):
                 FO_link_temp = batch_FO_link[j].project([0, 1])
                 c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
@@ -99,11 +99,10 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
                     A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
                     unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
-                    A_temp, b_temp = A_temp.cpu().numpy(), b_temp.cpu().numpy()
                 for b in range(n_batches):
-                    As[b][j].append(A_temp[b])
-                    bs[b][j].append(b_temp[b])
-                    FO_links[b].append(FO_link_temp[b])
+                    As[b][j].append(A_temp[b].cpu().numpy())
+                    bs[b][j].append(b_temp[b].cpu().numpy())
+                    FO_links[b].append(FO_link_temp[b].cpu())
 
             #unsafe_flag = torch.ones(n_batches)
             flags = -torch.ones(n_batches, dtype=torch.int)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
@@ -129,7 +128,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                              [dimension] * n_problems,
                              [g_ka] * n_problems,
                              [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
-                             lambd[rts_pass_indices]
+                             lambd.cpu()[rts_pass_indices]
                          )
                          ]
                     )
@@ -138,8 +137,8 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     rts_lambd_opt.append(res[0])
                     rts_flags.append(res[1])
                     infos[rts_pass_indices[idx]] = res[2]
-                lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=lambd.dtype)
-                flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype)
+                lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
+                flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype, device=device)
             return lambd, FO_links, flags, infos
 
         @staticmethod
