@@ -78,7 +78,10 @@ class batchMatZonotope():
     def to(self,dtype=None,device=None):
         Z = self.Z.to(dtype=dtype,device=device)
         return batchMatZonotope(Z)
-
+    def cpu(self):
+        Z = self.Z.cpu()
+        return batchMatZonotope(Z)
+        
     def __matmul__(self,other):
         '''
         Overloaded '@' operator for the multiplication of a __ with a matZonotope

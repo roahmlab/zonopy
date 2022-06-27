@@ -2,8 +2,9 @@ import torch
 import numpy as np
 import zonopy as zp
 from zonopy.kinematics.FO import forward_occupancy
+from zonopy.optimize.nlp_setup import NLP_setup
 import cyipopt
-
+import time
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
@@ -19,7 +20,8 @@ class ARMTD_2D_planner():
         #self.generate_combinations_upto()
         self.PI = torch.tensor(torch.pi)
         self.JRS_tensor = zp.preload_batch_JRS_trig()
-
+        #self.joint_speed_limit = torch.vstack((torch.pi*torch.ones(n_links),-torch.pi*torch.ones(n_links)))
+    
     def wrap_env(self,env):
         assert env.dimension == 2
         self.dimension = 2
@@ -47,13 +49,16 @@ class ARMTD_2D_planner():
             for o in range(self.n_obs):                
                 obs_Z = obstacles[o].Z[:,:self.dimension].unsqueeze(0).repeat(self.n_timesteps,1,1)
                 A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope() # A: n_timesteps,*,dimension  
-                self.A[j].append(A)
-                self.b[j].append(b)
-        self.qpos = qpos
-        self.qvel = qvel
+                self.A[j].append(A.cpu().numpy())
+                self.b[j].append(b.cpu().numpy())
+        self.qpos = qpos.cpu().numpy()
+        self.qvel = qvel.cpu().numpy()
 
     def trajopt(self,qgoal,ka_0):
         # NOTE: torch OR numpy ?
+        nlp_obj = NLP_setup(self.qpos,self.qvel,qgoal.cpu().numpy(),self.n_timesteps,self.n_links,self.dimension,self.n_obs,self.g_ka,self.FO_link,self.A,self.b)
+
+        '''
         class nlp_setup():
             x_prev = np.zeros(self.n_links)*np.nan
             def objective(p,x):
@@ -68,10 +73,17 @@ class ARMTD_2D_planner():
             def constraints(p,x): 
                 ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
                 if (p.x_prev!=x).any():                
-                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links)                   
-                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links,self.n_links)
-                    cons_obs[-self.n_links:] = self.qvel+x*T_PLAN
-                    grad_cons_obs[-self.n_links:] = torch.eye(self.n_links)*T_PLAN
+                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links)                   
+                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links)
+                    # velocity min max constraints
+                    possible_max_min_q_dot = torch.vstack((self.qvel,self.qvel+x*T_PLAN,torch.zeros_like(self.qvel)))
+                    q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
+                    q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
+                    grad_q_max = torch.diag(T_PLAN*(q_dot_max_idx%2))
+                    grad_q_min = torch.diag(T_PLAN*(q_dot_min_idx%2))
+                    cons_obs[-2*self.n_links:] = torch.hstack((q_dot_max,q_dot_min))
+                    grad_cons_obs[-2*self.n_links:] = torch.vstack((grad_q_max,grad_q_min))
+                    # velocity min max constraints
                     for j in range(self.n_links):
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
                         grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
@@ -88,10 +100,17 @@ class ARMTD_2D_planner():
             def jacobian(p,x):
                 ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
                 if (p.x_prev!=x).any():                
-                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links)                   
-                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+self.n_links,self.n_links)
-                    cons_obs[-self.n_links:] = self.qvel+x*T_PLAN
-                    grad_cons_obs[-self.n_links:] = torch.eye(self.n_links)*T_PLAN
+                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links)                   
+                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links)
+                    # velocity min max constraints
+                    possible_max_min_q_dot = torch.vstack((self.qvel,self.qvel+x*T_PLAN,torch.zeros_like(self.qvel)))
+                    q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
+                    q_dot_min, q_dot_min_idx = possible_max_min_q_dot.min(0)
+                    grad_q_max = torch.diag(T_PLAN*(q_dot_max_idx%2))
+                    grad_q_min = torch.diag(T_PLAN*(q_dot_min_idx%2))
+                    cons_obs[-2*self.n_links:] = torch.hstack((q_dot_max,q_dot_min))
+                    grad_cons_obs[-2*self.n_links:] = torch.vstack((grad_q_max,grad_q_min))
+                    # velocity min max constraints
                     for j in range(self.n_links):
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
                         grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
@@ -109,18 +128,21 @@ class ARMTD_2D_planner():
                      d_norm, regularization_size, alpha_du, alpha_pr,
                      ls_trials):
                 pass
-        
+        '''  
+
         M_obs = self.n_links*self.n_timesteps*self.n_obs
-        M = M_obs+self.n_links
+        M = M_obs+2*self.n_links
+
+        
 
         nlp = cyipopt.problem(
         n = self.n_links,
         m = M,
-        problem_obj=nlp_setup(),
-        lb = [-self.g_ka]*n_links,
-        ub = [self.g_ka]*n_links,
-        cl = [1e-6]*M_obs+[-torch.pi]*self.n_links,
-        cu = [1e20]*M_obs+[torch.pi]*self.n_links,
+        problem_obj=nlp_obj,
+        lb = [-self.g_ka]*self.n_links,
+        ub = [self.g_ka]*self.n_links,
+        cl = [1e-6]*M_obs+[-1e20]*self.n_links+[-torch.pi+1e-6]*self.n_links,
+        cu = [1e20]*M_obs+[torch.pi-1e-6]*self.n_links+[1e20]*self.n_links,
         )
         #nlp.add_option('mu_strategy', 'adaptive')
         #nlp.add_option('tol', 1e-7)
@@ -128,7 +150,7 @@ class ARMTD_2D_planner():
         nlp.addOption('sb', 'yes')
         nlp.addOption('print_level', 0)
         #ts = time.time()
-        k_opt, info = nlp.solve(ka_0)
+        k_opt, self.info = nlp.solve(ka_0)
         #print(f'opt time: {time.time()-ts}')
 
         '''
@@ -142,7 +164,8 @@ class ARMTD_2D_planner():
         if any(~safe):
             import pdb;pdb.set_trace()
         '''
-        return k_opt, info['status']
+        #close()
+        return k_opt, self.info['status']
         
     def plan(self,env,ka_0):
         zp.reset()
@@ -181,4 +204,3 @@ if __name__ == '__main__':
         #(env.safe_con.numpy() - planner.safe_con > 1e-2).any()
     print(f'Total time elasped for ARMTD-2d with {n_steps} steps: {t_armtd}')
     import pdb;pdb.set_trace()
-

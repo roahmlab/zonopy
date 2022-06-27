@@ -33,12 +33,12 @@ acc_dim = 3
 kv_dim = 4
 time_dim = 5
 
-def preload_batch_JRS_trig():
+def preload_batch_JRS_trig(dtype=None, device=None):
     jrs_tensor = []
     for c_kv in JRS_KEY['c_kvi'][0]:
         jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(c_kv,'.3f')+'.mat'
         jrs_tensor_load = loadmat(jrs_filename)
-        jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype = torch.get_default_dtype()).unsqueeze(0))   
+        jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype = dtype,device = device).unsqueeze(0))   
     
     return torch.cat(jrs_tensor,0) 
 

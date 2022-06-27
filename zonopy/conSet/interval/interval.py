@@ -5,8 +5,6 @@ Reference: CORA
 '''
 
 import torch
-from zonopy.conSet import DEFAULT_OPTS
-from torch import Tensor
 
 EMPTY_TENSOR = torch.tensor([])
 class interval:
@@ -25,7 +23,12 @@ class interval:
 
         self.__inf = inf
         self.__sup = sup
-        self.__shape = tuple(inf.shape)
+    @property
+    def dtype(self):
+        return self.inf.dtype
+    @property
+    def device(self):
+        return self.inf.device
     @property
     def inf(self):
         return self.__inf
@@ -42,13 +45,17 @@ class interval:
         self.__inf = value
     @property
     def shape(self):
-        return self.__shape
-    @property
-    def dtype(self):
-        return self.inf.dtype
-    @property
-    def device(self):
-        return self.inf.device
+        return tuple(self.__inf.shape)
+
+    def to(self,dtype=None,device=None):    
+        inf = self.__inf.to(dtype=dtype, device=device)
+        sup = self.__sup.to(dtype=dtype, device=device)
+        return interval(inf,sup)
+    def cpu(self):    
+        inf = self.__inf.cpu()
+        sup = self.__sup.cpu()
+        return interval(inf,sup)
+
     def __str__(self):
         intv_str = f"interval of shape {self.shape}.\n inf: {self.__inf}.\n sup: {self.__sup}.\n"
         del_dict = {'tensor(':'','    ':' ',')':''}
@@ -152,211 +159,7 @@ class interval:
         return (self.inf+self.sup)/2
     def rad(self):
         return (self.sup-self.inf)/2
-    def to(self,dtype=None,device=None):
-        if dtype is None:
-            dtype = self.dtype
-        if device is None:
-            device = self.device
-        return interval(self.__inf, self.__sup)
 
 
-    '''
-
-
-    def __truediv__(self, other):
-        inverse = None
-        if other.inf == other.sup == 0:
-            return interval(Tensor([]).to(self.dtype).to(self.device))
-        elif other.inf < 0 < other.sup:
-            inverse = interval(Tensor([math.inf, math.inf]).to(self.dtype).to(self.device))
-        elif other.inf < 0 and other.sup == 0:
-            inverse = interval(Tensor([-math.inf, 1 / other.inf]).to(self.dtype).to(self.device))
-        elif other.inf == 0 and other.sup > 0:
-            inverse = interval(Tensor([1 / other.sup, math.inf]).to(self.dtype).to(self.device))
-        else:
-            inverse = interval(Tensor([1 / other.sup, 1 / other.inf]).to(self.dtype).to(self.device))
-
-        return self.__mul__(inverse)
-
-    def __and__(self, other):
-        if self.is_empty or other.is_empty:
-            return interval(Tensor([]).to(self.dtype).to(self.device))
-
-        new_inf = max(self.inf, other.inf)
-        new_sup = min(self.sup, other.sup)
-        if new_inf <= new_sup:
-            return interval(Tensor([new_inf, new_sup]).to(self.dtype).to(self.device))
-        else:
-            return interval(Tensor([]).to(self.dtype).to(self.device))
-
-    def __or__(self, other):
-        if self.is_empty:
-            return interval(other.interval_tensor)
-        elif other.is_empty:
-            return interval(self.interval_tensor)
-
-        if max(self.inf, other.inf) <= min(self.sup, other.sup):
-            new_inf = min(self.inf, other.inf)
-            new_sup = max(self.sup, other.sup)
-            return interval(Tensor([new_inf, new_sup]).to(self.dtype).to(self.device))
-        else:
-            return interval(Tensor([math.nan, math.nan]).to(self.dtype).to(self.device))
-
-    def exp(self):
-        return interval(torch.exp(self.interval_tensor))
-
-    def log(self):
-        if self.inf >=0:
-            return interval(torch.log(self.interval_tensor))
-        else:
-            print("error in log")
-
-    def abs(self):
-        if self.sup < 0:
-            return interval(torch.abs(Tensor([self.sup, self.inf]).to(self.dtype).to(self.device)))
-        elif x.inf > 0:
-            return interval(self.interval_tensor)
-        else:
-            return interval(Tensor([0, torch.max(torch.abs(self.interval_tensor))]))
-
-    def sin(self):
-        y_inf = self.inf % (2 * math.pi) / (math.pi / 2)
-        y_sup = se;f.sup % (2 * math.pi) / (math.pi / 2)
-
-        if (self.sup - self.inf >= 2 * math.pi) or (0 <= y_inf < 1 and 0 <= y_sup < 1 and y_inf > y_sup) or 
-            (0 <= y_inf < 1 and 3 <= y_sup < 4) or (1 <= y_inf < 3 and 1<= y_sup < 3 and y_inf > y_sup):
-            return interval(Tensor([-1, 1]).to(self.dtype).to(self.device))
-        elif (0 <= y_inf < 1 and 0 <= y_sup < 1 and y_inf <= y_sup) or (3 <= y_inf < 4 and 0 <= y_sup < 1) or 
-            (3 <= y_inf < 4 and 3 <= y_sup < 4 and y_inf <= y_sup):
-            return interval(torch.sin(self.interval_tensor))
-        elif (0 <= y_inf < 1 and 1 <= y_sup < 3) or (3 <= y_inf < 4 and 1 <= y_sup < 3):
-            return interval(Tensor([torch.min(torch.sin(self.interval_tensor)),1]).to(self.dtype).to(self.device))
-        elif (1 <= y_inf < 3 and 0 <= y_sup < 1) or (1 <= y_inf < 3 and 3 <= y_sup < 4):
-            return interval(Tensor([-1,torch.max(torch.sin(self.interval_tensor))]).to(self.dtype).to(self.device))
-        elif 1 <= y_inf < 3 and 1 <= y_sup < 3 and y_inf <= y_sup:
-            return interval(torch.sin(Tensor([self.y_sup, self.y_inf]).to(self.dtype).to(self.device)))
-
-    def cos(self):
-        y_inf = self.inf % (2 * math.pi) / (math.pi / 2)
-        y_sup = se;f.sup % (2 * math.pi) / (math.pi / 2)
-
-        if (self.sup - self.inf >= 2 * math.pi) or (0 <= y_inf < 2 and 0 <= y_sup < 2 and y_inf > y_sup) or 
-            (2 <= y_inf < 4 and 2 <= y_sup < 4 and y_inf > y_sup):
-            return interval(Tensor([-1, 1]).to(self.dtype).to(self.device))
-        elif (2 <= y_inf < 4 and 2 <= y_sup < 4 and y_inf <= y_sup):
-            return interval(torch.cos(self.interval_tensor))
-        elif (2 <= y_inf < 4 and 0 <= y_sup < 2):
-            return interval(Tensor([torch.min(torch.cos(self.interval_tensor)),1]).to(self.dtype).to(self.device))
-        elif (0 <= y_inf < 2 and 2 <= y_sup < 4):
-            return interval(Tensor([-1,torch.max(torch.sin(self.interval_tensor))]).to(self.dtype).to(self.device))
-        elif 1 <= y_inf <= 3 and 1 <= y_sup <= 3 and y_inf <= y_sup:
-            return interval(torch.cos(Tensor([self.y_sup, self.y_inf]).to(self.dtype).to(self.device)))
-    '''
-
-def matmul_interval(mat, intv):
-    assert isinstance(mat, Tensor) or isinstance(mat, interval), "the matrix should be in the type of a torch tensor or an interval"
-    assert isinstance(intv, interval) or isinstance(mat, interval), "the intv or the mat should be in the type of an interval"
-    assert mat.dim() == 2, "the dimension of the matrix should be 2"
-    assert intv.dim() == 2, "the dimenstion of the interval matrix should be 2"
-    assert mat.shape[1] == intv.shape[0], "the dimension of mat and interval should match"
-
-    I, K = mat.shape
-    K, J = intv.shape
-
-    new_inf = torch.zeros(I,J).to(intv.dtype).to(intv.device)
-    new_sup = torch.zeros_like(new_inf)
-
-    for i in range(I):
-        for k in range(K):
-            for j in range(J):
-                new_intv = mat[i,k] * intv[k,j]
-                new_inf[i,j] += new_intv.inf.item()
-                new_sup[i,j] += new_intv.sup.item()
-
-    return interval(new_inf, new_sup)
-
-
-def cross_interval(vec, intv):
-    assert vec.numel() == 3, "we are considering only 3d vec"
-    if isinstance(vec, Tensor):
-        new_inf = torch.zeros_like(vec).to(intv.dtype).to(intv.device)
-    elif isinstance(vec, interval):
-        new_inf = torch.zeros_like(vec.inf).to(intv.dtype).to(intv.device)
-    else:
-        assert False, "such cross not supported"
-    new_sup = torch.zeros_like(new_inf)
-
-    intvs = []
-    intvs.append(vec[1] * intv[2] - vec[2] * intv[1])
-    intvs.append(vec[2] * intv[0] - vec[0] * intv[2])
-    intvs.append(vec[0] * intv[1] - vec[1] * intv[0])
-
-    for i in range(3):
-        new_inf[i] = intvs[i].inf
-        new_sup[i] = intvs[i].sup
-
-    return interval(new_inf, new_sup)
-
-
-if __name__ == '__main__':
-    print("testing the functionality...")
-    print("--- class construction test... ---")
-    inf = torch.Tensor([1])
-    sup = torch.Tensor([2])
-    intv = interval(inf, sup)
-    print(f"interval is: {intv}")
-
-    print("--- testing index... ---")
-    inf1 = torch.Tensor([[0.9,1.9],[2.9,3.9]])
-    sup1 = torch.Tensor([[1.1,2.1],[3.1,4.1]])
-    intv1 = interval(inf1, sup1)
-    print(f"intv[0,0] = {intv1[0,0]}")
-    print(f"intv[0] = {intv1[0]}")
-
-
-    print("--- basic operation test... ---")
-    intv1 = interval(torch.Tensor([-4]), torch.Tensor([2]))
-    intv2 = interval(torch.Tensor([-12]), torch.Tensor([0]))
-    print(f"intv1 + intv2 = {intv1 + intv2}")
-    print(f"intv1 - intv2 = {intv1 - intv2}")
-    print(f"intv1 * intv2 = {intv1 * intv2}")
-
-    print("--- cross test... ---")
-    intv1 = interval(torch.Tensor([0.9,1.9,2.9]), torch.Tensor([1.1,2.1,3.1]))
-    intv2 = interval(torch.Tensor([0.9,4.9,-0.1]), torch.Tensor([1.1,5.1,0.1]))
-    print(f"intv1 x intv2 = {cross_interval(intv1, intv2)}")
-    
-
-    print("--- matrix interval test... ---")
-    inf1 = torch.Tensor([[0.9,1.9],[2.9,3.9]])
-    sup1 = torch.Tensor([[1.1,2.1],[3.1,4.1]])
-    intv1 = interval(inf1, sup1)
-
-    inf2 = torch.Tensor([[9.9,9.9],[1.9,1.9]])
-    sup2 = torch.Tensor([[10.1,10.1],[2.1,2.1]])
-    intv2 = interval(inf2, sup2)
-    print(f"intv1 matmul intev2 = {matmul_interval(intv1, intv2)}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if __name__ == '__main__':
 

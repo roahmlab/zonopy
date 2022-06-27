@@ -23,6 +23,7 @@ class Arm_2D:
             hyp_dist_to_goal = 1.0,
             hyp_collision = -200,
             hyp_success = 50,
+            hyp_fail_safe = - 25,
             reward_shaping=True,
             max_episode_steps = 100
             ):
@@ -57,7 +58,9 @@ class Arm_2D:
         self.hyp_dist_to_goal = hyp_dist_to_goal
         self.hyp_collision = hyp_collision
         self.hyp_success = hyp_success
+        self.hyp_fail_safe = hyp_fail_safe
         self.reward_shaping = reward_shaping
+        self.discount = 1
 
         self.fig = None
         self.render_flag = True
@@ -133,6 +136,8 @@ class Arm_2D:
 
         self._elapsed_steps = 0
         
+        self.reward_com = 0
+
         return self.get_observations()
 
 
@@ -192,10 +197,13 @@ class Arm_2D:
 
         self._elapsed_steps = 0
 
+        self.reward_com = 0
+
         return self.get_observations()
 
-    def step(self,ka,safe=0):
-        self.safe = safe <= 0
+    def step(self,ka,flag=0):
+        self.step_flag = flag
+        self.safe = flag <= 0
         # -torch.pi<qvel+k*T_PLAN < torch.pi
         # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
         self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
@@ -245,14 +253,16 @@ class Arm_2D:
             self.until_goal = goal_distance.argmin()
         '''
         self._elapsed_steps += 1
-        reward = self.reward(ka) # NOTE: should it be ka or self.ka ??
+        self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
+        self.reward_com *= self.discount
+        self.reward_com += self.reward
         self.done = self.success or self.collision
         observations = self.get_observations()
         info = self.get_info()
-        return observations, reward, self.done, info
+        return observations, self.reward, self.done, info
 
     def get_info(self):
-        info ={'is_success':self.success,'collision':self.collision,'safe_flag':self.safe}
+        info ={'is_success':self.success,'collision':self.collision,'safe_flag':self.safe,'step_flag':self.step_flag}
         if self.collision:
             collision_info = {
                 'qpos_collision':self.qpos_collision,
@@ -265,6 +275,7 @@ class Arm_2D:
         if self._elapsed_steps >= self._max_episode_steps:
             info["TimeLimit.truncated"] = not self.done
             self.done = True            
+        info['episode'] = {"r":self.reward_com,"l":self._elapsed_steps}
         return info
 
     def get_observations(self):
@@ -311,7 +322,7 @@ class Arm_2D:
   
         return False
 
-    def reward(self, action, qpos=None, qgoal=None):
+    def get_reward(self, action, qpos=None, qgoal=None):
         # Get the position and goal then calculate distance to goal
         if qpos is None or qgoal is None:
             qpos = self.qpos
@@ -336,8 +347,11 @@ class Arm_2D:
         reward -= self.hyp_effort * torch.linalg.norm(action)
         # Add collision if needed
         reward += self.hyp_collision * torch.tensor(self.collision,dtype=torch.get_default_dtype())
+        # Add fail-safe if needed
+        reward += self.hyp_fail_safe * (1-bool(self.safe))
         # Add success if wanted
         reward += self.hyp_success * success
+
         return reward       
 
 

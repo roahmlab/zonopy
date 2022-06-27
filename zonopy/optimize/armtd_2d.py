@@ -130,11 +130,11 @@ class ARMTD_2D_planner():
         M = M_obs+2*self.n_links
 
         
-
+        self.prob = nlp_setup()
         nlp = cyipopt.problem(
         n = self.n_links,
         m = M,
-        problem_obj=nlp_setup(),
+        problem_obj=self.prob,
         lb = [-self.g_ka]*self.n_links,
         ub = [self.g_ka]*self.n_links,
         cl = [1e-6]*M_obs+[-1e20]*self.n_links+[-torch.pi+1e-6]*self.n_links,
@@ -143,8 +143,8 @@ class ARMTD_2D_planner():
         #nlp.add_option('mu_strategy', 'adaptive')
         #nlp.add_option('tol', 1e-7)
 
-        nlp.addOption('sb', 'yes')
-        nlp.addOption('print_level', 0)
+        #nlp.addOption('sb', 'yes')
+        #nlp.addOption('print_level', 0)
         #ts = time.time()
         k_opt, self.info = nlp.solve(ka_0)
         #print(f'opt time: {time.time()-ts}')
@@ -160,8 +160,8 @@ class ARMTD_2D_planner():
         if any(~safe):
             import pdb;pdb.set_trace()
         '''
+        #import pdb;pdb.set_trace()
         #close()
-        self.prob = nlp_setup()
         return k_opt, self.info['status']
         
     def plan(self,env,ka_0):

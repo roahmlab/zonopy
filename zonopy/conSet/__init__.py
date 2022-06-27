@@ -56,7 +56,7 @@ class __Property_ID(object):
     def offset(self):
         return self.__ids.numel()    
     def __repr__(self):
-        return f'{self.__dict}'
+        return str(self.__dict)
     def __str__(self):
         return self.__repr__()
     def _to(self,device):
