@@ -50,12 +50,12 @@ class batchPolyZonotope:
         if expMat == None and id == None:
             nonzero_g = torch.sum(G!=0,tuple(range(self.batch_dim))+(-1,))!=0 # non-zero generator index
             G = G[self.batch_idx_all+(nonzero_g,)]
-            self.expMat = torch.eye(G.shape[self.batch_dim],dtype=torch.long) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
+            self.expMat = torch.eye(G.shape[self.batch_dim],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
             self.id = PROPERTY_ID.update(self.expMat.shape[1],prop) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat != None:
             #check correctness of user input 
             if isinstance(expMat, list):
-                expMat = torch.tensor(expMat)
+                expMat = torch.tensor(expMat,dtype=torch.long,device=Z.device)
             assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
             assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
             assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
@@ -72,7 +72,7 @@ class batchPolyZonotope:
             #self.expMat =expMat
             if id != None:
                 if isinstance(id, list):
-                    id = torch.tensor(id,dtype=torch.long)
+                    id = torch.tensor(id,dtype=torch.long,device=Z.device)
                 if id.shape[0] !=0:
                     assert prop == 'None', 'Either ID or property should not be defined.'
                     assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
@@ -131,6 +131,12 @@ class batchPolyZonotope:
         Z = self.Z.to(dtype=dtype,device=device)
         expMat = self.expMat.to(dtype=itype,device=device)
         id = self.id.to(device=device)
+        return batchPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+
+    def cpu(self):
+        Z = self.Z.cpu()
+        expMat = self.expMat.cpu()
+        id = self.id.cpu()
         return batchPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
 
     def  __add__(self,other):
@@ -265,22 +271,22 @@ class batchPolyZonotope:
         if isinstance(other,polyZonotope):
             c = torch.hstack((self.c,other.c))
             id,expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            g1 = torch.cat((self.G,torch.zeros(self.batch_shape+(self.n_indep_gens,other.dimension))),dim=-1)
-            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_indep_gens,self.dimension)),other.G.repeat(self.batch_shape+(1,1))),dim=-1)
+            g1 = torch.cat((self.G,torch.zeros(self.batch_shape+(self.n_indep_gens,other.dimension),dtype=self.dtype,device=self.device)),dim=-1)
+            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_indep_gens,self.dimension),dtype=self.dtype,device=self.device),other.G.repeat(self.batch_shape+(1,1))),dim=-1)
             G = torch.cat((g1,g2),dim=-2)
             expMat = torch.vstack((expMat1,expMat2))
-            g1 = torch.cat((self.Grest,torch.zeros(self.batch_shape+(self.n_dep_gens,other.dimension))),dim=-1)
-            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_dep_gens,self.dimension)),other.Grest.repeat(self.batch_shape+(1,1))),dim=-1)
+            g1 = torch.cat((self.Grest,torch.zeros(self.batch_shape+(self.n_dep_gens,other.dimension),dtype=self.dtype,device=self.device)),dim=-1)
+            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_dep_gens,self.dimension),dtype=self.dtype,device=self.device),other.Grest.repeat(self.batch_shape+(1,1))),dim=-1)
             Grest = torch.cat((g1,g2),dim=-2)
         if isinstance(other,batchPolyZonotope):
             c = torch.hstack((self.c,other.c))
             id,expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            g1 = torch.cat((self.G,torch.zeros(self.batch_shape+(self.n_indep_gens,other.dimension))),dim=-1)
-            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_indep_gens,self.dimension)),other.G),dim=-1)
+            g1 = torch.cat((self.G,torch.zeros(self.batch_shape+(self.n_indep_gens,other.dimension),dtype=self.dtype,device=self.device)),dim=-1)
+            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_indep_gens,self.dimension),dtype=self.dtype,device=self.device),other.G),dim=-1)
             G = torch.cat((g1,g2),dim=-2)
             expMat = torch.vstack((expMat1,expMat2))
-            g1 = torch.cat((self.Grest,torch.zeros(self.batch_shape+(self.n_dep_gens,other.dimension))),dim=-1)
-            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_dep_gens,self.dimension)),other.Grest),dim=-1)
+            g1 = torch.cat((self.Grest,torch.zeros(self.batch_shape+(self.n_dep_gens,other.dimension),dtype=self.dtype,device=self.device)),dim=-1)
+            g2 = torch.cat((torch.zeros(self.batch_shape+(other.n_dep_gens,self.dimension),dtype=self.dtype,device=self.device),other.Grest),dim=-1)
             Grest = torch.cat((g1,g2),dim=-2)
         Z = torch.cat((c,G,Grest),dim=-2)
         n_dep_gens = self.n_dep_gens+other.n_dep_gens
@@ -311,11 +317,11 @@ class batchPolyZonotope:
         if isinstance(id_slc,(int,list)):
             if isinstance(id_slc,int):
                 id_slc = [id_slc]
-            id_slc = torch.tensor(id_slc,dtype=self.dtype)
+            id_slc = torch.tensor(id_slc,dtype=self.dtype,device=self.device)
         if isinstance(val_slc,(int,float,list)):
             if isinstance(val_slc,(int,float)):
                 val_slc = [val_slc]
-            val_slc = torch.tensor(val_slc,dtype=self.dtype)
+            val_slc = torch.tensor(val_slc,dtype=self.dtype,device=self.device)
         
         if any(abs(val_slc)>1):
             import pdb; pdb.set_trace()
@@ -379,7 +385,7 @@ class batchPolyZonotope:
         #(self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-3)), 
         #res, b1, b2,..., 1, n_ids,  n_dep_gens
         grad = ((expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num(0))@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
-        grad = torch.cat((grad,torch.zeros(self.batch_shape+self.shape+(n_short,))),-1)
+        grad = torch.cat((grad,torch.zeros(self.batch_shape+self.shape+(n_short,),dtype=self.dtype,device=self.device)),-1)
         return grad
     
     

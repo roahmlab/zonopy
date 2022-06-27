@@ -47,12 +47,12 @@ class matPolyZonotope():
         if expMat == None and id == None:
             nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
             G = G[nonzero_g]
-            self.expMat = torch.eye(G.shape[0],dtype=torch.long) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)            
+            self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)            
             self.id = PROPERTY_ID.update(self.expMat.shape[1],prop) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat != None:
             #check correctness of user input 
             if isinstance(expMat, list):
-                expMat = torch.tensor(expMat)
+                expMat = torch.tensor(expMat,dtype=torch.long,device=Z.device)
             assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
             assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
             assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
@@ -66,7 +66,7 @@ class matPolyZonotope():
                 self.expMat =expMat
             if id != None:
                 if isinstance(id, list):
-                    id = torch.tensor(id,dtype=torch.long)
+                    id = torch.tensor(id,dtype=torch.long,device=Z.device)
                 if id.shape[0] !=0:
                     assert prop == 'None', 'Either ID or property should not be defined.'
                     assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
@@ -117,7 +117,12 @@ class matPolyZonotope():
         expMat = self.expMat.to(dtype=itype,device=device)
         id = self.id.to(device=device)
         return matPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
-
+    def cpu(self):
+        Z = self.Z.cpu()
+        expMat = self.expMat.cpu()
+        id = self.id.cpu()
+        return matPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+        
     def __matmul__(self,other):
         '''
         Overloaded '@' operator for the multiplication of a __ with a matPolyZonotope
@@ -232,7 +237,7 @@ class matPolyZonotope():
             # construct a zonotope from the gens that are removed
             n_dg_rem = indDep.shape[0]
             Erem = self.expMat[indDep]
-            Ztemp = torch.vstack((torch.zeros(1,self.n_rows,self.n_cols),G[ind_REM]))
+            Ztemp = torch.vstack((torch.zeros(1,self.n_rows,self.n_cols,dtype=self.dtype,device=self.device),G[ind_REM]))
             pZtemp = matPolyZonotope(Ztemp,n_dg_rem,Erem,self.id,compress=1) # NOTE: ID???
             zono = pZtemp.to_matZonotope() # zonotope over-approximation
             # reduce the constructed zonotope with the reducetion techniques for linear zonotopes

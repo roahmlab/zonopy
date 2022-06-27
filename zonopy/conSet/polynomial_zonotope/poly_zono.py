@@ -48,12 +48,12 @@ class polyZonotope:
         if expMat == None and id == None:
             nonzero_g = torch.sum(G!=0,-1)!=0 # non-zero generator index
             G = G[nonzero_g]
-            self.expMat = torch.eye(G.shape[0],dtype=torch.long) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)Z
+            self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)Z
             self.id = PROPERTY_ID.update(self.expMat.shape[1],prop) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat != None:
             #check correctness of user input 
             if isinstance(expMat, list):
-                expMat = torch.tensor(expMat)
+                expMat = torch.tensor(expMat,dtype=torch.long,device=Z.device)
             assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
             assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
             assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.'
@@ -67,7 +67,7 @@ class polyZonotope:
                 self.expMat =expMat
             if id != None:
                 if isinstance(id, list):
-                    id = torch.tensor(id,dtype=torch.long)
+                    id = torch.tensor(id,dtype=torch.long,device=Z.device)
                 if id.shape[0] !=0:
                     assert prop == 'None', 'Either ID or property should not be defined.'
                     assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
@@ -112,6 +112,12 @@ class polyZonotope:
         expMat = self.expMat.to(dtype=itype,device=device)
         id = self.id.to(device=device)
         return polyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+    def cpu(self):
+        Z = self.Z.cpu()
+        expMat = self.expMat.cpu()
+        id = self.id.cpu()
+        return polyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+
 
     def __str__(self):
         if self.expMat.numel() == 0:
@@ -273,7 +279,7 @@ class polyZonotope:
             # construct a zonotope from the gens that are removed
             n_dg_red = indDep_red.shape[0]
             Ered = self.expMat[indDep_red]
-            Ztemp = torch.vstack((torch.zeros(N),G[ind_RED]))
+            Ztemp = torch.vstack((torch.zeros(N,dtype=self.dtype,device=self.device),G[ind_RED]))
             pZtemp = polyZonotope(Ztemp,n_dg_red,Ered,self.id,compress=1) # NOTE: ID???
             zono = pZtemp.to_zonotope() # zonotope over-approximation
             # reduce the constructed zonotope with the reducetion techniques for linear zonotopes
@@ -367,11 +373,11 @@ class polyZonotope:
         if isinstance(id_slc,(int,list)):
             if isinstance(id_slc,int):
                 id_slc = [id_slc]
-            id_slc = torch.tensor(id_slc,dtype=self.dtype)
+            id_slc = torch.tensor(id_slc,dtype=self.dtype,device=self.device)
         if isinstance(val_slc,(int,float,list)):
             if isinstance(val_slc,(int,float)):
                 val_slc = [val_slc]
-            val_slc = torch.tensor(val_slc,dtype=self.dtype)
+            val_slc = torch.tensor(val_slc,dtype=self.dtype,device=self.device)
         
         if any(abs(val_slc)>1):
             import pdb; pdb.set_trace()
