@@ -84,9 +84,10 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
             batch_FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
 
-            As = [[[] for _ in range(n_links)] for _ in range(n_batches)]
-            bs = [[[] for _ in range(n_links)] for _ in range(n_batches)]
-            FO_links = [[] for _ in range(n_batches)]
+
+            As = np.zeros((n_batches,n_links,n_obs),dtype=object)
+            bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
+            FO_links = np.zeros((n_batches,n_links),dtype=object)
             lambda_to_slc = lambd.reshape(n_batches, 1, dimension).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
@@ -99,26 +100,25 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
                     A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
                     unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
-                for b in range(n_batches):
-                    As[b][j].append(A_temp[b].cpu().numpy())
-                    bs[b][j].append(b_temp[b].cpu().numpy())
-                    FO_links[b].append(FO_link_temp[b].cpu())
+                    As[:,j,o] = list(A_temp.cpu().numpy())
+                    bs[:,j,o] = list(b_temp.cpu().numpy())
+                FO_links[:,j] = [fo for fo in FO_link_temp.cpu()]
 
             #unsafe_flag = torch.ones(n_batches)
             flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             infos = [None for _ in range(n_batches)]
-            rts_pass_indices = unsafe_flag.nonzero().reshape(-1)
 
-            n_problems = rts_pass_indices.numel()
+            rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
+            n_problems = len(rts_pass_indices)
             # rts_pass(As, bs, FO_links, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat, rts_pass_indices)
             if n_problems > 0:
                 with Pool(processes=min(num_processes, n_problems)) as pool:
                     results = pool.starmap(
                         rts_pass,
                         [x for x in
-                         zip([As[idx] for idx in rts_pass_indices],
-                             [bs[idx] for idx in rts_pass_indices],
-                             [FO_links[idx] for idx in rts_pass_indices],
+                         zip(As[rts_pass_indices],
+                             bs[rts_pass_indices],
+                             FO_links[rts_pass_indices],
                              qpos.cpu().numpy()[rts_pass_indices],
                              qvel.cpu().numpy()[rts_pass_indices],
                              qgoal.cpu().numpy()[rts_pass_indices],
