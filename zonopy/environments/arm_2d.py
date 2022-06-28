@@ -23,7 +23,7 @@ class Arm_2D:
             hyp_dist_to_goal = 1.0,
             hyp_collision = -200,
             hyp_success = 50,
-            hyp_fail_safe = - 25,
+            hyp_fail_safe = - 1,
             reward_shaping=True,
             max_episode_steps = 100
             ):
