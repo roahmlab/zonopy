@@ -69,7 +69,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
     class grad_RTS_2D_Layer(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, lambd, observation):
+        def forward(ctx, lambd, observation, FO_link):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             zp.reset()
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
@@ -86,9 +86,9 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
 
             # g_ka = torch.maximum(PI/24,abs(qvel/3))
-
-            _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
-            FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
+            if FO_link is None:
+                _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
+                FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
 
             As = [[[] for _ in range(n_links)] for _ in range(n_batches)]
             bs = [[[] for _ in range(n_links)] for _ in range(n_batches)]
@@ -214,7 +214,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch, n_links),dtype=dtype,device=device)
 
                 # NOTE: for fail-safe, keep into zeros             
-            return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device))
+            return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device), None)
 
     return grad_RTS_2D_Layer.apply
 

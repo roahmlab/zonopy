@@ -38,12 +38,13 @@ def preload_batch_JRS_trig(dtype=None, device=None):
     for c_kv in JRS_KEY['c_kvi'][0]:
         jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(c_kv,'.3f')+'.mat'
         jrs_tensor_load = loadmat(jrs_filename)
-        jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype = dtype,device = device).unsqueeze(0))   
-    
-    return torch.cat(jrs_tensor,0) 
+        jrs_tensor.append(jrs_tensor_load['JRS_tensor'].tolist()) 
+    return torch.tensor(jrs_tensor,dtype=dtype,device=device)
 
 
 def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=None, device=None):
+    q_0 = q_0.to(dtype=dtype,device=device)
+    qd_0 = qd_0.to(dtype=dtype,device=device)
     jrs_key = torch.tensor(JRS_KEY['c_kvi'],dtype=dtype,device=device)
     n_batches, n_joints = qd_0.shape
     PZ_JRS_batch = []
@@ -57,11 +58,10 @@ def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=None, device=None):
             jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(jrs_key[0,closest_idx[b]],'.3f')+'.mat'
             jrs_tensor_load = loadmat(jrs_filename)
             jrs_tensor.append(torch.tensor(jrs_tensor_load['JRS_tensor'],dtype=dtype,device=device).unsqueeze(0))
-            
         
         JRS_batch_zono = batchZonotope(torch.cat(jrs_tensor,0))
-        c_qpos = torch.cos(q_0[:,i:i+1],dtype=dtype,device=device).unsqueeze(-1)
-        s_qpos = torch.sin(q_0[:,i:i+1],dtype=dtype,device=device).unsqueeze(-1)
+        c_qpos = torch.cos(q_0[:,i:i+1]).unsqueeze(-1)
+        s_qpos = torch.sin(q_0[:,i:i+1]).unsqueeze(-1)
         A = (c_qpos*torch.tensor([[1.0]+[0]*5,[0,1]+[0]*4]+[[0]*6]*4,dtype=dtype,device=device) 
             + s_qpos*torch.tensor([[0,-1]+[0]*4,[1]+[0]*5]+[[0]*6]*4,dtype=dtype,device=device)
             + torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]],dtype=dtype,device=device))
@@ -83,6 +83,8 @@ def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=None, device=None):
 
 
 def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
+    q_0 = q_0.to(dtype=dtype,device=device)
+    qd_0 = qd_0.to(dtype=dtype,device=device)
     jrs_key = torch.tensor(JRS_KEY['c_kvi'],dtype=dtype,device=device)
     n_joints = qd_0.shape[-1]
     PZ_JRS_batch = []
@@ -95,8 +97,8 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
         jrs_tensor_load = loadmat(jrs_filename)
         jrs_tensor_load = torch.tensor(jrs_tensor_load['JRS_tensor'],dtype=dtype,device=device)
         JRS_batch_zono = batchZonotope(jrs_tensor_load)
-        c_qpos = torch.cos(q_0[i],dtype=dtype,device=device)
-        s_qpos = torch.sin(q_0[i],dtype=dtype,device=device)
+        c_qpos = torch.cos(q_0[i])
+        s_qpos = torch.sin(q_0[i])
         Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=dtype,device=device)
         A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
         JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i])
@@ -141,6 +143,8 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
     5: t
 
     '''
+    q_0 = q_0.to(dtype=dtype,device=device)
+    qd_0 = qd_0.to(dtype=dtype,device=device)
     jrs_key = torch.tensor(JRS_KEY['c_kvi'],dtype=dtype,device=device)
     if isinstance(q_0,list):
         q_0 = torch.tensor(q_0,dtype=dtype,device=device)
@@ -162,8 +166,8 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
             PZ_JRS = [[] for _ in range(n_time_steps)]
             R = [[] for _ in range(n_time_steps)]            
         for t in range(n_time_steps):
-            c_qpos = torch.cos(q_0[i],dtype=dtype,device=device)
-            s_qpos = torch.sin(q_0[i],dtype=dtype,device=device)
+            c_qpos = torch.cos(q_0[i])
+            s_qpos = torch.sin(q_0[i])
             Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=dtype,device=device)
             A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
             JRS_zono_i = zonotope(torch.tensor(jrs_mats_load[t,0],dtype=dtype,device=device).squeeze(0))
@@ -184,6 +188,8 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
     return PZ_JRS, R
 
 def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None,dtype=None,device=None):
+    q_0 = q_0.to(dtype=dtype,device=device)
+    qd_0 = qd_0.to(dtype=dtype,device=device)
     n_joints = len(q_0)
     if joint_axes is None:
         joint_axes = [torch.tensor([0,0,1],dtype=dtype,device=device) for _ in range(n_joints)]
