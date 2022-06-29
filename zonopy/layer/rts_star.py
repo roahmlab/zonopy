@@ -5,14 +5,14 @@ from zonopy.joint_reachable_set.jrs_trig.process_jrs_trig import process_batch_J
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_trig
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
 import cyipopt
-import os
+#import os
 from torch.multiprocessing import Pool
 import zonopy as zp
 
 from zonopy.layer.nlp_setup import NLP_setup
 
 # torch.multiprocessing.set_start_method('spawn', force=True)
-os.environ['OMP_NUM_THREADS'] = '2'
+# os.environ['OMP_NUM_THREADS'] = '2'
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi

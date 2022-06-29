@@ -13,12 +13,12 @@ from gurobipy import GRB
 import scipy.sparse as sp
 from scipy.linalg import block_diag
 
-import os
+#import os
 from torch.multiprocessing import Pool
 
 from zonopy.layer.nlp_setup import NLP_setup
 
-os.environ['OMP_NUM_THREADS'] = '2'
+#os.environ['OMP_NUM_THREADS'] = '2'
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
