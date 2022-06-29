@@ -85,7 +85,8 @@ class ARMTD_2D_planner():
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
                         grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
                         for o in range(self.n_obs):
-                            cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
+                            h_obs = (self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o]
+                            cons, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1) # shape: n_timsteps, SAFE if >=1e-6 
                             grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
                             cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
                             grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
@@ -112,7 +113,8 @@ class ARMTD_2D_planner():
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
                         grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
                         for o in range(self.n_obs):
-                            cons, ind = torch.max((self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o],-1) # shape: n_timsteps, SAFE if >=1e-6
+                            h_obs = (self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o]
+                            cons, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1) # shape: n_timsteps, SAFE if >=1e-6 
                             grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
                             cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
                             grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons

@@ -82,7 +82,7 @@ class NLP_setup():
                 grad_c_k = self.FO_grad_center_slice_all_dep(x,j)
                 for o in range(self.n_obs):
                     h_obs = (self.A[j][o]@c_k).squeeze(-1) - self.b[j][o]
-                    ind = np.argmax(h_obs,-1) 
+                    ind = np.argmax(np.nan_to_num(h_obs,-np.inf),-1) 
                     cons = - np.take_along_axis(h_obs,ind.reshape(self.n_timesteps,1),axis=1).squeeze(-1) # shape: n_timsteps, SAFE if <=-1e-6
                     jac = - (np.take_along_axis(self.A[j][o],ind.reshape(self.n_timesteps,1,1),axis=1)@grad_c_k).squeeze(-2)# shape: n_timsteps, n_links                    
                     
