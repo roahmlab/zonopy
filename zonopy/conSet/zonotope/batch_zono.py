@@ -261,6 +261,8 @@ class batchZonotope:
         P
         comb
         isDeg
+        NOTE: there is a possibility with having nan value on the output, so you might wanna use nan_to_num()
+        OR, just use python built-in max function instead of torch.max or np.max.
         '''
         c = self.center
         G = torch.clone(self.generators)
