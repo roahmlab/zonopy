@@ -5,6 +5,7 @@ from zonopy.joint_reachable_set.jrs_trig.process_jrs_trig import process_batch_J
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_trig
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
 from zonopy.conSet.polynomial_zonotope.batch_poly_zono import batchPolyZonotope
+from zonopy.conSet import PROPERTY_ID
 import zonopy as zp
 import cyipopt
 
@@ -72,7 +73,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
         @staticmethod
         def forward(ctx, lambd, observation, FO_link):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-
+            
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             ctx.lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
@@ -90,7 +91,11 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             if FO_link is None:
                 _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
                 FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
+                ccc = 1
             else:
+                PROPERTY_ID.update(n_links)
+                ccc = 2
+                '''
                 FO_new = []
                 for j in range(n_links):
                     max_size =  max([frs.n_generators for frs in FO_link[:,j]]) 
@@ -99,6 +104,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     temp = FO_link[0,j]
                     FO_new.append(batchPolyZonotope(Z,temp.n_dep_gens,temp.expMat,compress=0)) 
                 FO_link = FO_new
+                '''
 
             As = np.zeros((n_batches,n_links,n_obs),dtype=object)
             bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
@@ -110,6 +116,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
             for j in range(n_links):
                 FO_link_temp = FO_link[j].project([0, 1])
+
                 c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
                 for o in range(n_obs):
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2), torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
