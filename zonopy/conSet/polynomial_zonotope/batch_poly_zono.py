@@ -126,7 +126,12 @@ class batchPolyZonotope:
     @property 
     def shape(self):
         return self.Z.shape[-1:]
-    
+    @property 
+    def input_pairs(self):
+        id_sorted, order = torch.sort(self.id)
+        expMat_sorted = self.expMat[:,order] 
+        return self.Z, self.n_dep_gens, expMat_sorted, id_sorted
+
     def to(self,dtype=None,itype=None,device=None):
         Z = self.Z.to(dtype=dtype,device=device)
         expMat = self.expMat.to(dtype=itype,device=device)

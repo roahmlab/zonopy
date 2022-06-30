@@ -65,7 +65,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
         @staticmethod
         def forward(ctx, lambd, observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            zp.reset()
+
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
@@ -139,6 +139,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     infos[rts_pass_indices[idx]] = res[2]
                 lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
                 flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype, device=device)
+            zp.reset()
             return lambd, FO_links, flags, infos
 
         @staticmethod

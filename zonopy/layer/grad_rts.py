@@ -72,7 +72,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
         @staticmethod
         def forward(ctx, lambd, observation, FO_link):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            zp.reset()
+
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             ctx.lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
@@ -153,7 +153,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     ctx.infos[rts_pass_indices[idx]] = res[2]
                 ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
                 ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
-
+            zp.reset()
             return ctx.lambd, FO_links, ctx.flags, ctx.infos
 
         @staticmethod
