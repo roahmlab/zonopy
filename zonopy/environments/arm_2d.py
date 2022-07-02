@@ -44,7 +44,7 @@ class Arm_2D:
             self.T_len = T_len
             t_traj = torch.linspace(0,T_FULL,T_len+1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
-            self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len)+1:] - T_PLAN
+            self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len):] - T_PLAN
         
         
 
@@ -148,10 +148,9 @@ class Arm_2D:
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         self.qgoal = qgoal
-        self.fail_safe_count = 0
         if self.interpolate:
-            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
-            self.qvel_to_brake = torch.zeros(self.T_len,self.n_links)        
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(int((1-T_PLAN/T_FULL)*self.T_len)+1,1)
+            self.qvel_to_brake = torch.zeros(int((1-T_PLAN/T_FULL)*self.T_len)+1,self.n_links)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
             self.qvel_brake = torch.zeros(self.n_links)            
@@ -223,7 +222,7 @@ class Arm_2D:
                 self.qpos_to_brake = wrap_to_pi(self.qpos + torch.outer(self.t_to_brake,self.qvel) + .5*torch.outer(self.t_to_brake**2,bracking_accel))
                 self.qvel_to_brake = self.qvel + torch.outer(self.t_to_brake,bracking_accel)
                 
-                self.collision = self.collision_check(torch.vstack((self.qpos_to_peak,self.qpos_to_brake)))
+                self.collision = self.collision_check(torch.vstack((self.qpos_to_peak,self.qpos_to_brake[1:])))
             else:
                 self.fail_safe_count +=1
                 self.qpos_to_peak = torch.clone(self.qpos_to_brake)
@@ -311,7 +310,7 @@ class Arm_2D:
                 R, P = torch.eye(3), torch.zeros(3)
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
-                    R = R@self.R0[j]@R_q
+                    R = R@self.R0[j]@R_q[j]
                     link = (R@self.link_zonos[j]+P).to_zonotope()
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
@@ -365,7 +364,6 @@ class Arm_2D:
                 self.ax = self.fig.gca()
 
             self.render_flag = False
-            self.one_time_patches = self.ax.add_collection(PatchCollection([]))
             self.FO_patches = self.ax.add_collection(PatchCollection([]))
             self.link_patches = self.ax.add_collection(PatchCollection([]))
             one_time_patches = []
@@ -384,7 +382,8 @@ class Arm_2D:
         if FO_link is not None: 
             FO_patches = []
             if self.fail_safe_count != 1:
-                g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
+                #g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
+                g_ka = self.PI/24
                 self.FO_patches.remove()
                 for j in range(self.n_links):
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
@@ -563,7 +562,7 @@ if __name__ == '__main__':
     #from zonopy.optimize.armtd import ARMTD_planner
     #planner = ARMTD_planner(env)
     for _ in range(20):
-        for _ in range(4):
+        for _ in range(10):
             #ka, flag = planner.plan(env.qpos,env.qvel,env.qgoal,env.obs_zonos,torch.zeros(2))
             observations, reward, done, info = env.step(torch.rand(2))
             env.render()
