@@ -4,7 +4,6 @@ from zonopy.kinematics.FO import forward_occupancy
 from zonopy.joint_reachable_set.jrs_trig.process_jrs_trig import process_batch_JRS_trig_ic
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_trig
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
-from zonopy.conSet.polynomial_zonotope.batch_poly_zono import batchPolyZonotope
 from zonopy.conSet import PROPERTY_ID
 import zonopy as zp
 import cyipopt
@@ -61,7 +60,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
     return lambd_opt, flag, info
 
 
-def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu'):
+def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu',multi_process=True):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100
@@ -91,10 +90,8 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             if FO_link is None:
                 _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
                 FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
-                ccc = 1
             else:
                 PROPERTY_ID.update(n_links)
-                ccc = 2
                 '''
                 FO_new = []
                 for j in range(n_links):
@@ -133,33 +130,43 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
             n_problems = len(rts_pass_indices)
             if n_problems > 0:
-                with Pool(processes=min(num_processes, n_problems)) as pool:
-                    results = pool.starmap(
-                        rts_pass,
-                        [x for x in
-                         zip(As[rts_pass_indices],
-                             bs[rts_pass_indices],
-                             FO_links[rts_pass_indices],
-                             qpos.cpu().numpy()[rts_pass_indices],
-                             qvel.cpu().numpy()[rts_pass_indices],
-                             qgoal.cpu().numpy()[rts_pass_indices],
-                             [n_timesteps] * n_problems,
-                             [n_links] * n_problems,
-                             [n_obs] * n_problems,
-                             [dimension] * n_problems,
-                             [g_ka] * n_problems,
-                             [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
-                             lambd[rts_pass_indices]
-                         )
-                         ]
-                    )
-                rts_lambd_opt, rts_flags = [], []
-                for idx, res in enumerate(results):
-                    rts_lambd_opt.append(res[0])
-                    rts_flags.append(res[1])
-                    ctx.infos[rts_pass_indices[idx]] = res[2]
-                ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
-                ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
+                if multi_process:
+                    with Pool(processes=min(num_processes, n_problems)) as pool:
+                        results = pool.starmap(
+                            rts_pass,
+                            [x for x in
+                            zip(As[rts_pass_indices],
+                                bs[rts_pass_indices],
+                                FO_links[rts_pass_indices],
+                                qpos.cpu().numpy()[rts_pass_indices],
+                                qvel.cpu().numpy()[rts_pass_indices],
+                                qgoal.cpu().numpy()[rts_pass_indices],
+                                [n_timesteps] * n_problems,
+                                [n_links] * n_problems,
+                                [n_obs] * n_problems,
+                                [dimension] * n_problems,
+                                [g_ka] * n_problems,
+                                [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
+                                lambd[rts_pass_indices]
+                            )
+                            ]
+                        )
+                    rts_lambd_opt, rts_flags = [], []
+                    for idx, res in enumerate(results):
+                        rts_lambd_opt.append(res[0])
+                        rts_flags.append(res[1])
+                        ctx.infos[rts_pass_indices[idx]] = res[2]
+                    ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
+                    ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
+                else:
+                    for idx in rts_pass_indices:
+                        #import pdb;pdb.set_trace()
+                        rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links[idx],qpos.cpu().numpy()[idx],qvel.cpu().numpy()[idx],qgoal.cpu().numpy()[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd[idx])
+                        ctx.infos[idx] = info
+                        ctx.lambd[idx] = rts_lambd_opt
+                        ctx.flags[idx] = int(rts_flag)
+
+
             zp.reset()
             return ctx.lambd, FO_links, ctx.flags, ctx.infos
 
