@@ -99,7 +99,8 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 for o in range(n_obs):
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
                     A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
-                    unsafe_flag += (torch.max((A_temp @ c_k).squeeze(-1) - b_temp, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
+                    h_obs = ((A_temp @ c_k).squeeze(-1) - b_temp).nan_to_num(-torch.inf)
+                    unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
                     As[:,j,o] = list(A_temp.cpu().numpy())
                     bs[:,j,o] = list(b_temp.cpu().numpy())
                 FO_links[:,j] = [fo for fo in FO_link_temp.cpu()]
