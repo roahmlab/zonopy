@@ -232,7 +232,7 @@ class zonotope:
         vertices_half[:,1] -= y_max
         full_vertices = torch.vstack((vertices_half,-vertices_half[1:] + vertices_half[0]+ vertices_half[-1])) + c
         return full_vertices
-
+        
     def polyhedron(self):
         dim = 3
         V = self.center[:dim]
