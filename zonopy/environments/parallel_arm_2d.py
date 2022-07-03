@@ -35,23 +35,24 @@ class Parallel_Arm_2D:
         self.dimension = 2
         self.n_links = n_links
         self.n_obs = n_obs
-        link_Z = torch.tensor([[[0.5, 0, 0],[0.5,0,0],[0,0.01,0]]]).repeat(n_envs,1,1)
-        self.link_zonos = [zp.batchZonotope(link_Z)]*n_links 
-        self.P0 = [torch.tensor([0.0,0.0,0.0])]+[torch.tensor([1.0,0.0,0.0])]*(n_links-1)
-        self.R0 = [torch.eye(3)]*n_links
-        self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links)
+        self.link_zonos = [zp.polyZonotope(torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device),0)]*n_links 
+        link_Z = torch.tensor([[[0.5, 0, 0],[0.5,0,0],[0,0.01,0]]],dtype=dtype,device=device).repeat(n_envs,1,1)
+        self.__link_zonos = [zp.batchZonotope(link_Z)]*n_links 
+        self.P0 = [torch.tensor([0.0,0.0,0.0],dtype=dtype,device=device)]+[torch.tensor([1.0,0.0,0.0],dtype=dtype,device=device)]*(n_links-1)
+        self.R0 = [torch.eye(3,dtype=dtype,device=device)]*n_links
+        self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links,dtype=dtype,device=device)
         self.fig_scale = 1
         self.interpolate = interpolate
-        self.PI = torch.tensor(torch.pi)
+        self.PI = torch.tensor(torch.pi,dtype=dtype,device=device)
 
         if interpolate:
             self.T_len = T_len
-            t_traj = torch.linspace(0,T_FULL,T_len+1).reshape(-1,1,1)
+            t_traj = torch.linspace(0,T_FULL,T_len+1,dtype=dtype,device=device).reshape(-1,1,1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len):] - T_PLAN
         
-        self.obs_buffer_length = torch.tensor([0.001,0.001])
-        self.obstacle_config = {'side_length':0.1*torch.eye(2).unsqueeze(0).repeat(n_envs,1,1), 'zero_pad': torch.zeros(n_envs,3,1)}
+        self.obs_buffer_length = torch.tensor([0.001,0.001],dtype=dtype,device=device)
+        self.obstacle_config = {'side_length':0.1*torch.eye(2,dtype=dtype,device=device).unsqueeze(0).repeat(n_envs,1,1), 'zero_pad': torch.zeros(n_envs,3,1,dtype=dtype,device=device)}
         self.check_collision = check_collision
         self.check_collision_FO = check_collision_FO
         self.collision_threshold = collision_threshold
@@ -69,33 +70,38 @@ class Parallel_Arm_2D:
         self.render_flag = True
 
         self._max_episode_steps = max_episode_steps
-        self._elapsed_steps = torch.zeros(self.n_envs)
-
+        self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=device)
+        
+        if dtype is None:
+            self.dtype = torch.get_default_dtype()
+        else:
+            self.dtype = dtype
+        self.device = device
         self.get_plot_grid_size()
         self.reset()
     
 
     def __reset(self,idx):
         n_envs = idx.sum()
-        self.qpos[idx] = torch.rand(n_envs,self.n_links)*2*torch.pi - torch.pi
+        self.qpos[idx] = torch.rand(n_envs,self.n_links,dtype=self.dtype,device=self.device)*2*self.PI - self.PI
         self.qpos_int[idx] = self.qpos[idx]
-        self.qvel[idx] = torch.zeros(n_envs,self.n_links)
+        self.qvel[idx] = torch.zeros(n_envs,self.n_links,dtype=self.dtype,device=self.device)
         self.qpos_prev[idx] = self.qpos[idx]
         self.qvel_prev[idx] = self.qvel[idx]
-        self.qgoal[idx] = torch.rand(n_envs,self.n_links)*2*torch.pi - torch.pi
+        self.qgoal[idx] = torch.rand(n_envs,self.n_links,dtype=self.dtype,device=self.device)*2*self.PI - self.PI
 
         if self.interpolate:
             T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1 
             self.qpos_to_brake[:,idx] = self.qpos[idx].unsqueeze(0).repeat(T_len_to_brake,1,1) 
-            self.qvel_to_brake[:,idx] = torch.zeros(T_len_to_brake,n_envs,self.n_links) 
+            self.qvel_to_brake[:,idx] = torch.zeros(T_len_to_brake,n_envs,self.n_links,dtype=self.dtype,device=self.device) 
         else:
             self.qpos_brake[idx] = self.qpos[idx] + 0.5*self.qvel[idx]*(T_FULL-T_PLAN)
-            self.qvel_brake[idx] = torch.zeros(n_envs,self.n_links) 
+            self.qvel_brake[idx] = torch.zeros(n_envs,self.n_links,dtype=self.dtype,device=self.device) 
 
         R_qi = self.rot(self.qpos[idx])
         R_qg = self.rot(self.qgoal[idx])
-        Ri, Pi = torch.eye(3), torch.zeros(3) 
-        Rg, Pg = torch.eye(3), torch.zeros(3)   
+        Ri, Pi = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device) 
+        Rg, Pg = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)   
         link_init, link_goal = [], []
         for j in range(self.n_links):    
             Pi = Ri@self.P0[j] + Pi 
@@ -103,7 +109,7 @@ class Parallel_Arm_2D:
             Ri = Ri@self.R0[j]@R_qi[:,j]
             Rg = Rg@self.R0[j]@R_qg[:,j]
             
-            link_zonos_idx = self.link_zonos[j][idx]
+            link_zonos_idx = self.__link_zonos[j][idx]
             link = Ri@link_zonos_idx+Pi
             link_init.append(link)
             link = Rg@link_zonos_idx+Pg
@@ -111,7 +117,7 @@ class Parallel_Arm_2D:
 
         idx_nonzero = idx.nonzero().reshape(-1)
         for o in range(self.n_obs):
-            safe_flag = torch.zeros(n_envs,dtype=bool)
+            safe_flag = torch.zeros(n_envs,dtype=bool,device=self.device)
             while True:
                 obs_z, safe_idx = self.obstacle_sample(link_init,link_goal,~safe_flag)
                 self.obs_zonos[o].Z[idx_nonzero[safe_idx]] = obs_z 
@@ -126,31 +132,31 @@ class Parallel_Arm_2D:
         self.reward_com[idx] = 0
 
     def reset(self):
-        self.qpos = torch.rand(self.n_envs,self.n_links)*2*torch.pi - torch.pi
+        self.qpos = torch.rand(self.n_envs,self.n_links,dtype=self.dtype,device=self.device)*2*self.PI - self.PI
         self.qpos_int = torch.clone(self.qpos)
-        self.qvel = torch.zeros(self.n_envs,self.n_links)
+        self.qvel = torch.zeros(self.n_envs,self.n_links,dtype=self.dtype,device=self.device)
         self.qvel_int = torch.clone(self.qvel)
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
-        self.qgoal = torch.rand(self.n_envs,self.n_links)*2*torch.pi - torch.pi
+        self.qgoal = torch.rand(self.n_envs,self.n_links,dtype=self.dtype,device=self.device)*2*self.PI - self.PI
 
         if self.interpolate:
             T_len_to_peak = int(T_PLAN/T_FULL*self.T_len)+1
             T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1
             self.qpos_to_peak = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1,1)
-            self.qvel_to_peak = torch.zeros(T_len_to_peak,self.n_envs,self.n_links)
+            self.qvel_to_peak = torch.zeros(T_len_to_peak,self.n_envs,self.n_links,dtype=self.dtype,device=self.device)
             self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_brake,1,1)
-            self.qvel_to_brake = torch.zeros(T_len_to_brake,self.n_envs,self.n_links)        
+            self.qvel_to_brake = torch.zeros(T_len_to_brake,self.n_envs,self.n_links,dtype=self.dtype,device=self.device)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
-            self.qvel_brake = torch.zeros(self.n_envs,self.n_links)            
+            self.qvel_brake = torch.zeros(self.n_envs,self.n_links,dtype=self.dtype,device=self.device)            
 
         self.obs_zonos = []
         
         R_qi = self.rot()
         R_qg = self.rot(self.qgoal)
-        Ri, Pi = torch.eye(3), torch.zeros(3)       
-        Rg, Pg = torch.eye(3), torch.zeros(3)               
+        Ri, Pi = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)       
+        Rg, Pg = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)               
         link_init, link_goal = [], []
         for j in range(self.n_links):
             
@@ -159,13 +165,13 @@ class Parallel_Arm_2D:
             Ri = Ri@self.R0[j]@R_qi[:,j]
             Rg = Rg@self.R0[j]@R_qg[:,j]
             
-            link = Ri@self.link_zonos[j]+Pi
+            link = Ri@self.__link_zonos[j]+Pi
             link_init.append(link)
-            link = Rg@self.link_zonos[j]+Pg
+            link = Rg@self.__link_zonos[j]+Pg
             link_goal.append(link)
         for _ in range(self.n_obs):
-            safe_flag = torch.zeros(self.n_envs,dtype=bool)
-            obs_Z = torch.zeros(self.n_envs,3,3)
+            safe_flag = torch.zeros(self.n_envs,dtype=bool,device=self.device)
+            obs_Z = torch.zeros(self.n_envs,3,3,dtype=self.dtype,device=self.device)
             while True:
                 obs_z, safe_idx = self.obstacle_sample(link_init,link_goal,~safe_flag)
                 obs_Z[safe_idx] = obs_z 
@@ -174,17 +180,17 @@ class Parallel_Arm_2D:
                     obs = zp.batchZonotope(obs_Z)
                     self.obs_zonos.append(obs)
                     break
-        self.fail_safe_count = torch.zeros(self.n_envs)
+        self.fail_safe_count = torch.zeros(self.n_envs,dtype=int,device=self.device)
         if self.render_flag == False:
             for b in range(self.n_plots):
                 self.one_time_patches[b].remove()
                 self.FO_patches[b].remove()
                 self.link_patches[b].remove()
         self.render_flag = True
-        self.done = torch.zeros(self.n_envs,dtype=bool)
-        self.collision = torch.zeros(self.n_envs,dtype=bool)
-        self._elapsed_steps = torch.zeros(self.n_envs)
-        self.reward_com = torch.zeros(self.n_envs)
+        self.done = torch.zeros(self.n_envs,dtype=bool,device=self.device)
+        self.collision = torch.zeros(self.n_envs,dtype=bool,device=self.device)
+        self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=self.device)
+        self.reward_com = torch.zeros(self.n_envs,dtype=self.dtype,device=self.device)
         return self.get_observations()
         
     def obstacle_sample(self,link_init,link_goal,idx):
@@ -195,12 +201,12 @@ class Parallel_Arm_2D:
         else:
         ''' 
         n_envs = idx.sum()
-        r,th = torch.rand(2,n_envs)
+        r,th = torch.rand(2,n_envs,dtype=self.dtype,device=self.device)
         #obs_pos = torch.rand(n_envs,2)*2*self.n_links-self.n_links
-        obs_pos = (3/4*self.n_links*r*torch.vstack((torch.cos(2*torch.pi*th),torch.sin(2*torch.pi*th)))).T
+        obs_pos = (3/4*self.n_links*r*torch.vstack((torch.cos(2*self.PI*th),torch.sin(2*self.PI*th)))).T
         obs_Z = torch.cat((torch.cat((obs_pos.unsqueeze(1),self.obstacle_config['side_length'][:n_envs]),1),self.obstacle_config['zero_pad'][:n_envs]),-1)
         obs = zp.batchZonotope(obs_Z)
-        safe_flag = torch.zeros(len(idx),dtype=bool)
+        safe_flag = torch.zeros(len(idx),dtype=bool,device=self.device)
         safe_flag[idx] = True
         for j in range(self.n_links):            
             buff = link_init[j][idx]-obs
@@ -213,13 +219,13 @@ class Parallel_Arm_2D:
 
     def step(self,ka,flag=None):
         if flag is None:
-            self.step_flag = torch.zeros(self.n_envs)
+            self.step_flag = torch.zeros(self.n_envs,dtype=int,device=self.device)
         else:
-            self.step_flag = flag
+            self.step_flag = flag.to(dtype=int,device=self.device)
         self.safe = self.step_flag <= 0
         # -torch.pi<qvel+k*T_PLAN < torch.pi
         # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
-        self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
+        self.ka = ka.clamp((-self.PI-self.qvel)/T_PLAN,(self.PI-self.qvel)/T_PLAN) # velocity clamp
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         if self.interpolate:
@@ -264,8 +270,6 @@ class Parallel_Arm_2D:
         self.done = self.success + self.collision
         observations = self.get_observations()
         infos = self.get_info()
-        print(f'collision: {self.collision}')
-        print(f'success: {self.success}')
         if self.done.sum()>0:
             self.__reset(self.done)
         return observations, self.reward, self.done, infos
@@ -309,11 +313,11 @@ class Parallel_Arm_2D:
             R_q = self.rot(qs)
             if len(R_q.shape) == 5:
                 time_steps = R_q.shape[0]
-                R, P = torch.eye(3), torch.zeros(3)
+                R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
                     R = R@self.R0[j]@R_q[:,:,j]
-                    link =zp.batchZonotope(self.link_zonos[j].Z.unsqueeze(0).repeat(time_steps,1,1,1))
+                    link =zp.batchZonotope(self.__link_zonos[j].Z.unsqueeze(0).repeat(time_steps,1,1,1))
                     link = R@link+P
                     for o in range(self.n_obs):
                         buff = torch.cat(((link.center - self.obs_zonos[o].center).unsqueeze(-2),link.generators,self.obs_zonos[o].generators.unsqueeze(0).repeat(time_steps,1,1,1)),-2)
@@ -323,11 +327,11 @@ class Parallel_Arm_2D:
                         
             else:
                 time_steps = 1
-                R, P = torch.eye(3), torch.zeros(3)
+                R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
                     R = R@self.R0[j]@R_q[:,j]
-                    link = R@self.link_zonos[j]+P
+                    link = R@self.__link_zonos[j]+P
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
                         _,b = buff.project([0,1]).polytope()
@@ -342,7 +346,7 @@ class Parallel_Arm_2D:
         
         self.goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal),dim=-1)
         self.success = self.goal_dist < self.goal_threshold 
-        success = self.success.to(dtype=torch.get_default_dtype())
+        success = self.success.to(dtype=self.device)
         
         reward = 0.0
 
@@ -360,7 +364,7 @@ class Parallel_Arm_2D:
         # Add collision if needed
         reward += self.hyp_collision * self.collision
         # Add fail-safe if needed
-        reward += self.hyp_fail_safe * (1 - self.safe.to(dtype=torch.get_default_dtype()))
+        reward += self.hyp_fail_safe * (1 - self.safe.to(dtype=self.dtype))
         # Add success if wanted
         reward += self.hyp_success * success
 
@@ -376,11 +380,11 @@ class Parallel_Arm_2D:
 
             R_q = self.rot(self.qgoal[:self.n_plots])
             link_goal_patches = []
-            R, P = torch.eye(3), torch.zeros(3)
+            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
             for j in range(self.n_links):
                 P = R@self.P0[j] + P
                 R = R@self.R0[j]@R_q[:,j]
-                link_goal_patches.append((R@self.link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())
+                link_goal_patches.append((R@self.__link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())
 
             obs_patches = []
             for o in range(self.n_obs):
@@ -427,12 +431,12 @@ class Parallel_Arm_2D:
         '''
         if self.interpolate:
             R_q = self.rot(self.qpos_to_peak[:,:self.n_plots])
-            R, P = torch.eye(3), torch.zeros(3)
+            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
             link_trace_patches = []
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[:,:,j]
-                link_trace_patches.append((R@self.link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())   
+                link_trace_patches.append((R@self.__link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())   
             time_steps = int(T_PLAN/T_FULL*self.T_len) # NOTE
             for t in range(time_steps):
                 for b, ax in enumerate(self.axs.flat):
@@ -451,12 +455,12 @@ class Parallel_Arm_2D:
 
         else:
             R_q = self.rot(self.qpos[:self.n_plots])
-            R, P = torch.eye(3), torch.zeros(3)
+            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
             link_trace_patches = []
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[:,j]
-                link_trace_patches.append((R@self.link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())            
+                link_trace_patches.append((R@self.__link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())            
             
             for b, ax in enumerate(self.axs.flat):
                 self.link_patches[b].remove()
@@ -476,11 +480,11 @@ class Parallel_Arm_2D:
         
             R_q = self.rot(self.qgoal[reset_flag])
             link_goal = []
-            R, P = torch.eye(3), torch.zeros(3)
+            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[:,j]
-                link_goal.append(R@self.link_zonos[j][reset_flag]+P)
+                link_goal.append(R@self.__link_zonos[j][reset_flag]+P)
 
             for idx, b in enumerate(reset_flag.tolist()):
                 self.one_time_patches[b].remove()
@@ -509,10 +513,10 @@ class Parallel_Arm_2D:
     def rot(self,q=None):
         if q is None:
             q = self.qpos
-        w = torch.tensor([[[0,0,0],[0,0,-1],[0,1,0]],[[0,0,1],[0,0,0],[-1,0,0]],[[0,-1,0],[1,0,0],[0,0,0.0]]])
+        w = torch.tensor([[[0,0,0],[0,0,-1],[0,1,0]],[[0,0,1],[0,0,0],[-1,0,0]],[[0,-1,0],[1,0,0],[0,0,0.0]]],dtype=self.dtype,device=self.device)
         w = (w@self.joint_axes.T).transpose(0,-1)
         q = q.reshape(q.shape+(1,1))
-        return torch.eye(3) + torch.sin(q)*w + (1-torch.cos(q))*w@w
+        return torch.eye(3,dtype=self.dtype,device=self.device) + torch.sin(q)*w + (1-torch.cos(q))*w@w
 
     @property
     def action_spec(self):

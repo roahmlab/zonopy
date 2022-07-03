@@ -77,7 +77,8 @@ class GymWrapper(Wrapper, Env):
 
 class ParallelGymWrapper(GymWrapper):
     def __init__(self, env, keys=None):
-        super().__init__(env=env)
+        self.num_envs = env.n_envs
+        super().__init__(env=env,keys=keys)
 
     def _setup_observation_space(self):
         obs = self.env.get_observations()
