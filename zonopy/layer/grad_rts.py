@@ -48,10 +48,10 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
 
     # NOTE: for training, dont care about fail-safe
     if info['status'] == 0:
-        lambd_opt = torch.tensor(k_opt, dtype=torch.get_default_dtype())
+        lambd_opt = k_opt.tolist()
         flag = 0
     else:
-        lambd_opt = lambd_hat
+        lambd_opt = lambd_hat.tolist()
         flag = 1
     
     info['jac_g'] = nlp_obj.jacobian(k_opt)
@@ -157,7 +157,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                         rts_lambd_opts.append(res[0])
                         rts_flags.append(res[1])
                         ctx.infos[rts_pass_indices[idx]] = res[2]
-                    ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opts, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
+                    ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
                     ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
                 else:
                     rts_lambd_opts, rts_flags = [], []
@@ -167,8 +167,8 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                         ctx.infos[idx] = info
                         rts_lambd_opts.append(rts_lambd_opt)
                         rts_flags.append(rts_flag)
-                    ctx.lambd[idx] = torch.cat(rts_lambd_opts, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
-                    ctx.flags[idx] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
+                    ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
+                    ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
 
 
             zp.reset()
