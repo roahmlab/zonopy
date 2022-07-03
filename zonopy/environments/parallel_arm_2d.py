@@ -2,7 +2,7 @@ import torch
 import zonopy as zp
 import matplotlib.pyplot as plt 
 from matplotlib.collections import PatchCollection
-#from .utils import locate_figure
+import matplotlib.patches as patches
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
@@ -44,15 +44,12 @@ class Parallel_Arm_2D:
         self.interpolate = interpolate
         self.PI = torch.tensor(torch.pi)
 
-
         if interpolate:
             self.T_len = T_len
             t_traj = torch.linspace(0,T_FULL,T_len+1).reshape(-1,1,1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len):] - T_PLAN
         
-        
-
         self.obs_buffer_length = torch.tensor([0.001,0.001])
         self.obstacle_config = {'side_length':0.1*torch.eye(2).unsqueeze(0).repeat(n_envs,1,1), 'zero_pad': torch.zeros(n_envs,3,1)}
         self.check_collision = check_collision
@@ -76,6 +73,7 @@ class Parallel_Arm_2D:
 
         self.get_plot_grid_size()
         self.reset()
+    
 
     def __reset(self,idx):
         n_envs = idx.sum()
@@ -87,24 +85,19 @@ class Parallel_Arm_2D:
         self.qgoal[idx] = torch.rand(n_envs,self.n_links)*2*torch.pi - torch.pi
 
         if self.interpolate:
-            
-            T_len_to_peak = int(T_PLAN/T_FULL*self.T_len)+1
-            T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1
-            self.qpos_to_peak[:,idx] = self.qpos[idx].unsqueeze(0).repeat(T_len_to_peak,1,1)
-            self.qvel_to_peak[:,idx] = torch.zeros(T_len_to_peak,n_envs,self.n_links)
-            self.qpos_to_brake[:,idx] = self.qpos[idx].unsqueeze(0).repeat(T_len_to_brake,1,1)
-            self.qvel_to_brake[:,idx] = torch.zeros(T_len_to_brake,n_envs,self.n_links)        
+            T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1 
+            self.qpos_to_brake[:,idx] = self.qpos[idx].unsqueeze(0).repeat(T_len_to_brake,1,1) 
+            self.qvel_to_brake[:,idx] = torch.zeros(T_len_to_brake,n_envs,self.n_links) 
         else:
             self.qpos_brake[idx] = self.qpos[idx] + 0.5*self.qvel[idx]*(T_FULL-T_PLAN)
             self.qvel_brake[idx] = torch.zeros(n_envs,self.n_links) 
 
         R_qi = self.rot(self.qpos[idx])
         R_qg = self.rot(self.qgoal[idx])
-        Ri, Pi = torch.eye(3), torch.zeros(3)       
+        Ri, Pi = torch.eye(3), torch.zeros(3) 
         Rg, Pg = torch.eye(3), torch.zeros(3)   
         link_init, link_goal = [], []
-        for j in range(self.n_links):
-            
+        for j in range(self.n_links):    
             Pi = Ri@self.P0[j] + Pi 
             Pg = Rg@self.P0[j] + Pg
             Ri = Ri@self.R0[j]@R_qi[:,j]
@@ -125,12 +118,6 @@ class Parallel_Arm_2D:
                 safe_flag += safe_idx 
                 if safe_flag.all():
                     break
-        if self.render_flag == False:
-            reset_flag =idx[:self.n_plots].nonzero().reshape(-1)
-            for b in reset_flag:
-                self.one_time_patches[b].remove()
-                self.FO_patches[b].remove()
-                self.link_patches[b].remove()
         
         self.fail_safe_count[idx] = 0
         #self.done[idx] = False
@@ -142,16 +129,18 @@ class Parallel_Arm_2D:
         self.qpos = torch.rand(self.n_envs,self.n_links)*2*torch.pi - torch.pi
         self.qpos_int = torch.clone(self.qpos)
         self.qvel = torch.zeros(self.n_envs,self.n_links)
+        self.qvel_int = torch.clone(self.qvel)
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         self.qgoal = torch.rand(self.n_envs,self.n_links)*2*torch.pi - torch.pi
 
         if self.interpolate:
-            
-            self.qpos_to_peak = self.qpos.unsqueeze(0).repeat(int(T_PLAN/T_FULL*self.T_len)+1,1,1)
-            self.qvel_to_peak = torch.zeros(int(T_PLAN/T_FULL*self.T_len)+1,self.n_envs,self.n_links)
-            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(int((1-T_PLAN/T_FULL)*self.T_len)+1,1,1)
-            self.qvel_to_brake = torch.zeros(int((1-T_PLAN/T_FULL)*self.T_len)+1,self.n_envs,self.n_links)        
+            T_len_to_peak = int(T_PLAN/T_FULL*self.T_len)+1
+            T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1
+            self.qpos_to_peak = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1,1)
+            self.qvel_to_peak = torch.zeros(T_len_to_peak,self.n_envs,self.n_links)
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_brake,1,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_brake,self.n_envs,self.n_links)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
             self.qvel_brake = torch.zeros(self.n_envs,self.n_links)            
@@ -275,9 +264,10 @@ class Parallel_Arm_2D:
         self.done = self.success + self.collision
         observations = self.get_observations()
         infos = self.get_info()
+        print(f'collision: {self.collision}')
+        print(f'success: {self.success}')
         if self.done.sum()>0:
             self.__reset(self.done)
-        
         return observations, self.reward, self.done, infos
 
     def get_info(self):
@@ -288,7 +278,7 @@ class Parallel_Arm_2D:
                 'is_success':bool(self.success[idx]),
                 'collision':bool(self.collision[idx]),
                 'safe_flag':bool(self.safe[idx]),
-                'step_flag':bool(self.step_flag[idx])
+                'step_flag':int(self.step_flag[idx])
                 }
             if self.collision[idx]:
                 collision_info = {
@@ -300,13 +290,13 @@ class Parallel_Arm_2D:
                 info['collision_info'] = collision_info
             if self._elapsed_steps[idx] >= self._max_episode_steps:
                 info["TimeLimit.truncated"] = not self.done[idx]
-                self.done[idx] = True            
-            info['episode'] = {"r":self.reward_com[idx],"l":self._elapsed_steps[idx]}
+                self.done[idx] = True       
+            info['episode'] = {"r":float(self.reward_com[idx]),"l":int(self._elapsed_steps[idx])}
             infos.append(info)
-        return infos
+        return tuple(infos)
 
     def get_observations(self):
-        observation = {'qpos':self.qpos,'qvel':self.qvel,'qgoal':self.qgoal}
+        observation = {'qpos':torch.clone(self.qpos),'qvel':torch.clone(self.qvel),'qgoal':torch.clone(self.qgoal)}
         
         if self.n_obs > 0:
             observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center[:,:2].unsqueeze(1) for o in range(self.n_obs)],1)
@@ -376,59 +366,36 @@ class Parallel_Arm_2D:
 
         return reward       
 
-
     def render(self,FO_link=None):
-        
         if self.render_flag:
             if self.fig is None:
                 plt.ion()
                 self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2])
-            
             self.render_flag = False
             self.one_time_patches, self.FO_patches, self.link_patches= [], [], []
 
             R_q = self.rot(self.qgoal[:self.n_plots])
-            link_goal = []
-            R, P = torch.eye(3), torch.zeros(3)  
+            link_goal_patches = []
+            R, P = torch.eye(3), torch.zeros(3)
             for j in range(self.n_links):
-                P = R@self.P0[j] + P 
+                P = R@self.P0[j] + P
                 R = R@self.R0[j]@R_q[:,j]
-                link_goal.append(R@self.link_zonos[j][:self.n_plots]+P)
+                link_goal_patches.append((R@self.link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())
 
+            obs_patches = []
+            for o in range(self.n_obs):
+                obs_patches.append(self.obs_zonos[o][:self.n_plots].polygon(nan=False).cpu().numpy())
+                #patches.Polygon(p,alpha=alpha,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth)
             for b, ax in enumerate(self.axs.flat):
-
                 one_time_patch = []
-                for o in range(self.n_obs):
-                    one_time_patch.append(self.obs_zonos[o][b].polygon_patch(edgecolor='red',facecolor='red'))
                 for j in range(self.n_links):
-                    link_patch = link_goal[j][b].polygon_patch(edgecolor='gray',facecolor='gray')
-                    one_time_patch.append(link_patch)
+                    one_time_patch.append(patches.Polygon(link_goal_patches[j][b],alpha = .5, facecolor='gray',edgecolor='gray',linewidth=.2))
+                for o in range(self.n_obs):
+                    one_time_patch.append(patches.Polygon(obs_patches[o][b],alpha = .5, facecolor='red',edgecolor='red',linewidth=.2))
                 self.one_time_patches.append(PatchCollection(one_time_patch, match_original=True))
                 ax.add_collection(self.one_time_patches[b])
                 self.FO_patches.append(ax.add_collection(PatchCollection([])))
                 self.link_patches.append(ax.add_collection(PatchCollection([])))
-        elif self.done.any():
-            reset_flag = self.done[:self.n_plots].nonzero().reshape(-1)
-            R_q = self.rot(self.qgoal[reset_flag])
-            link_goal = []
-            R, P = torch.eye(3), torch.zeros(3)
-            for j in range(self.n_links):
-                P = R@self.P0[j] + P 
-                R = R@self.R0[j]@R_q[:,j]
-                link_goal.append(R@self.link_zonos[j][reset_flag]+P)
-            for idx, b in enumerate(reset_flag.tolist()):
-                ax = self.axs.flat[b]
-                one_time_patch = []
-                for o in range(self.n_obs):
-                    one_time_patch.append(self.obs_zonos[o][b].polygon_patch(edgecolor='red',facecolor='red'))
-                for j in range(self.n_links):
-                    link_patch = link_goal[j][idx].polygon_patch(edgecolor='gray',facecolor='gray')
-                    one_time_patch.append(link_patch)
-                self.one_time_patches[b] = PatchCollection(one_time_patch, match_original=True)
-                ax.add_collection(self.one_time_patches[b])
-                self.FO_patches[b] = ax.add_collection(PatchCollection([]))
-                self.link_patches[b] = ax.add_collection(PatchCollection([]))            
-            
         
         '''
         if FO_link is not None: 
@@ -461,19 +428,18 @@ class Parallel_Arm_2D:
         if self.interpolate:
             R_q = self.rot(self.qpos_to_peak[:,:self.n_plots])
             R, P = torch.eye(3), torch.zeros(3)
-            link_curr = []
+            link_trace_patches = []
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[:,:,j]
-                link_curr.append(R@self.link_zonos[j][:self.n_plots]+P)    
+                link_trace_patches.append((R@self.link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())   
             time_steps = int(T_PLAN/T_FULL*self.T_len) # NOTE
             for t in range(time_steps):
                 for b, ax in enumerate(self.axs.flat):
-                
                     self.link_patches[b].remove()
                     link_patch = []
                     for j in range(self.n_links):
-                        link_patch.append(link_curr[j][t,b].polygon_patch(edgecolor='blue',facecolor='blue'))
+                        link_patch.append(patches.Polygon(link_trace_patches[j][t,b],alpha = .5, facecolor='blue',edgecolor='blue',linewidth=.2))
                     self.link_patches[b] = PatchCollection(link_patch, match_original=True)
                     ax.add_collection(self.link_patches[b])
                 
@@ -486,17 +452,17 @@ class Parallel_Arm_2D:
         else:
             R_q = self.rot(self.qpos[:self.n_plots])
             R, P = torch.eye(3), torch.zeros(3)
-            link_curr = []
+            link_trace_patches = []
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[:,j]
-                link_curr.append(R@self.link_zonos[j][:self.n_plots]+P)            
+                link_trace_patches.append((R@self.link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())            
             
             for b, ax in enumerate(self.axs.flat):
                 self.link_patches[b].remove()
                 link_patch = []
                 for j in range(self.n_links):
-                    link_patch.append(link_curr[j][b].polygon_patch(edgecolor='blue',facecolor='blue'))
+                    link_patch.append(patches.Polygon(link_trace_patches[j][b],alpha = .5, facecolor='blue',edgecolor='blue',linewidth=.2))
                 self.link_patches[b] = PatchCollection(link_patch, match_original=True)
                 ax.add_collection(self.link_patches[b])
                 ax_scale = 1.2
@@ -505,34 +471,32 @@ class Parallel_Arm_2D:
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
-
-    def __render(self,FO_link=None):
-        if self.render_flag:
-            plt.ion()
-            self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2])
-            self.render_flag = False
-            for b, ax in enumerate(self.axs.flat):
-                for o in range(self.n_obs):
-                    self.obs_zonos[o][b].plot(ax=ax, edgecolor='red',facecolor='red')
-            self.link_patches = [[[] for _ in range(self.n_links)] for _ in range(b+1)]
+        if self.done.any():
+            reset_flag = self.done[:self.n_plots].nonzero().reshape(-1)
         
-        R_q = self.rot 
-        
-        for b, ax in enumerate(self.axs.flat):
-            R, P = torch.eye(3), torch.zeros(3)  
-            #if len(self.link_patches[0]) > 0:
-            #ax.clear()
+            R_q = self.rot(self.qgoal[reset_flag])
+            link_goal = []
+            R, P = torch.eye(3), torch.zeros(3)
             for j in range(self.n_links):
-                if not isinstance(self.link_patches[b][j],list):
-                    self.link_patches[b][j].remove()
                 P = R@self.P0[j] + P 
-                R = R@self.R0[j]@R_q[b,j]
-                self.link_patches[b][j] = (R@self.link_zonos[j]+P).to_zonotope().plot(ax=ax, edgecolor='blue',facecolor='blue')
-            ax_scale = 1.2
-            axis_lim = ax_scale*self.n_links
-            ax.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()        
+                R = R@self.R0[j]@R_q[:,j]
+                link_goal.append(R@self.link_zonos[j][reset_flag]+P)
+
+            for idx, b in enumerate(reset_flag.tolist()):
+                self.one_time_patches[b].remove()
+                self.FO_patches[b].remove()
+                self.link_patches[b].remove()
+                ax = self.axs.flat[b]
+                one_time_patch = []
+                for o in range(self.n_obs):
+                    one_time_patch.append(self.obs_zonos[o][b].polygon_patch(edgecolor='red',facecolor='red'))
+                for j in range(self.n_links):
+                    link_patch = link_goal[j][idx].polygon_patch(edgecolor='gray',facecolor='gray')
+                    one_time_patch.append(link_patch)
+                self.one_time_patches[b] = PatchCollection(one_time_patch, match_original=True)
+                ax.add_collection(self.one_time_patches[b])
+                self.FO_patches[b] = ax.add_collection(PatchCollection([]))
+                self.link_patches[b] = ax.add_collection(PatchCollection([]))  
         
     def get_plot_grid_size(self):
         if self.n_envs in (1,2,3):
@@ -569,7 +533,7 @@ class Parallel_Arm_2D:
 if __name__ == '__main__':
     import time
     from zonopy.environments.arm_2d import Arm_2D
-    n_envs = 10
+    n_envs = 3
     env = Parallel_Arm_2D(n_envs=n_envs,interpolate=True)
     env1 = Arm_2D()
 
@@ -582,6 +546,7 @@ if __name__ == '__main__':
     print(f'parallel reset : {time.time()-ts}')
 
     for i in range(20):
-        env.step(torch.ones(env.n_envs,env.n_links))
+        observations, rewards, dones, infos = env.step(torch.ones(env.n_envs,env.n_links))
         env.render()
+    
     import pdb;pdb.set_trace()

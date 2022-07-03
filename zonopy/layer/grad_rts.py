@@ -152,20 +152,23 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                             )
                             ]
                         )
-                    rts_lambd_opt, rts_flags = [], []
+                    rts_lambd_opts, rts_flags = [], []
                     for idx, res in enumerate(results):
-                        rts_lambd_opt.append(res[0])
+                        rts_lambd_opts.append(res[0])
                         rts_flags.append(res[1])
                         ctx.infos[rts_pass_indices[idx]] = res[2]
-                    ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opt, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
+                    ctx.lambd[rts_pass_indices] = torch.cat(rts_lambd_opts, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
                     ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
                 else:
+                    rts_lambd_opts, rts_flags = [], []
                     for idx in rts_pass_indices:
                         #import pdb;pdb.set_trace()
                         rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links[idx],qpos.cpu().numpy()[idx],qvel.cpu().numpy()[idx],qgoal.cpu().numpy()[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd[idx])
                         ctx.infos[idx] = info
-                        ctx.lambd[idx] = rts_lambd_opt
-                        ctx.flags[idx] = int(rts_flag)
+                        rts_lambd_opts.append(rts_lambd_opt)
+                        rts_flags.append(rts_flag)
+                    ctx.lambd[idx] = torch.cat(rts_lambd_opts, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
+                    ctx.flags[idx] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
 
 
             zp.reset()

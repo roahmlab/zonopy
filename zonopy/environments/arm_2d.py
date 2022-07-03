@@ -351,7 +351,7 @@ class Arm_2D:
         # Add success if wanted
         reward += self.hyp_success * success
 
-        return reward       
+        return float(reward)       
 
 
     def render(self,FO_link=None):

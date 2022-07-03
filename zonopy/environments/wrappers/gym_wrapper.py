@@ -9,6 +9,10 @@ from gym import spaces
 from gym.core import Env
 
 
+
+
+
+
 class GymWrapper(Wrapper, Env):
     def __init__(self, env, keys=None):
         # Run super method
@@ -25,6 +29,11 @@ class GymWrapper(Wrapper, Env):
         self.metadata = None
 
         # set up observation and action spaces
+        self._setup_observation_space()
+        low, high = self.action_spec
+        self.action_space = spaces.Box(low=low, high=high)
+ 
+    def _setup_observation_space(self):
         obs = self.env.get_observations()
         self.modality_dims = {key: tuple(obs[key].shape) for key in self.keys}
         flat_ob = self._flatten_obs(obs)
@@ -32,8 +41,6 @@ class GymWrapper(Wrapper, Env):
         high = np.inf * np.ones(self.obs_dim)
         low = -high
         self.observation_space = spaces.Box(low=low, high=high)
-        low, high = self.action_spec
-        self.action_space = spaces.Box(low=low, high=high)
 
     def _flatten_obs(self, obs_dict):
         ob_lst = []
@@ -54,7 +61,7 @@ class GymWrapper(Wrapper, Env):
     def step(self, action, *args, **kwargs):
         ob_dict, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), *args, **kwargs)
         info['action_taken'] = action
-        return self._flatten_obs(ob_dict), float(reward), done, dict_torch2np(info)
+        return self._flatten_obs(ob_dict), reward, done, dict_torch2np(info)
 
     def seed(self, seed=None):
         # Seed the generator
@@ -66,9 +73,41 @@ class GymWrapper(Wrapper, Env):
                 TypeError("Seed must be an integer type!")
 
     def compute_reward(self, achieved_goal, desired_goal, info):
-        return float(self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype())))
+        return self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype()))
 
-    
+class PrallelGymWrapper(GymWrapper):
+    def __init__(self, env, keys=None):
+        super().__init__(env=env)
+
+    def _setup_observation_space(self):
+        obs = self.env.get_observations()
+        self.modality_dims = {key: tuple(obs[key].shape[1:]) for key in self.keys}
+        flat_ob = self._flatten_obs(obs)
+        self.obs_dim = flat_ob.shape[1]
+        high = np.inf * np.ones(self.obs_dim)
+        low = -high
+        self.observation_space = spaces.Box(low=low, high=high)
+
+    def _flatten_obs(self, obs_dict):
+        ob_lst = []
+        for key in self.keys:
+            if key in obs_dict:
+                ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
+        return np.hstack(ob_lst)
+
+    def step(self, action, *args, **kwargs):
+        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), *args, **kwargs)
+        for b in range(self.n_envs):
+            infos[b]['action_taken'] = action[b]
+            for key in infos[b].keys():
+                if isinstance(infos[b][key],torch.Tensor):
+                    infos[b][key] = infos[b][key].numpy().astype(float)
+                elif isinstance(infos[b][key],torch.Tensor) and isinstance(infos[b][key][0],torch.Tensor):
+                    infos[b][key] = [el.numpy().astype(float) for el in infos[b][key]]
+        return self._flatten_obs(ob_dicts), rewards.numpy(), dones.numpy(), infos
+
+    def compute_reward(self, achieved_goal, desired_goal, info):
+        return self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype())).numpy()
 
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
