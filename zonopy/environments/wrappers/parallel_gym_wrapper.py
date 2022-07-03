@@ -30,8 +30,10 @@ class PrallelGymWrapper(GymWrapper):
                 ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
         return np.hstack(ob_lst)
 
-    def step(self, action, *args, **kwargs):
-        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), *args, **kwargs)
+    def step(self, action, flag=None):
+        if isinstance(flag,np.ndarray):
+            flag = torch.tensor(flag, dtype=int)
+        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=env.dtype),flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
             for key in infos[b].keys():
