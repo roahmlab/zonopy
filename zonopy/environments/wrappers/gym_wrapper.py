@@ -95,9 +95,20 @@ class ParallelGymWrapper(GymWrapper):
             if key in obs_dict:
                 ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
         return np.hstack(ob_lst)
-
+    '''
+    def step(self, action, flag=None):
+        if isinstance(flag,np.ndarray):
+            flag = torch.tensor(flag, dtype=int,device=env.device)
+        import pdb;pdb.set_trace()
+        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=env.dtype))
+        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=env.dtype),flag)
+    '''
     def step(self, action, *args, **kwargs):
-        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), *args, **kwargs)
+        if len(args) > 0:
+            flag = torch.tensor(args[0], dtype=int,device=self.env.device)
+        else:
+            flag = None
+        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
             for key in infos[b].keys():
@@ -105,6 +116,8 @@ class ParallelGymWrapper(GymWrapper):
                     infos[b][key] = infos[b][key].numpy().astype(float)
                 elif isinstance(infos[b][key],torch.Tensor) and isinstance(infos[b][key][0],torch.Tensor):
                     infos[b][key] = [el.numpy().astype(float) for el in infos[b][key]]
+        if self.collision.any():
+            import pdb;pdb.set_trace()
         return self._flatten_obs(ob_dicts), rewards.numpy(), dones.numpy(), infos
 
     def compute_reward(self, achieved_goal, desired_goal, info):
