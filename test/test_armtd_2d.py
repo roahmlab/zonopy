@@ -1,7 +1,14 @@
 import torch
+
 from zonopy.environments.arm_2d import Arm_2D
-from zonopy.optimize.backup import ARMTD_2D_planner
+from zonopy.environments.arm_3d import Arm_3D
+
+from zonopy.optimize.armtd_2d import ARMTD_2D_planner
+from zonopy.optimize.armtd_3d import ARMTD_3D_planner
+
 import pickle 
+
+
 
 test_flag = True 
 n_links = 2
