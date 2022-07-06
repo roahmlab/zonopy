@@ -49,7 +49,7 @@ class ARMTD_3D_planner():
         self.A = [[] for _ in range(self.n_links)]
         self.b = [[] for _ in range(self.n_links)]
         self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
-        self.FO_link = self.FO_link.cpu()
+        #self.FO_link = self.FO_link.cpu()
 
         for j in range(self.n_links):
             for o in range(self.n_obs):                
@@ -169,13 +169,13 @@ class ARMTD_3D_planner():
         
     def plan(self,env,ka_0):
         zp.reset()
-        t1 = time.time()
+        #t1 = time.time()
         self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
-        t2 = time.time()
+        #t2 = time.time()
         k_opt, flag = self.trajopt(env.qgoal,ka_0)
-        t3 = time.time()
-        print(f'FO time: {t2-t1}')
-        print(f'NLP time: {t3-t2}')
+        #t3 = time.time()
+        #print(f'FO time: {t2-t1}')
+        #print(f'NLP time: {t3-t2}')
         return k_opt, flag
 
 
