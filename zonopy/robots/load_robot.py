@@ -77,6 +77,7 @@ def load_sinlge_robot_arm_params(urdf_file,gravity=True):
     pos_lim = [] # joint position limit
     vel_lim = [] # joint velocity limit
     tor_lim = [] # joint torque limit
+    lim_flag = [] # False for continuous, True for everything else
 
     link_zonos = [] # link zonotopes
     
@@ -113,6 +114,7 @@ def load_sinlge_robot_arm_params(urdf_file,gravity=True):
         pos_lim.append(body.joint.pos_lim.tolist())
         vel_lim.append(body.joint.vel_lim)
         tor_lim.append(body.joint.f_lim)
+        lim_flag.append(body.joint.type!='continuous')
         if len(body.children_id)!=1 or robot[body.children_id[0]].joint.type == 'fixed':
             n_joints = i+1
             break
@@ -121,7 +123,7 @@ def load_sinlge_robot_arm_params(urdf_file,gravity=True):
 
     params = {'mass':mass, 'I':I, 'G':G, 'com':com, 'com_rot':com_rot, 'joint_axes':joint_axes,
     'H':H, 'R':R, 'P':P, 'M':M, 'screw':screw,
-    'pos_lim':pos_lim, 'vel_lim':vel_lim, 'tor_lim':tor_lim,
+    'pos_lim':pos_lim, 'vel_lim':vel_lim, 'tor_lim':tor_lim, 'lim_flag':lim_flag,
     'n_bodies': robot.n_bodies, 'n_joints': n_joints,
     'gravity': robot.gravity, 'use_interval': False, 'link_zonos':link_zonos
     }

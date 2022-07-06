@@ -255,7 +255,9 @@ class Parallel_Arm_2D:
             self.fail_safe_count = (unsafe)*(self.fail_safe_count+1)
             self.qpos[self.safe] += wrap_to_pi(self.qvel[self.safe]*T_PLAN + 0.5*self.ka[self.safe]*T_PLAN**2)
             self.qvel[self.safe] += self.ka[self.safe]*T_PLAN
-            self.qpos_brake[self.safe] = wrap_to_pi(self.qpos[self.safe] + 0.5*self.qvel[self.safe]*(T_FULL-T_PLAN))
+
+            bracking_accel = (0 - self.qvel[self.safe])/(T_FULL - T_PLAN)            
+            self.qpos_brake[self.safe] = wrap_to_pi(self.qpos[self.safe] + self.qvel[self.safe]*(T_FULL-T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2)            
             self.qvel_brake[self.safe] = 0
             self.qpos[unsafe] = self.qpos_brake[unsafe]
             self.qvel[unsafe] = self.qvel_brake[unsafe] 

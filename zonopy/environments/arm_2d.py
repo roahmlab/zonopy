@@ -236,7 +236,8 @@ class Arm_2D:
                 self.fail_safe_count = 0
                 self.qpos += wrap_to_pi(self.qvel*T_PLAN + 0.5*self.ka*T_PLAN**2)
                 self.qvel += self.ka*T_PLAN
-                self.qpos_brake = wrap_to_pi(self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN))
+                bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
+                self.qpos_brake = wrap_to_pi(self.qpos + self.qvel*(T_FULL-T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2)
                 self.qvel_brake = torch.zeros(self.n_links)
 
                 self.collision = self.collision_check(torch.vstack((self.qpos,self.qpos_brake)))

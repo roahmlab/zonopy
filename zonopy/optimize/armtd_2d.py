@@ -30,17 +30,12 @@ class ARMTD_2D_planner():
         self.params = {'n_joints':env.n_links, 'P':env.P0, 'R':env.R0}
         self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*env.n_links)
 
-    def generate_combinations_upto(self):
-        self.combs = [torch.tensor([0])]
-        for i in range(1,self.max_combs):
-            self.combs.append(torch.combinations(torch.arange(i+1),2))
-
     def prepare_constraints(self,qpos,qvel,obstacles):
         _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos,qvel,self.joint_axes)
         #_, R_trig = zp.load_batch_JRS_trig(qpos,qvel)
         self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
-        self.A = [[] for _ in range(self.n_links)]
-        self.b = [[] for _ in range(self.n_links)]
+        self.A = np.zeros((self.n_links,self.n_obs),dtype=object)
+        self.b = np.zeros((self.n_links,self.n_obs),dtype=object)
         self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
         
         for j in range(self.n_links):
@@ -48,13 +43,12 @@ class ARMTD_2D_planner():
             for o in range(self.n_obs):                
                 obs_Z = obstacles[o].Z[:,:self.dimension].unsqueeze(0).repeat(self.n_timesteps,1,1)
                 A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope() # A: n_timesteps,*,dimension  
-                self.A[j].append(A)
-                self.b[j].append(b)
+                self.A[j,o] = A
+                self.b[j,o] = b
         self.qpos = qpos
         self.qvel = qvel
 
     def trajopt(self,qgoal,ka_0):
-        # NOTE: torch OR numpy ?
 
         class nlp_setup():
             x_prev = np.zeros(self.n_links)*np.nan
@@ -133,7 +127,7 @@ class ARMTD_2D_planner():
 
         
         self.prob = nlp_setup()
-        nlp = cyipopt.problem(
+        nlp = cyipopt.Problem(
         n = self.n_links,
         m = M,
         problem_obj=self.prob,
@@ -147,23 +141,9 @@ class ARMTD_2D_planner():
 
         #nlp.addOption('sb', 'yes')
         #nlp.addOption('print_level', 0)
-        #ts = time.time()
+
         k_opt, self.info = nlp.solve(ka_0)
-        #print(f'opt time: {time.time()-ts}')
 
-        '''
-        Problem = nlp_setup()
-        self.safe_con = Problem.constraints(k_opt)[:-self.n_links]
-        safe = self.safe_con>1e-6
-        print(f'safe: {not any(~safe)}')
-        print(f'safe distance: {self.safe_con.min()}')
-        print(info['status'])
-
-        if any(~safe):
-            import pdb;pdb.set_trace()
-        '''
-        #import pdb;pdb.set_trace()
-        #close()
         return k_opt, self.info['status']
         
     def plan(self,env,ka_0):
