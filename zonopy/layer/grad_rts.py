@@ -53,14 +53,11 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
     else:
         lambd_opt = lambd_hat.tolist()
         flag = 1
-    
     info['jac_g'] = nlp_obj.jacobian(k_opt)
-    #nlp_info['cons'] = nlp_obj.cons
-
     return lambd_opt, flag, info
 
 
-def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu',multi_process=True):
+def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu', multi_process=True):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100
@@ -86,22 +83,11 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             obstacle_size = observation[:, -2 * n_obs:]
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
 
-            # g_ka = torch.maximum(PI/24,abs(qvel/3))
             if FO_link is None:
                 _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
                 FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
             else:
                 PROPERTY_ID.update(n_links)
-                '''
-                FO_new = []
-                for j in range(n_links):
-                    max_size =  max([frs.n_generators for frs in FO_link[:,j]]) 
-                    zero_pad = torch.zeros(n_timesteps,max_size,dimension)
-                    Z = torch.cat([torch.cat((frs.Z,zero_pad[:,:max_size-frs.n_generators,:]),1).unsqueeze(0) for frs in FO_link[:,j]],0)
-                    temp = FO_link[0,j]
-                    FO_new.append(batchPolyZonotope(Z,temp.n_dep_gens,temp.expMat,compress=0)) 
-                FO_link = FO_new
-                '''
 
             As = np.zeros((n_batches,n_links,n_obs),dtype=object)
             bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
@@ -109,11 +95,10 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             lambda_to_slc = ctx.lambd.reshape(n_batches, 1, dimension).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
-            unsafe_flag = (abs(qvel + ctx.lambd * g_ka * T_PLAN) > PI_vel).any(-1)  # NOTE: this might not work on gpu, velocity lim check
+            unsafe_flag = (abs(qvel + ctx.lambd * g_ka * T_PLAN) > PI_vel).any(-1)
             lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
             for j in range(n_links):
                 FO_link_temp = FO_link[j].project([0, 1])
-
                 c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
                 for o in range(n_obs):
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2), torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
@@ -123,8 +108,8 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     As[:,j,o] = list(A_temp.cpu().numpy())
                     bs[:,j,o] = list(b_temp.cpu().numpy())
                 FO_links[:,j] = [fo for fo in FO_link_temp.cpu()]
+            
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts all ways
-
             ctx.flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             ctx.infos = [None for _ in range(n_batches)]
 
@@ -162,7 +147,6 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 else:
                     rts_lambd_opts, rts_flags = [], []
                     for idx in rts_pass_indices:
-                        #import pdb;pdb.set_trace()
                         rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links[idx],qpos.cpu().numpy()[idx],qvel.cpu().numpy()[idx],qgoal.cpu().numpy()[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd[idx])
                         ctx.infos[idx] = info
                         rts_lambd_opts.append(rts_lambd_opt)

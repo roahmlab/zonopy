@@ -135,7 +135,7 @@ class ARMTD_3D_planner():
         
 
 
-        nlp = cyipopt.problem(
+        nlp = cyipopt.Problem(
         n = self.n_links,
         m = M,
         problem_obj=nlp_setup(),

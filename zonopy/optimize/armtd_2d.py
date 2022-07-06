@@ -139,8 +139,8 @@ class ARMTD_2D_planner():
         #nlp.add_option('mu_strategy', 'adaptive')
         #nlp.add_option('tol', 1e-7)
 
-        #nlp.addOption('sb', 'yes')
-        #nlp.addOption('print_level', 0)
+        nlp.add_option('sb', 'yes')
+        nlp.add_option('print_level', 0)
 
         k_opt, self.info = nlp.solve(ka_0)
 
