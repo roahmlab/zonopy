@@ -13,15 +13,16 @@ def wrap_to_pi(phases):
 T_PLAN, T_FULL = 0.5, 1.0
 # NOTE: optimize ka instead of lambda
 class ARMTD_3D_planner():
-    def __init__(self,env,zono_order=40,max_combs=200):
+    def __init__(self,env,zono_order=40,max_combs=200,device='cpu'):
+        self.device = device
         self.wrap_env(env)
         self.n_timesteps = 100
         self.eps = 1e-6
         self.zono_order = zono_order
         self.max_combs = max_combs
         self.generate_combinations_upto()
-        self.PI = torch.tensor(torch.pi)
-        self.JRS_tensor = zp.preload_batch_JRS_trig()
+        self.PI = torch.tensor(torch.pi,device=self.device)
+        self.JRS_tensor = zp.preload_batch_JRS_trig(device=self.device)
         #self.joint_speed_limit = torch.vstack((torch.pi*torch.ones(n_links),-torch.pi*torch.ones(n_links)))
     
     def wrap_env(self,env):
@@ -29,9 +30,9 @@ class ARMTD_3D_planner():
         self.dimension = 3
         self.n_links = env.n_links
         self.n_obs = env.n_obs
-        self.link_zonos = env.link_zonos
-        self.params = {'n_joints':env.n_links, 'P':env.P0, 'R':env.R0}
-        self.joint_axes = env.joint_axes
+        self.link_zonos = [link_z.cpu() for link_z in env.link_zonos]
+        self.params = {'n_joints':env.n_links, 'P':[P.cpu() for P in env.P0], 'R':[R.cpu() for R in env.R0]}
+        self.joint_axes = env.joint_axes.to(device=self.device)
         self.vel_lim =  env.vel_lim 
         self.pos_lim = env.pos_lim 
         self.actual_pos_lim = env.pos_lim[env.lim_flag]
@@ -40,15 +41,16 @@ class ARMTD_3D_planner():
     def generate_combinations_upto(self):
         self.combs = [torch.tensor([0])]
         for i in range(self.max_combs):
-            self.combs.append(torch.combinations(torch.arange(i+1),2))
+            self.combs.append(torch.combinations(torch.arange(i+1,device=self.device),2))
 
     def prepare_constraints(self,qpos,qvel,obstacles):
-        _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos,qvel,self.joint_axes)
+        _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos.to(device=self.device),qvel.to(device=self.device),self.joint_axes)
         self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
         self.A = [[] for _ in range(self.n_links)]
         self.b = [[] for _ in range(self.n_links)]
         self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
-        
+        self.FO_link = self.FO_link.cpu()
+
         for j in range(self.n_links):
             for o in range(self.n_obs):                
                 obs_Z = obstacles[o].Z.unsqueeze(0).repeat(self.n_timesteps,1,1)
@@ -146,8 +148,8 @@ class ARMTD_3D_planner():
         #nlp.add_option('mu_strategy', 'adaptive')
         #nlp.add_option('tol', 1e-7)
 
-        nlp.addOption('sb', 'yes')
-        nlp.addOption('print_level', 0)
+        nlp.add_option('sb', 'yes')
+        nlp.add_option('print_level', 0)
         #ts = time.time()
         k_opt, info = nlp.solve(ka_0)
         #print(f'opt time: {time.time()-ts}')
@@ -167,13 +169,13 @@ class ARMTD_3D_planner():
         
     def plan(self,env,ka_0):
         zp.reset()
-        t1 = time.time()
+        #t1 = time.time()
         self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
-        t2 = time.time()
+        #t2 = time.time()
         k_opt, flag = self.trajopt(env.qgoal,ka_0)
-        t3 = time.time()
-        print(f'FO time: {t2-t1}')
-        print(f'NLP time: {t3-t2}')
+        #t3 = time.time()
+        #print(f'FO time: {t2-t1}')
+        #print(f'NLP time: {t3-t2}')
         return k_opt, flag
 
 
