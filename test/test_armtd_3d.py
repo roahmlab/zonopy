@@ -17,8 +17,8 @@ if test_flag:
     collision_info = []
     for i in range(n_test):        
         env = Arm_3D(n_obs=int(N_OBS[i]))
-        planner = ARMTD_3D_planner(env,device='cuda:0')
-        for _ in range(200):
+        planner = ARMTD_3D_planner(env,device='cpu')
+        for _ in range(100):
             ka, flag = planner.plan(env,torch.zeros(env.n_links))
             observations, reward, done, info = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
             #env.render(planner.FO_link)
