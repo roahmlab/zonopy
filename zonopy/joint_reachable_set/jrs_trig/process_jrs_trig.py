@@ -28,7 +28,7 @@ def process_batch_JRS_trig(jrs_tensor, q_0,qd_0,joint_axes):
         s_qpos = torch.sin(q_0[i])
         Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=dtype,device=device)
         A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
-        JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i])
+        JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i:i+1])
         PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
         '''
         delta_k = PZ_JRS.G[0,0,ka_dim]
