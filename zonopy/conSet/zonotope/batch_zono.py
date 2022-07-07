@@ -179,14 +179,14 @@ class batchZonotope:
         return <zonotope>
         '''
         if isinstance(slice_dim, list):
-            slice_dim = torch.tensor(slice_dim,dtype=torch.long)
+            slice_dim = torch.tensor(slice_dim,dtype=torch.long,device=self.device)
         elif isinstance(slice_dim, int) or (isinstance(slice_dim, torch.Tensor) and len(slice_dim.shape)==0):
-            slice_dim = torch.tensor([slice_dim],dtype=torch.long)
+            slice_dim = torch.tensor([slice_dim],dtype=torch.long,device=self.device)
 
         if isinstance(slice_pt, list):
-            slice_pt = torch.tensor(slice_pt,dtype=self.dtype)
+            slice_pt = torch.tensor(slice_pt,dtype=self.dtype,device=self.device)
         elif isinstance(slice_pt, int) or isinstance(slice_pt, float) or (isinstance(slice_pt, torch.Tensor) and len(slice_pt.shape)==0):
-            slice_pt = torch.tensor([slice_pt],dtype=self.dtype)
+            slice_pt = torch.tensor([slice_pt],dtype=self.dtype,device=self.device)
 
         assert isinstance(slice_dim, torch.Tensor) and isinstance(slice_pt, torch.Tensor), 'Invalid type of input'
         assert len(slice_dim.shape) ==1, 'slicing dimension should be 1-dim component.'
@@ -209,7 +209,6 @@ class batchZonotope:
         slice_c = c[self.batch_idx_all+(slice_dim,)]
         ind = tuple(slice_idx[:,:-2].T)
         slice_g = G_dim[ind+(slice_idx[:,-1],slice_idx[:,-2])].reshape(self.batch_shape+(N,))
-        
         slice_lambda = (slice_pt-slice_c)/slice_g
         assert not (abs(slice_lambda)>1).any(), 'slice point is ouside bounds of reach set, and therefore is not verified'        
         Z = torch.cat((c.unsqueeze(-2) + slice_lambda.unsqueeze(-2)@G[ind+(slice_idx[:,-1],)].reshape(self.batch_shape+(N,self.dimension)),G[~non_zero_idx.any(-1)].reshape(self.batch_shape+(-1,self.dimension))),-2)
@@ -268,9 +267,13 @@ class batchZonotope:
         G = torch.clone(self.generators)
         h = torch.linalg.vector_norm(G,dim=-1)
         h_sort, indicies = torch.sort(h,dim=-1,descending=True)
-        h_zero = ((h_sort > 1e-6).sum(tuple(range(self.batch_dim))) ==0)
-        if torch.any(h_zero):
-            first_reduce_idx = torch.nonzero(h_zero).squeeze(-1)[0]
+
+
+        h_nonzero = h_sort > 1e-6
+        h_nonzero_all = ((h_nonzero).sum(tuple(range(self.batch_dim))) ==0)
+        G[~h_nonzero] = 0 # make sure everything less than 1e-6 to be actual zero, so that non-removable zero padding can be converged into nan value on the output value
+        if torch.any(h_nonzero_all):            
+            first_reduce_idx = torch.nonzero(h_nonzero_all).squeeze(-1)[0]
             G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
 
         n_gens, dim = G.shape[-2:] 
