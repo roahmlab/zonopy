@@ -151,7 +151,7 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
         ind = torch.any(Ind_rep,axis=1)
         non_ind = ~ind
         ind2[ind] = Ind_rep.nonzero()[:,1]
-        ind2[non_ind] = torch.arange(non_ind.sum()) + len(id1)
+        ind2[non_ind] = torch.arange(non_ind.sum(),device=non_ind.device) + len(id1)
         id = torch.hstack((id1,id2[non_ind]))
         # construct the new exponent matrices
         L = len(id)

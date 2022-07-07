@@ -51,7 +51,7 @@ class batchPolyZonotope:
             nonzero_g = torch.sum(G!=0,tuple(range(self.batch_dim))+(-1,))!=0 # non-zero generator index
             G = G[self.batch_idx_all+(nonzero_g,)]
             self.expMat = torch.eye(G.shape[self.batch_dim],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
-            self.id = PROPERTY_ID.update(self.expMat.shape[1],prop) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
+            self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat != None:
             #check correctness of user input 
             if isinstance(expMat, list):
@@ -80,7 +80,7 @@ class batchPolyZonotope:
                 assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
                 self.id = id
             else:
-                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop)  
+                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) 
         else:
             assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
 
