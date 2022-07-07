@@ -102,7 +102,8 @@ class ARMTD_3D_planner():
                     grad_qvel_peak = self.g_ka * T_PLAN * torch.eye(self.n_links)
 
                     bracking_accel = (0 - qvel_peak)/(T_FULL - T_PLAN)
-                    qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*T_PLAN**2
+                    qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2
+                    # can be also, qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL+T_PLAN) + 0.5 * (self.g_ka * ka[0]) * T_PLAN * T_FULL
                     grad_qpos_brake = 0.5 * self.g_ka * T_PLAN * T_FULL * torch.eye(self.n_links) # NOTE: need to verify equation
 
                     qpos_possible_max_min = torch.vstack((qpos_peak_optimum,qpos_peak,qpos_brake))[:,self.lim_flag] 

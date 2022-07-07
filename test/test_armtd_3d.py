@@ -27,9 +27,9 @@ if test_flag:
 
             #if done:
             #    break
-        print(f'{i}-th test, collision so far: {len(collision_info)}')
-    with open('results/test_armtd_3d.pickle', 'wb') as handle:
-        pickle.dump(collision_info, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f'{i+1}-th test, collision so far: {len(collision_info)}')
+        with open('results/test_armtd_3d.pickle', 'wb') as handle:
+            pickle.dump(collision_info, handle, protocol=pickle.HIGHEST_PROTOCOL)
        
 else:
     with open('results/test_armtd_3d.pickle', 'rb') as handle:
