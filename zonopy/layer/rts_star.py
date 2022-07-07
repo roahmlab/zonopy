@@ -100,7 +100,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     bs[:,j,o] = list(b_temp.cpu().numpy())
                 FO_links[:,j] = [fo for fo in FO_link_temp.cpu()]
 
-            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts all ways
+            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
             flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             infos = [None for _ in range(n_batches)]
 
@@ -156,43 +156,57 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
 
 if __name__ == '__main__':
+    
     from zonopy.environments.arm_2d import Arm_2D
     import time
+    ##### 0. SET DEVICE #####
+    if torch.cuda.is_available():
+        device = 'cuda:0'
+        dtype = torch.float
+    else:
+        device = 'cpu'
+        dtype = torch.float
 
+    ##### 1. SET ENVIRONMENT #####
     n_links = 2
     env = Arm_2D(n_links=n_links, n_obs=1)
-    observation = env.set_initial(qpos=torch.tensor([0.1 * torch.pi, 0.1 * torch.pi]), qvel=torch.zeros(n_links),
+    observation = env.set_initial(qpos=torch.tensor([0.1 * torch.pi, 0.1 * torch.pi]), 
+                                  qvel=torch.zeros(n_links),
                                   qgoal=torch.tensor([-0.5 * torch.pi, -0.8 * torch.pi]),
                                   obs_pos=[torch.tensor([-1, -0.9])])
 
-    t_armtd = 0
-    params = {'n_joints': env.n_links, 'P': env.P0, 'R': env.R0}
-    joint_axes = [j for j in env.joint_axes]
-    RTS = gen_RTS_star_2D_Layer(env.link_zonos, joint_axes, env.n_links, env.n_obs, params)
+    ##### 2. GENERATE RTS LAYER #####    
+    P,R,link_zonos = [],[],[]
+    for p,r,l in zip(env.P0,env.R0,env.link_zonos):
+        P.append(p.to(device=device,dtype=dtype))
+        R.append(r.to(device=device,dtype=dtype))
+        link_zonos.append(l.to(device=device,dtype=dtype))
+    params = {'n_joints': env.n_links, 'P': P, 'R': R}
+    joint_axes = [j for j in env.joint_axes.to(device=device,dtype=dtype)]
+    RTS = gen_RTS_star_2D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, params,device=device,dtype=dtype)
 
+    ##### 3. RUN RTS #####
+    t_forward = 0
     n_steps = 30
+    n_batch = 40
+    print('='*90)
     for _ in range(n_steps):
         ts = time.time()
         observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys()])
-        # k = 2*(env.qgoal - env.qpos - env.qvel*T_PLAN)/(T_PLAN**2)
+
         lam = torch.tensor([0.8, 0.8])
-        lam, FO_link, flag = RTS(torch.vstack(([lam] * 3)), torch.vstack(([observ_temp] * 3)))
-        # ka, FO_link, flag = RTS(k,observ_temp)
-        print(f'action: {lam}')
-        print(f'flag: {flag}')
+        lam, FO_link, flag, nlp_info = RTS(torch.vstack(([lam] * n_batch)), torch.vstack(([observ_temp] * n_batch)))
+              
+        print(f'action: {lam[0]}')
+        print(f'flag: {flag[0]}')
 
         t_elasped = time.time() - ts
-        print(f'Time elasped for ARMTD-2d:{t_elasped}')
-        t_armtd += t_elasped
-        # print(ka[0])
-        observation, reward, done, info = env.step(lam[0] * torch.pi / 24, flag[0])
+        print(f'Time elasped for RTS forward:{t_elasped}')
+        print('='*90)
+        t_forward += t_elasped
+        observation, reward, done, info = env.step(lam[0].cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag[0].cpu().to(dtype=torch.get_default_dtype()))
 
         FO_link = [fo[0] for fo in FO_link]
         env.render(FO_link)
-        '''
-        if done:
-            import pdb;pdb.set_trace()
-            break
-        '''
 
-    print(f'Total time elasped for ARMTD-2d with {n_steps} steps: {t_armtd}')
+    print(f'Total time elasped for RTS forward with {n_steps} steps: {t_forward}')

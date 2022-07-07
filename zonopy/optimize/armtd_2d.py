@@ -8,17 +8,17 @@ def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
 T_PLAN, T_FULL = 0.5, 1.0
-# NOTE: optimize ka instead of lambda
+
 class ARMTD_2D_planner():
-    def __init__(self,env,zono_order=40,max_combs=200):
+    def __init__(self,env,zono_order=40,max_combs=200,dtype=torch.float,device='cpu'):
+        self.dtype, self.device = dtype, device
         self.wrap_env(env)
         self.n_timesteps = 100
         self.eps = 1e-6
         self.zono_order = zono_order
         self.max_combs = max_combs
-        #self.generate_combinations_upto()
-        self.PI = torch.tensor(torch.pi)
-        self.JRS_tensor = zp.preload_batch_JRS_trig()
+        self.PI = torch.tensor(torch.pi,dtype=self.dtype,device=self.device)
+        self.JRS_tensor = zp.preload_batch_JRS_trig(dtype=self.dtype,device=self.device)
         #self.joint_speed_limit = torch.vstack((torch.pi*torch.ones(n_links),-torch.pi*torch.ones(n_links)))
     
     def wrap_env(self,env):
@@ -26,29 +26,33 @@ class ARMTD_2D_planner():
         self.dimension = 2
         self.n_links = env.n_links
         self.n_obs = env.n_obs
-        self.link_zonos = env.link_zonos
-        self.params = {'n_joints':env.n_links, 'P':env.P0, 'R':env.R0}
-        self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*env.n_links)
+        P,R,self.link_zonos = [], [], []
+        for p,r,l in zip(env.P0,env.R0,env.link_zonos):
+            P.append(p.to(dtype=self.dtype,device=self.device))
+            R.append(r.to(dtype=self.dtype,device=self.device))
+            self.link_zonos.append(l.to(dtype=self.dtype,device=self.device))
+        self.params = {'n_joints':env.n_links, 'P':P, 'R':R}     
+        self.joint_axes = env.joint_axes.to(dtype=self.dtype,device=self.device)
 
     def prepare_constraints(self,qpos,qvel,obstacles):
-        _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos,qvel,self.joint_axes)
-        #_, R_trig = zp.load_batch_JRS_trig(qpos,qvel)
+        _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos.to(dtype=self.dtype,device=self.device),qvel.to(dtype=self.dtype,device=self.device),self.joint_axes)
         self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
         self.A = np.zeros((self.n_links,self.n_obs),dtype=object)
         self.b = np.zeros((self.n_links,self.n_obs),dtype=object)
         self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
-        
         for j in range(self.n_links):
-            self.FO_link[j] = self.FO_link[j].project([0,1])
+            self.FO_link[j] = self.FO_link[j].project([0,1]).cpu()
             for o in range(self.n_obs):                
                 obs_Z = obstacles[o].Z[:,:self.dimension].unsqueeze(0).repeat(self.n_timesteps,1,1)
                 A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope() # A: n_timesteps,*,dimension  
-                self.A[j,o] = A
-                self.b[j,o] = b
-        self.qpos = qpos
-        self.qvel = qvel
+                self.A[j,o] = A.cpu()
+                self.b[j,o] = b.cpu()
+        self.qpos = qpos.to(dtype=self.dtype,device='cpu')
+        self.qvel = qvel.to(dtype=self.dtype,device='cpu')
 
     def trajopt(self,qgoal,ka_0):
+        M_obs = self.n_links*self.n_timesteps*self.n_obs
+        M = M_obs+2*self.n_links
 
         class nlp_setup():
             x_prev = np.zeros(self.n_links)*np.nan
@@ -122,15 +126,10 @@ class ARMTD_2D_planner():
                      ls_trials):
                 pass
         
-        M_obs = self.n_links*self.n_timesteps*self.n_obs
-        M = M_obs+2*self.n_links
-
-        
-        self.prob = nlp_setup()
         nlp = cyipopt.Problem(
         n = self.n_links,
         m = M,
-        problem_obj=self.prob,
+        problem_obj=nlp_setup(),
         lb = [-self.g_ka]*self.n_links,
         ub = [self.g_ka]*self.n_links,
         cl = [1e-6]*M_obs+[-1e20]*self.n_links+[-torch.pi+1e-6]*self.n_links,
@@ -141,46 +140,56 @@ class ARMTD_2D_planner():
 
         nlp.add_option('sb', 'yes')
         nlp.add_option('print_level', 0)
+        k_opt, self.info = nlp.solve(ka_0.cpu().numpy())
 
-        k_opt, self.info = nlp.solve(ka_0)
-
-        return k_opt, self.info['status']
+        return torch.tensor(k_opt,dtype=self.dtype,device=self.device), self.info['status']
         
     def plan(self,env,ka_0):
         zp.reset()
+        t1 = time.time()
         self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
+        t2 = time.time()
         k_opt, flag = self.trajopt(env.qgoal,ka_0)
+        t3 = time.time()
+        print(f'FO time: {t2-t1}')
+        print(f'NLP time: {t3-t2}')
         return k_opt, flag
 
 
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
     import time
+    ##### 0.SET DEVICE #####
+    if torch.cuda.is_available():
+        device = 'cuda:0'
+        device = 'cpu'
+        dtype = torch.float
+    else:
+        device = 'cpu'
+        dtype = torch.float
+
+    ##### 1. SET ENVIRONMENT #####        
     n_links = 2
-    #cyipopt.setLoggingLevel(1000)
     env = Arm_2D(n_links=n_links,n_obs=1)
-    env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),qvel= torch.zeros(n_links), qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),obs_pos=[torch.tensor([-1,-0.9])])
-    #from zonopy.optimize.armtd import ARMTD_planner
+    observation = env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),
+                                  qvel= torch.zeros(n_links),   
+                                  qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),
+                                  obs_pos=[torch.tensor([-1,-0.9])])
+
+    ##### 2. RUN ARMTD #####
+    planner = ARMTD_2D_planner(env,device=device,dtype=dtype)
     t_armtd = 0
-    planner = ARMTD_2D_planner(env)
     n_steps = 30
+    print('='*90)    
     for _ in range(n_steps):
         ts = time.time()
         ka, flag = planner.plan(env,torch.zeros(n_links))
-        #print(env.qpos)
         t_elasped = time.time()-ts
         print(f'Time elasped for ARMTD-2d:{t_elasped}')
         t_armtd += t_elasped
-        #import pdb;pdb.set_trace()
-        observations, reward, done, info = env.step(torch.tensor(ka,dtype=torch.get_default_dtype()),flag)
+        observations, reward, done, info = env.step(ka.cpu(),flag)
         env.render(planner.FO_link)
-        '''
-        if done:
-            import pdb;pdb.set_trace()
-            break
-        '''
-        #import pdb;pdb.set_trace()
-        #(env.safe_con.numpy() - planner.safe_con > 1e-2).any()
-    print(f'Total time elasped for ARMTD-2d with {n_steps} steps: {t_armtd}')
+
+    print(f'Total time elasped for ARMTD-2D with {n_steps} steps: {t_armtd}')
     import pdb;pdb.set_trace()
 
