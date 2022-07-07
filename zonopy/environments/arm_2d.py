@@ -78,8 +78,9 @@ class Arm_2D:
         self.qgoal = torch.rand(self.n_links)*2*torch.pi - torch.pi
         self.fail_safe_count = 0
         if self.interpolate:
-            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
-            self.qvel_to_brake = torch.zeros(self.T_len,self.n_links)        
+            T_len_to_peak = int((1-T_PLAN/T_FULL)*self.T_len)+1  
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
             self.qvel_brake = torch.zeros(self.n_links)            
@@ -149,8 +150,9 @@ class Arm_2D:
         self.qvel_prev = torch.clone(self.qvel)
         self.qgoal = qgoal
         if self.interpolate:
-            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(int((1-T_PLAN/T_FULL)*self.T_len)+1,1)
-            self.qvel_to_brake = torch.zeros(int((1-T_PLAN/T_FULL)*self.T_len)+1,self.n_links)        
+            T_len_to_peak = int((1-T_PLAN/T_FULL)*self.T_len)+1            
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
             self.qvel_brake = torch.zeros(self.n_links)            

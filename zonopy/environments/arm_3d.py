@@ -27,8 +27,11 @@ class Arm_3D:
             hyp_fail_safe = - 1,
             reward_shaping=True,
             max_episode_steps = 100,
-            scale = 10
+            scale = 10,
+            max_combs = 200
             ):
+        self.max_combs = max_combs
+        self.generate_combinations_upto()
         self.dimension = 3
         self.n_links = n_links
         self.n_obs = n_obs
@@ -59,7 +62,7 @@ class Arm_3D:
             t_traj = torch.linspace(0,T_FULL,T_len+1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len):] - T_PLAN
-
+        
         self.obs_buffer_length = torch.tensor([0.001,0.001])
         self.check_collision = check_collision
         self.check_collision_FO = check_collision_FO
@@ -82,6 +85,12 @@ class Arm_3D:
 
         self.FO_freq = 10
         self.reset()
+    
+    def generate_combinations_upto(self):
+        self.combs = [torch.tensor([0])]
+        for i in range(self.max_combs):
+            self.combs.append(torch.combinations(torch.arange(i+1),2))
+
     def reset(self):
         self.qpos = self.pos_sampler.sample()
         self.qpos_int = torch.clone(self.qpos)
@@ -91,12 +100,13 @@ class Arm_3D:
         self.qgoal = self.pos_sampler.sample()
         self.fail_safe_count = 0
         if self.interpolate:
-            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
-            self.qvel_to_brake = torch.zeros(self.T_len,self.n_links)        
+            T_len_to_peak = int((1-T_PLAN/T_FULL)*self.T_len)+1
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
             self.qvel_brake = torch.zeros(self.n_links)            
-
+        
         self.obs_zonos = []
 
         R_qi = self.rot()
@@ -126,12 +136,12 @@ class Arm_3D:
                 safe_flag = True
                 for j in range(self.n_links):
                     buff = link_init[j]-obs
-                    _,b = buff.project([0,1]).polytope()
+                    _,b = buff.polytope(self.combs)
                     if min(b) > 1e-6:
                         safe_flag = False
                         break
                     buff = link_goal[j]-obs
-                    _,b = buff.project([0,1]).polytope()
+                    _,b = buff.polytope(self.combs)
                     if min(b) > 1e-6:
                         safe_flag = False
                         break
@@ -140,6 +150,63 @@ class Arm_3D:
                     self.obs_zonos.append(obs)
                     break
 
+        self.fail_safe_count = 0
+        if self.render_flag == False:
+            self.obs_patches.remove()
+            self.link_goal_patches.remove()
+            self.FO_patches.remove()
+            self.link_patches.remove()
+        self.render_flag = True
+        self.done = False
+        self.collision = False
+
+        self._elapsed_steps = 0
+        
+        self.reward_com = 0
+
+    def set_initial(self,qpos,qvel,qgoal,obs_pos):
+        self.qpos = qpos
+        self.qpos_int = torch.clone(self.qpos)
+        self.qvel = qvel
+        self.qpos_prev = torch.clone(self.qpos)
+        self.qvel_prev = torch.clone(self.qvel)
+        self.qgoal = qgoal   
+        if self.interpolate:
+            T_len_to_peak = int((1-T_PLAN/T_FULL)*self.T_len)+1            
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links)        
+        else:
+            self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
+            self.qvel_brake = torch.zeros(self.n_links)           
+        
+        self.obs_zonos = []
+
+        R_qi = self.rot()
+        R_qg = self.rot(self.qgoal)    
+        Ri, Pi = torch.eye(3), torch.zeros(3)       
+        Rg, Pg = torch.eye(3), torch.zeros(3)               
+        link_init, link_goal = [], []
+        for j in range(self.n_links):
+            Pi = Ri@self.P0[j] + Pi 
+            Pg = Rg@self.P0[j] + Pg
+            Ri = Ri@self.R0[j]@R_qi[j]
+            Rg = Rg@self.R0[j]@R_qg[j]
+            link = (Ri@self.link_zonos[j]+Pi).to_zonotope()
+            link_init.append(link)
+            link = (Rg@self.link_zonos[j]+Pg).to_zonotope()
+            link_goal.append(link)
+        for pos in obs_pos:
+            obs = zp.zonotope(torch.vstack((pos,torch.eye(3))))
+            for j in range(self.n_links):
+                buff = link_init[j]-obs
+                _,b = buff.polytope(self.combs)
+                if min(b) > 1e-6:
+                    assert False, 'given obstacle position is in collision with initial and goal configuration.'
+                buff = link_goal[j]-obs
+                _,b = buff.polytope(self.combs)
+                if min(b) > 1e-6:
+                    assert False, 'given obstacle position is in collision with initial and goal configuration.'    
+            self.obs_zonos.append(obs)
         self.fail_safe_count = 0
         if self.render_flag == False:
             self.obs_patches.remove()
@@ -175,7 +242,7 @@ class Arm_3D:
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_to_brake = wrap_to_pi(self.qpos + torch.outer(self.t_to_brake,self.qvel) + .5*torch.outer(self.t_to_brake**2,bracking_accel))
                 self.qvel_to_brake = self.qvel + torch.outer(self.t_to_brake,bracking_accel)
-                
+
                 self.collision = self.collision_check(torch.vstack((self.qpos_to_peak,self.qpos_to_brake[1:])))
             else:
                 self.fail_safe_count +=1
@@ -280,7 +347,7 @@ class Arm_3D:
                     link = R@link+P
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
-                        _,b = buff.polytope()
+                        _,b = buff.polytope(self.combs)
                         unsafe = b.min(dim=-1)[0]>1e-6
                         if any(unsafe):
                             self.qpos_collision = qs[unsafe]
@@ -295,7 +362,7 @@ class Arm_3D:
                     link = (R@self.link_zonos[j]+P).to_zonotope()
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
-                        _,b = buff.polytope()
+                        _,b = buff.polytope(self.combs)
                         if min(b) > 1e-6:
                             self.qpos_collision = qs
                             return True
