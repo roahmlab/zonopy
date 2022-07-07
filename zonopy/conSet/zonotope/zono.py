@@ -298,7 +298,7 @@ class zonotope:
         Pb = torch.hstack((d+deltaD,-d+deltaD))
         return PA, Pb, C
 
-    def polytope(self):
+    def polytope(self,combs=None):
         '''
         converts a zonotope from a G- to a H- representation
         self: <zonotope>
@@ -336,7 +336,10 @@ class zonotope:
             C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
         elif dim == 3:
             # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
-            comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            if combs is None or n_gens >= len(combs):
+                comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            else:
+                comb = combs[n_gens]
             
             Q = torch.hstack((G[comb[:,0]],G[comb[:,1]]))
             C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]-Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
