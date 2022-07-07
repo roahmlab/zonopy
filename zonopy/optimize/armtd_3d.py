@@ -48,11 +48,15 @@ class ARMTD_3D_planner():
         for i in range(self.max_combs):
             self.combs.append(torch.combinations(torch.arange(i+1,device=self.device),2))
 
-    def prepare_constraints(self,qpos,qvel,obstacles):
+    def prepare_constraints(self,qpos,qvel,obstacles,db_flag):
         _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos.to(dtype=self.dtype,device=self.device),qvel.to(dtype=self.dtype,device=self.device),self.joint_axes)
         self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
         self.A = np.zeros((self.n_links,self.n_obs),dtype=object)
         self.b = np.zeros((self.n_links,self.n_obs),dtype=object)
+
+        self.A2 = np.zeros((self.n_links,self.n_obs),dtype=object)
+        self.b2 = np.zeros((self.n_links,self.n_obs),dtype=object)
+
         self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
         for j in range(self.n_links):
             self.FO_link[j] = self.FO_link[j].cpu()
@@ -61,10 +65,15 @@ class ARMTD_3D_planner():
                 A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope(self.combs) # A: n_timesteps,*,dimension  
                 self.A[j,o] = A.cpu()
                 self.b[j,o] = b.cpu()
+                A2, b2 = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope2(self.combs) # A: n_timesteps,*,dimension  
+                self.A[j,o] = A2.cpu()
+                self.b[j,o] = b2.cpu()
+
+
         self.qpos = qpos.to(dtype=self.dtype,device='cpu')
         self.qvel = qvel.to(dtype=self.dtype,device='cpu')
 
-    def trajopt(self,qgoal,ka_0):
+    def trajopt(self,qgoal,ka_0,db_flag):
         M_obs = self.n_links*self.n_timesteps*self.n_obs
         M = M_obs+2*self.n_links+6*self.n_pos_lim
 
@@ -148,17 +157,25 @@ class ARMTD_3D_planner():
         nlp.add_option('print_level', 0)
         k_opt, self.info = nlp.solve(ka_0.cpu().numpy())
 
+        for b in self.b.flatten():
+            if b.isnan().any():
+                print('there are nan values')
+                break
+
+        if db_flag:
+            print('traj opt')
+            import pdb;pdb.set_trace()
         return torch.tensor(k_opt,dtype=self.dtype,device=self.device), self.info['status']
         
-    def plan(self,env,ka_0):
+    def plan(self,env,ka_0,db_flag=False):
         zp.reset()
-        t1 = time.time()
-        self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
-        t2 = time.time()
-        k_opt, flag = self.trajopt(env.qgoal,ka_0)
-        t3 = time.time()
-        print(f'FO time: {t2-t1}')
-        print(f'NLP time: {t3-t2}')
+        #t1 = time.time()
+        self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos,db_flag)
+        #t2 = time.time()
+        k_opt, flag = self.trajopt(env.qgoal,ka_0,db_flag)
+        #t3 = time.time()
+        #print(f'FO time: {t2-t1}')
+        #print(f'NLP time: {t3-t2}')
         return k_opt, flag
 
 
