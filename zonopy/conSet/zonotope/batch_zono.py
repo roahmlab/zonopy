@@ -271,12 +271,10 @@ class batchZonotope:
 
         h_nonzero = h_sort > 1e-6
         h_zero_all = ((h_nonzero).sum(tuple(range(self.batch_dim))) ==0)
-        G2 = torch.clone(G)
         G[~h_nonzero] = 0 # make sure everything less than 1e-6 to be actual zero, so that non-removable zero padding can be converged into nan value on the output value
         if torch.any(h_zero_all): 
             first_reduce_idx = torch.nonzero(h_zero_all).squeeze(-1)[0]
             G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
-            G2=G2.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
         
         n_gens, dim = G.shape[-2:] 
         if dim == 1:
@@ -306,8 +304,8 @@ class batchZonotope:
         #index = torch.sum(torch.isnan(C),dim=1) == 0
         #n_c_batch = index.sum(dim=-1).reshape(-1)
 
-        deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=-1)
-        deltaD = torch.sum(abs(C@G2.transpose(-2,-1)),dim=-1)
+        #deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=-1)
+        deltaD = torch.sum(abs(C@self.generators.transpose(-2,-1)),dim=-1)
         
         d = (C@c.unsqueeze(-1)).squeeze(-1)
         PA = torch.cat((C,-C),dim=-2)
