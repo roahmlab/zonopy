@@ -62,6 +62,6 @@ else:
         print(f'time step: {t}')
         ka, flag = planner.plan(env,torch.zeros(env.n_links),t>=4)
         observations, reward, done, info = env.step(ka.cpu(),flag)
-        #env.render(planner.FO_link)
+        env.render(planner.FO_link)
         if info['collision']:
             import pdb;pdb.set_trace()

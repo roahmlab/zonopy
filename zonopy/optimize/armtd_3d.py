@@ -77,6 +77,10 @@ class ARMTD_3D_planner():
         M_obs = self.n_links*self.n_timesteps*self.n_obs
         M = M_obs+2*self.n_links+6*self.n_pos_lim
 
+
+        # NOTE
+        # NOTE
+        # NOTE: ARE YOU SOLVING K OR LAMBDA ???
         class nlp_setup():
             x_prev = np.zeros(self.n_links)*np.nan
             def objective(p,x):
