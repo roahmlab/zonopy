@@ -13,6 +13,7 @@ from zonopy.layer.nlp_setup import NLP_setup
 
 # torch.multiprocessing.set_start_method('spawn', force=True)
 # os.environ['OMP_NUM_THREADS'] = '2'
+import time 
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
@@ -41,17 +42,17 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
 
     # NOTE: for training, dont care about fail-safe
     if info['status'] == 0:
-        lambd_opt = torch.tensor(k_opt, dtype=torch.get_default_dtype())
+        lambd_opt = k_opt.tolist()
         flag = 0
     else:
-        lambd_opt = lambd_hat
+        lambd_opt = lambd_hat.tolist()
         flag = 1
     return lambd_opt, flag, info
 
 
 # batch
 
-def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu', multi_process=True):
+def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu', multi_process=False):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100
@@ -63,7 +64,6 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
         @staticmethod
         def forward(ctx, lambd, observation):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
@@ -107,6 +107,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
             n_problems = len(rts_pass_indices)
             if n_problems > 0:
+                ts = time.time()
                 if multi_process:
                     with Pool(processes=min(num_processes, n_problems)) as pool:
                         results = pool.starmap(
@@ -133,7 +134,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                         rts_lambd_opts.append(res[0])
                         rts_flags.append(res[1])
                         infos[rts_pass_indices[idx]] = res[2]
-                    lambd[rts_pass_indices] = torch.cat(rts_lambd_opts, 0).view(n_problems, dimension).to(dtype=dtype,device=device)
+                    lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
                     flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype, device=device)
                 else:
                     rts_lambd_opts, rts_flags = [], []                    
@@ -144,7 +145,6 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                         rts_flags.append(rts_flag)
                     lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
                     flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype, device=device)
-
             zp.reset()
             return lambd, FO_links, flags, infos
 

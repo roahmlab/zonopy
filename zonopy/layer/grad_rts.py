@@ -57,7 +57,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
     return lambd_opt, flag, info
 
 
-def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu', multi_process=True):
+def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu', multi_process=False):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100
@@ -69,7 +69,6 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
         @staticmethod
         def forward(ctx, lambd, observation, FO_link):
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             ctx.lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
