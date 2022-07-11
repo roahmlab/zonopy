@@ -33,7 +33,7 @@ acc_dim = 3
 kv_dim = 4
 time_dim = 5
 
-def preload_batch_JRS_trig(dtype=None, device=None):
+def preload_batch_JRS_trig(dtype=torch.float,device='cpu'):
     jrs_tensor = []
     for c_kv in JRS_KEY['c_kvi'][0]:
         jrs_filename = jrs_tensor_path+'jrs_trig_tensor_mat_'+format(c_kv,'.3f')+'.mat'
@@ -42,7 +42,7 @@ def preload_batch_JRS_trig(dtype=None, device=None):
     return torch.tensor(jrs_tensor,dtype=dtype,device=device)
 
 
-def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=None, device=None):
+def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
     q_0 = q_0.to(dtype=dtype,device=device)
     qd_0 = qd_0.to(dtype=dtype,device=device)
     jrs_key = torch.tensor(JRS_KEY['c_kvi'],dtype=dtype,device=device)
@@ -82,7 +82,7 @@ def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=None, device=None):
     return PZ_JRS_batch, R_batch
 
 
-def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
+def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
     q_0 = q_0.to(dtype=dtype,device=device)
     qd_0 = qd_0.to(dtype=dtype,device=device)
     jrs_key = torch.tensor(JRS_KEY['c_kvi'],dtype=dtype,device=device)
@@ -117,7 +117,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
     return PZ_JRS_batch, R_batch
 
 
-def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
+def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
     '''
     load joint reachable set precomputed by MATLAB CORA (look gen_jrs).
     Then, operate loaded JRS zonotope into JRS polyzonotope w/ k-sliceable dep. gen. 
@@ -187,7 +187,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=None,device=None):
             R[t].append(R_temp)
     return PZ_JRS, R
 
-def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None,dtype=None,device=None):
+def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None,dtype=torch.float,device='cpu'):
     q_0 = q_0.to(dtype=dtype,device=device)
     qd_0 = qd_0.to(dtype=dtype,device=device)
     n_joints = len(q_0)
