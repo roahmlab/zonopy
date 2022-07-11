@@ -13,7 +13,7 @@ params = {'joint_axes':[torch.tensor([0.0,0.0,1.0])]*N_joints,
         'P': [torch.tensor([0.0,0.0,0.0])]+[torch.tensor([1.0,0.0,0.0])]*(N_joints-1),
         'H': [torch.eye(4)]+[torch.tensor([[1.0,0,0,1],[0,1,0,0],[0,0,1,0],[0,0,0,1]])]*(N_joints-1),
         'n_joints':N_joints}
-link_zonos = [zp.zonotope(torch.tensor([[0.5,0.5,0.0],[0.0,0.0,0.01],[0.0,0.0,0.0]]).T).to_polyZonotope()]*N_joints # [1,0,0]
+link_zonos = [zp.zonotope(torch.tensor([[0.5,0,0],[0.5,0,0],[0,0.01,0]])).to_polyZonotope()]*N_joints # [1,0,0]
 
 t_start = time.time()
 
