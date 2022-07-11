@@ -65,9 +65,9 @@ class ARMTD_3D_planner():
                 A, b = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope(self.combs) # A: n_timesteps,*,dimension  
                 self.A[j,o] = A.cpu()
                 self.b[j,o] = b.cpu()
-                A2, b2 = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope2(self.combs) # A: n_timesteps,*,dimension  
-                self.A[j,o] = A2.cpu()
-                self.b[j,o] = b2.cpu()
+                #A2, b2 = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest),-2)).polytope2(self.combs) # A: n_timesteps,*,dimension  
+                #self.A2[j,o] = A2.cpu()
+                #self.b2[j,o] = b2.cpu()
 
 
         self.qpos = qpos.to(dtype=self.dtype,device='cpu')
@@ -162,9 +162,12 @@ class ARMTD_3D_planner():
         k_opt, self.info = nlp.solve(ka_0.cpu().numpy())
 
         for b in self.b.flatten():
+            if ((b==torch.inf)+(b==torch.inf)).any():
+                print('there are +-inf values')
             if b.isnan().any():
                 print('there are nan values')
                 break
+                
 
         if db_flag:
             print('traj opt')
