@@ -12,7 +12,7 @@ def pickedBatchGenerators(bZ,order):
     selects generators to be reduced
     '''
     c = bZ.center
-    G = bZ.generators.sort(bZ.batch_dim,descending=True)[0]
+    G = torch.clone(bZ.generators)
     dim = len(bZ.shape)
     norm_dim = tuple(range(-1,-dim-1,-1))
     nrOfGens = bZ.n_generators
@@ -33,6 +33,7 @@ def pickedBatchGenerators(bZ,order):
             Gsorted = G.gather(bZ.batch_dim,sorted_h)
             Gred = Gsorted[bZ.batch_idx_all+(slice(None,nReduced),)]
             Gunred = Gsorted[bZ.batch_idx_all+(slice(nReduced,None),)]
+
         else:
             Gred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
             Gunred = G
