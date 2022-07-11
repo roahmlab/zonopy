@@ -271,7 +271,8 @@ class batchZonotope:
 
         h_nonzero = h_sort > 1e-6
         h_zero_all = ((h_nonzero).sum(tuple(range(self.batch_dim))) ==0)
-        G[~h_nonzero] = 0 # make sure everything less than 1e-6 to be actual zero, so that non-removable zero padding can be converged into nan value on the output value
+        #G[~h_nonzero] = 0 # make sure everything less than 1e-6 to be actual zero, so that non-removable zero padding can be converged into nan value on the output value
+        # NOTE: for some reason the above one didnt work out
         if torch.any(h_zero_all): 
             first_reduce_idx = torch.nonzero(h_zero_all).squeeze(-1)[0]
             G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
