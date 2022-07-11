@@ -17,6 +17,7 @@ class Parallel_Arm_2D:
             T_len = 50, # number of discritization of time interval
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
+            # NOTE: validation
             check_collision_FO = False, # flag for whether check collision for FO rendering
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.05, # goal threshold
@@ -41,6 +42,9 @@ class Parallel_Arm_2D:
         self.P0 = [torch.tensor([0.0,0.0,0.0],dtype=dtype,device=device)]+[torch.tensor([1.0,0.0,0.0],dtype=dtype,device=device)]*(n_links-1)
         self.R0 = [torch.eye(3,dtype=dtype,device=device)]*n_links
         self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links,dtype=dtype,device=device)
+        w = torch.tensor([[[0,0,0],[0,0,-1],[0,1,0]],[[0,0,1],[0,0,0],[-1,0,0]],[[0,-1,0],[1,0,0],[0,0,0.0]]],dtype=self.dtype,device=self.device)
+        self.rot_skew_sym = (w@self.joint_axes.T).transpose(0,-1)
+
         self.fig_scale = 1
         self.interpolate = interpolate
         self.PI = torch.tensor(torch.pi,dtype=dtype,device=device)
@@ -512,13 +516,12 @@ class Parallel_Arm_2D:
         else:
             self.plot_grid_size = (3,3)
         self.n_plots = self.plot_grid_size[0]*self.plot_grid_size[1]
+
     def rot(self,q=None):
         if q is None:
             q = self.qpos
-        w = torch.tensor([[[0,0,0],[0,0,-1],[0,1,0]],[[0,0,1],[0,0,0],[-1,0,0]],[[0,-1,0],[1,0,0],[0,0,0.0]]],dtype=self.dtype,device=self.device)
-        w = (w@self.joint_axes.T).transpose(0,-1)
         q = q.reshape(q.shape+(1,1))
-        return torch.eye(3,dtype=self.dtype,device=self.device) + torch.sin(q)*w + (1-torch.cos(q))*w@w
+        return torch.eye(3,dtype=self.dtype,device=self.device) + torch.sin(q)*self.rot_skew_sym + (1-torch.cos(q))*self.rot_skew_sym@self.rot_skew_sym
 
     @property
     def action_spec(self):

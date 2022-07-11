@@ -35,6 +35,9 @@ class Arm_2D:
         self.P0 = [torch.tensor([0.0,0.0,0.0])]+[torch.tensor([1.0,0.0,0.0])]*(n_links-1)
         self.R0 = [torch.eye(3)]*n_links
         self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links)
+        w = torch.tensor([[[0,0,0],[0,0,1],[0,-1,0]],[[0,0,-1],[0,0,0],[1,0,0]],[[0,1,0],[-1,0,0],[0,0,0.0]]])
+        self.rot_skew_sym = (w@self.joint_axes.T).transpose(0,-1)
+
         self.fig_scale = 1
         self.interpolate = interpolate
         self.PI = torch.tensor(torch.pi)
@@ -222,9 +225,8 @@ class Arm_2D:
                 #to stop
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_to_brake = wrap_to_pi(self.qpos + torch.outer(self.t_to_brake,self.qvel) + .5*torch.outer(self.t_to_brake**2,bracking_accel))
-                self.qvel_to_brake = self.qvel + torch.outer(self.t_to_brake,bracking_accel)
-                
-                self.collision = self.collision_check(torch.vstack((self.qpos_to_peak,self.qpos_to_brake[1:])))
+                self.qvel_to_brake = self.qvel + torch.outer(self.t_to_brake,bracking_accel)                
+                self.collision = self.collision_check(self.qpos_to_peak[1:])
             else:
                 self.fail_safe_count +=1
                 self.qpos_to_peak = torch.clone(self.qpos_to_brake)
@@ -233,6 +235,7 @@ class Arm_2D:
                 self.qvel = self.qvel_to_peak[-1]
                 self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
                 self.qvel_to_brake = torch.zeros(self.T_len,self.n_links)
+                self.collision = self.collision_check(self.qpos_to_peak[1:])
         else:
             if self.safe:
                 self.fail_safe_count = 0
@@ -241,13 +244,12 @@ class Arm_2D:
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_brake = wrap_to_pi(self.qpos + self.qvel*(T_FULL-T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2)
                 self.qvel_brake = torch.zeros(self.n_links)
-
-                self.collision = self.collision_check(torch.vstack((self.qpos,self.qpos_brake)))
+                self.collision = self.collision_check(self.qpos)
             else:
                 self.fail_safe_count +=1
                 self.qpos = torch.clone(self.qpos_brake)
                 self.qvel = torch.clone(self.qvel_brake) 
-        
+                self.collision = self.collision_check(self.qpos)
         '''
         goal_distance = torch.linalg.norm(wrap_to_pi(self.qpos_to_peak-self.qgoal),dim=1)
         self.done = goal_distance.min() < 0.05
@@ -456,11 +458,9 @@ class Arm_2D:
 
     def rot(self,q=None):
         if q is None:
-            q = self.qpos
-        w = torch.tensor([[[0,0,0],[0,0,1],[0,-1,0]],[[0,0,-1],[0,0,0],[1,0,0]],[[0,1,0],[-1,0,0],[0,0,0.0]]])
-        w = (w@self.joint_axes.T).transpose(0,-1)
+            q = self.qpos        
         q = q.reshape(q.shape+(1,1))
-        return torch.eye(3) + torch.sin(q)*w + (1-torch.cos(q))*w@w
+        return torch.eye(3) + torch.sin(q)*self.rot_skew_sym + (1-torch.cos(q))*self.rot_skew_sym@self.rot_skew_sym
     
     @property
     def action_spec(self):

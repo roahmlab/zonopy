@@ -44,6 +44,8 @@ class Arm_3D:
         self.P0 = [self.scale*P for P in params['P']]
         self.R0 = params['R']
         self.joint_axes = torch.vstack(params['joint_axes'])
+        w = torch.tensor([[[0,0,0],[0,0,1],[0,-1,0]],[[0,0,-1],[0,0,0],[1,0,0]],[[0,1,0],[-1,0,0],[0,0,0.0]]])
+        self.rot_skew_sym = (w@self.joint_axes.T).transpose(0,-1)
         
         self.pos_lim = torch.tensor(params['pos_lim'])
         self.vel_lim = torch.tensor(params['vel_lim'])
@@ -242,8 +244,7 @@ class Arm_3D:
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_to_brake = wrap_to_pi(self.qpos + torch.outer(self.t_to_brake,self.qvel) + .5*torch.outer(self.t_to_brake**2,bracking_accel))
                 self.qvel_to_brake = self.qvel + torch.outer(self.t_to_brake,bracking_accel)
-
-                self.collision = self.collision_check(torch.vstack((self.qpos_to_peak,self.qpos_to_brake[1:])))
+                self.collision = self.collision_check(self.qpos_to_peak[1:])
             else:
                 self.fail_safe_count +=1
                 self.qpos_to_peak = torch.clone(self.qpos_to_brake)
@@ -252,6 +253,7 @@ class Arm_3D:
                 self.qvel = self.qvel_to_peak[-1]
                 self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
                 self.qvel_to_brake = torch.zeros(self.T_len,self.n_links)
+                self.collision = self.collision_check(self.qpos_to_peak[1:])
         else:
             if self.safe:
                 self.fail_safe_count = 0
@@ -260,12 +262,12 @@ class Arm_3D:
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_brake = wrap_to_pi(self.qpos + self.qvel*(T_FULL-T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2)
                 self.qvel_brake = torch.zeros(self.n_links)
-
-                self.collision = self.collision_check(torch.vstack((self.qpos,self.qpos_brake)))
+                self.collision = self.collision_check(self.qpos)
             else:
                 self.fail_safe_count +=1
                 self.qpos = torch.clone(self.qpos_brake)
                 self.qvel = torch.clone(self.qvel_brake) 
+                self.collision = self.collision_check(self.qpos)
 
         self._elapsed_steps += 1
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
@@ -350,6 +352,7 @@ class Arm_3D:
                         _,b = buff.polytope(self.combs)
                         unsafe = b.min(dim=-1)[0]>1e-6
                         if any(unsafe):
+                            import pdb;pdb.set_trace()
                             self.qpos_collision = qs[unsafe]
                             return True
 
@@ -406,7 +409,7 @@ class Arm_3D:
                         if t % self.FO_freq == 0:
                             FO_patch = FO_link_slc[t].polyhedron_patch()
                             FO_patches.extend(FO_patch)
-                self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.05,edgecolor='green',facecolor='green',linewidths=0.2)) 
+                self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.2)) 
 
         if self.interpolate:
             R_q = self.rot(self.qpos_to_peak)
@@ -447,10 +450,8 @@ class Arm_3D:
     def rot(self,q=None):
         if q is None:
             q = self.qpos
-        w = torch.tensor([[[0,0,0],[0,0,1],[0,-1,0]],[[0,0,-1],[0,0,0],[1,0,0]],[[0,1,0],[-1,0,0],[0,0,0.0]]])
-        w = (w@self.joint_axes.T).transpose(0,-1)
         q = q.reshape(q.shape+(1,1))
-        return torch.eye(3) + torch.sin(q)*w + (1-torch.cos(q))*w@w
+        return torch.eye(3) + torch.sin(q)*self.rot_skew_sym + (1-torch.cos(q))*self.rot_skew_sym@self.rot_skew_sym
 
 
 if __name__ == '__main__':
