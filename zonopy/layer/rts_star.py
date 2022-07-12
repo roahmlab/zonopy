@@ -52,7 +52,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
 
 # batch
 
-def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device='cpu', multi_process=False):
+def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100

@@ -28,8 +28,8 @@ class Parallel_Arm_2D:
             hyp_fail_safe = - 1,
             reward_shaping=True,
             max_episode_steps = 100,
-            dtype= None,
-            device = None
+            dtype= torch.float,
+            device = torch.device('cpu')
             ):
         self.n_envs = n_envs
 
@@ -76,10 +76,7 @@ class Parallel_Arm_2D:
         self._max_episode_steps = max_episode_steps
         self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=device)
         
-        if dtype is None:
-            self.dtype = torch.get_default_dtype()
-        else:
-            self.dtype = dtype
+        self.dtype = dtype
         self.device = device
         self.get_plot_grid_size()
         self.reset()

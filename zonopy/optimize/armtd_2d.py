@@ -10,7 +10,7 @@ def wrap_to_pi(phases):
 T_PLAN, T_FULL = 0.5, 1.0
 
 class ARMTD_2D_planner():
-    def __init__(self,env,zono_order=40,max_combs=200,dtype=torch.float,device='cpu'):
+    def __init__(self,env,zono_order=40,max_combs=200,dtype=torch.float,device=torch.device('cpu')):
         self.dtype, self.device = dtype, device
         self.wrap_env(env)
         self.n_timesteps = 100
