@@ -349,7 +349,7 @@ class Parallel_Arm_2D:
         
         self.goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal),dim=-1)
         self.success = self.goal_dist < self.goal_threshold 
-        success = self.success.to(dtype=self.device)
+        success = self.success.to(dtype=self.dtype)
         
         reward = 0.0
 
