@@ -2,6 +2,7 @@ import torch
 import zonopy as zp
 import matplotlib.pyplot as plt 
 from matplotlib.collections import PatchCollection
+import os
 #from .utils import locate_figure
 
 def wrap_to_pi(phases):
@@ -142,7 +143,7 @@ class Arm_2D:
         self.collision = False
 
         self._elapsed_steps = 0
-        
+        self._frame_steps = 0
         self.reward_com = 0
 
         return self.get_observations()
@@ -203,7 +204,7 @@ class Arm_2D:
         self.collision = False
 
         self._elapsed_steps = 0
-
+        self._frame_steps = 0
         self.reward_com = 0
 
         return self.get_observations()
@@ -362,12 +363,19 @@ class Arm_2D:
         return float(reward)       
 
 
-    def render(self,FO_link=None):
-        
+    def render(self,FO_link=None,show=True,dpi=None,save_kwargs=None):
+        '''
+        save_kwargs = {'frame_rate':frame_rate,'save_path':save_path, 'dpi':dpi}
+        self._frame_steps = 0
+        '''
+        figs_output = []
         if self.render_flag:
             if self.fig is None:
-                plt.ion()
-                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8])
+                if show:
+                    plt.ion()
+                if save_kwargs is not None:
+                    os.makedirs(save_kwargs['save_path'],exist_ok=True)
+                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
                 #self.fig.canvas.manager.window.move(100,400)
                 self.ax = self.fig.gca()
 
@@ -440,7 +448,14 @@ class Arm_2D:
                 plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
+                if save_kwargs is not None:
+                    if t%(time_steps//save_kwargs['frame_rate']) == 0:
+                        filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
+                        self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
+                        self._frame_steps+=1
 
+
+                
         else:
             R_q = self.rot()
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
@@ -458,6 +473,15 @@ class Arm_2D:
             plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
+            if save_kwargs is not None:
+                filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
+                self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
+                self._frame_steps+=1
+
+        return figs_output
+    def close(self):
+        plt.close()
+        self.fig = None 
 
     def rot(self,q=None):
         if q is None:

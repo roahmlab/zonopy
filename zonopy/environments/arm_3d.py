@@ -95,9 +95,9 @@ class Arm_3D:
         self.reset()
     
     def generate_combinations_upto(self):
-        self.combs = [torch.tensor([0],dtype=self.dtype,device=self.device)]
+        self.combs = [torch.tensor([0],device=self.device)]
         for i in range(self.max_combs):
-            self.combs.append(torch.combinations(torch.arange(i+1,dtype=self.dtype,device=self.device),2))
+            self.combs.append(torch.combinations(torch.arange(i+1,device=self.device),2))
 
     def reset(self):
         self.qpos = self.pos_sampler.sample()
@@ -185,14 +185,14 @@ class Arm_3D:
             self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links,dtype=self.dtype,device=self.device)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
-            self.qvel_brake = torch.zeros(self.n_links,self.n_links,dtype=self.dtype,device=self.device)           
+            self.qvel_brake = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)           
         
         self.obs_zonos = []
 
         R_qi = self.rot()
         R_qg = self.rot(self.qgoal)    
-        Ri, Pi = torch.eye(3,self.n_links,dtype=self.dtype,device=self.device), torch.zeros(3,self.n_links,dtype=self.dtype,device=self.device)       
-        Rg, Pg = torch.eye(3,self.n_links,dtype=self.dtype,device=self.device), torch.zeros(3,self.n_links,dtype=self.dtype,device=self.device)               
+        Ri, Pi = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)       
+        Rg, Pg = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)               
         link_init, link_goal = [], []
         for j in range(self.n_links):
             Pi = Ri@self.P0[j] + Pi 
@@ -204,7 +204,7 @@ class Arm_3D:
             link = (Rg@self.link_zonos[j]+Pg).to_zonotope()
             link_goal.append(link)
         for pos in obs_pos:
-            obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),torch.eye(3,self.n_links,dtype=self.dtype,device=self.device))))
+            obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),torch.eye(3,dtype=self.dtype,device=self.device))))
             for j in range(self.n_links):
                 buff = link_init[j]-obs
                 _,b = buff.polytope(self.combs)
@@ -258,7 +258,7 @@ class Arm_3D:
                 self.qpos = self.qpos_to_peak[-1]
                 self.qvel = self.qvel_to_peak[-1]
                 self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
-                self.qvel_to_brake = torch.zeros(self.T_len,self.n_links,self.n_links,dtype=self.dtype,device=self.device)
+                self.qvel_to_brake = torch.zeros(self.T_len,self.n_links,dtype=self.dtype,device=self.device)
                 self.collision = self.collision_check(self.qpos_to_peak[1:])
         else:
             if self.safe:
@@ -267,7 +267,7 @@ class Arm_3D:
                 self.qvel += self.ka*T_PLAN
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_brake = wrap_to_pi(self.qpos + self.qvel*(T_FULL-T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2)
-                self.qvel_brake = torch.zeros(self.n_links,self.n_links,dtype=self.dtype,device=self.device)
+                self.qvel_brake = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)
                 self.collision = self.collision_check(self.qpos)
             else:
                 self.fail_safe_count +=1
@@ -453,6 +453,10 @@ class Arm_3D:
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
+    def close(self):
+        plt.close()
+        self.fig = None 
+        
     def rot(self,q=None):
         if q is None:
             q = self.qpos

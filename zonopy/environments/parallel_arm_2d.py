@@ -504,7 +504,11 @@ class Parallel_Arm_2D:
                 ax.add_collection(self.one_time_patches[b])
                 self.FO_patches[b] = ax.add_collection(PatchCollection([]))
                 self.link_patches[b] = ax.add_collection(PatchCollection([]))  
-        
+    
+    def close(self):
+        plt.close()
+        self.fig = None 
+
     def get_plot_grid_size(self):
         if self.n_envs in (1,2,3):
             self.plot_grid_size = (1, self.n_envs)
