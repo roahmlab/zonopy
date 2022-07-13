@@ -1,0 +1,1 @@
+from zonopy.environments.wrappers.monitoring.video_recoder import VideoRecorder
