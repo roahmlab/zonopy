@@ -75,6 +75,7 @@ class Parallel_Arm_2D:
 
         self.fig = None
         self.render_flag = True
+        self._frame_steps = 0
 
         self._max_episode_steps = max_episode_steps
         self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=device)
@@ -189,6 +190,8 @@ class Parallel_Arm_2D:
                 self.FO_patches[b].remove()
                 self.link_patches[b].remove()
         self.render_flag = True
+        self._frame_steps = 0
+
         self.done = torch.zeros(self.n_envs,dtype=bool,device=self.device)
         self.collision = torch.zeros(self.n_envs,dtype=bool,device=self.device)
         self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=self.device)
