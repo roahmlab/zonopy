@@ -69,9 +69,11 @@ class GymWrapper(Wrapper, Env):
             try:
                 np.random.seed(seed)
                 torch.maual_seed(seed)
-                self.action_space.seed(seed)
+                
             except:
                 TypeError("Seed must be an integer type!")
+        self.action_space.seed(seed)
+        return Env.seed(seed)
 
     def compute_reward(self, achieved_goal, desired_goal, info):
         return self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype()))
