@@ -454,6 +454,12 @@ class Arm_3D:
             self.fig.canvas.flush_events()
 
     def close(self):
+        if self.render_flag == False:
+            self.obs_patches.remove()
+            self.link_goal_patches.remove()
+            self.FO_patches.remove()
+            self.link_patches.remove()
+        self.render_flag = True
         plt.close()
         self.fig = None 
         

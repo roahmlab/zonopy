@@ -3,6 +3,7 @@ import zonopy as zp
 import matplotlib.pyplot as plt 
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as patches
+import os
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
@@ -374,11 +375,14 @@ class Parallel_Arm_2D:
 
         return reward       
 
-    def render(self,FO_link=None):
+    def render(self,FO_link=None,show=True,dpi=None,save_kwargs=None):
         if self.render_flag:
             if self.fig is None:
-                plt.ion()
-                self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2])
+                if show:
+                    plt.ion()
+                if save_kwargs is not None:
+                    os.makedirs(save_kwargs['save_path'],exist_ok=True)
+                self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2],dpi=dpi)
             self.render_flag = False
             self.one_time_patches, self.FO_patches, self.link_patches= [], [], []
 
@@ -456,7 +460,11 @@ class Parallel_Arm_2D:
                     ax.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
-
+                if save_kwargs is not None:
+                    if t%(time_steps//save_kwargs['frame_rate']) == 0:
+                        filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
+                        self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
+                        self._frame_steps+=1
         else:
             R_q = self.rot(self.qpos[:self.n_plots])
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
@@ -478,6 +486,10 @@ class Parallel_Arm_2D:
                 ax.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
+            if save_kwargs is not None:
+                filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
+                self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
+                self._frame_steps+=1
 
         if self.done.any():
             reset_flag = self.done[:self.n_plots].nonzero().reshape(-1)
@@ -507,6 +519,12 @@ class Parallel_Arm_2D:
                 self.link_patches[b] = ax.add_collection(PatchCollection([]))  
     
     def close(self):
+        if self.render_flag == False:
+            for b in range(self.n_plots):
+                self.one_time_patches[b].remove()
+                self.FO_patches[b].remove()
+                self.link_patches[b].remove()
+        self.render_flag = True
         plt.close()
         self.fig = None 
 

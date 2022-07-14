@@ -480,6 +480,11 @@ class Arm_2D:
 
         return figs_output
     def close(self):
+        if self.render_flag == False:
+            self.one_time_patches.remove()
+            self.FO_patches.remove()
+            self.link_patches.remove()
+        self.render_flag = True
         plt.close()
         self.fig = None 
 
