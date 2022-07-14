@@ -119,8 +119,6 @@ class ParallelGymWrapper(GymWrapper):
                     infos[b][key] = infos[b][key].numpy().astype(float)
                 elif isinstance(infos[b][key],torch.Tensor) and isinstance(infos[b][key][0],torch.Tensor):
                     infos[b][key] = [el.numpy().astype(float) for el in infos[b][key]]
-        if self.collision.any():
-            import pdb;pdb.set_trace()
         return self._flatten_obs(ob_dicts), rewards.numpy(), dones.numpy(), infos
 
     def compute_reward(self, achieved_goal, desired_goal, info):
