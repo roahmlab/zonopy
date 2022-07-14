@@ -69,6 +69,7 @@ class GymWrapper(Wrapper, Env):
             try:
                 np.random.seed(seed)
                 torch.maual_seed(seed)
+                self.action_space.seed(seed)
             except:
                 TypeError("Seed must be an integer type!")
 
