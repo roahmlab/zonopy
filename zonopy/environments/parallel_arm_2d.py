@@ -271,10 +271,11 @@ class Parallel_Arm_2D:
         self.reward_com *= self.discount
         self.reward_com += self.reward
         self.done = self.success + self.collision
-        observations = self.get_observations()
+
         infos = self.get_info()
         if self.done.sum()>0:
             self.__reset(self.done)
+        observations = self.get_observations()
         return observations, self.reward, self.done, infos
 
     def get_info(self):
