@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as patches
 import os
+import numpy as np
 
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
@@ -29,6 +30,7 @@ class Parallel_Arm_2D:
             hyp_fail_safe = - 1,
             reward_shaping=True,
             max_episode_steps = 100,
+            n_plots = None,
             dtype= torch.float,
             device = torch.device('cpu')
             ):
@@ -80,7 +82,7 @@ class Parallel_Arm_2D:
         self._max_episode_steps = max_episode_steps
         self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=device)
         
-        self.get_plot_grid_size()
+        self.get_plot_grid_size(n_plots)
         self.reset()
     
 
@@ -253,7 +255,8 @@ class Parallel_Arm_2D:
             bracking_accel = (0 - qvel)/(T_FULL - T_PLAN)
             self.qpos_to_brake = wrap_to_pi(qpos + self.t_to_brake*qvel + .5*(self.t_to_brake**2)*bracking_accel)
             self.qvel_to_brake = qvel + self.t_to_brake*bracking_accel 
-            self.collision = self.collision_check(torch.cat((self.qpos_to_peak,self.qpos_to_brake[1:]),0))
+            self.collision = self.collision_check(self.qpos_to_peak[1:])            
+            #self.collision = self.collision_check(torch.cat((self.qpos_to_peak,self.qpos_to_brake[1:]),0))
 
         else:
             unsafe = ~self.safe
@@ -266,8 +269,8 @@ class Parallel_Arm_2D:
             self.qvel_brake[self.safe] = 0
             self.qpos[unsafe] = self.qpos_brake[unsafe]
             self.qvel[unsafe] = self.qvel_brake[unsafe] 
-            self.collision_check(self.qpos)
-            self.collision = self.collision_check(torch.cat((self.qpos.unsqueeze(0),self.qpos_brake.unsqueeze(0)),0))
+            self.collision = self.collision_check(self.qpos)
+            #self.collision = self.collision_check(torch.cat((self.qpos.unsqueeze(0),self.qpos_brake.unsqueeze(0)),0))
                     
         self._elapsed_steps += 1
         
@@ -385,7 +388,12 @@ class Parallel_Arm_2D:
                     plt.ion()
                 if save_kwargs is not None:
                     os.makedirs(save_kwargs['save_path'],exist_ok=True)
-                self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2],dpi=dpi)
+                if self.n_plots == 1:
+                    self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
+                    self.axs = np.array([self.fig.gca()])
+                else:
+                    self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2],dpi=dpi)
+
             self.render_flag = False
             self.one_time_patches, self.FO_patches, self.link_patches= [], [], []
 
@@ -401,6 +409,7 @@ class Parallel_Arm_2D:
             for o in range(self.n_obs):
                 obs_patches.append(self.obs_zonos[o][:self.n_plots].polygon(nan=False).cpu().numpy())
                 #patches.Polygon(p,alpha=alpha,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth)
+  
             for b, ax in enumerate(self.axs.flat):
                 one_time_patch = []
                 for j in range(self.n_links):
@@ -475,8 +484,7 @@ class Parallel_Arm_2D:
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[:,j]
-                link_trace_patches.append((R@self.__link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())            
-            
+                link_trace_patches.append((R@self.__link_zonos[j][:self.n_plots]+P).polygon(nan=False).cpu().numpy())                      
             for b, ax in enumerate(self.axs.flat):
                 self.link_patches[b].remove()
                 link_patch = []
@@ -531,11 +539,14 @@ class Parallel_Arm_2D:
         plt.close()
         self.fig = None 
 
-    def get_plot_grid_size(self):
-        if self.n_envs in (1,2,3):
-            self.plot_grid_size = (1, self.n_envs)
-        elif self.n_envs < 9:
-            self.plot_grid_size = (2, min(self.n_envs//2,3))
+    def get_plot_grid_size(self,n_plots):
+        if n_plots is None:
+            n_plots = self.n_envs
+
+        if n_plots in (1,2,3):
+            self.plot_grid_size = (1, n_plots)
+        elif n_plots < 9:
+            self.plot_grid_size = (2, min(n_plots//2,4))
         else:
             self.plot_grid_size = (3,3)
         self.n_plots = self.plot_grid_size[0]*self.plot_grid_size[1]
@@ -566,9 +577,9 @@ if __name__ == '__main__':
     import time
     from zonopy.environments.arm_2d import Arm_2D
     n_envs = 3
-    env = Parallel_Arm_2D(n_envs=n_envs,interpolate=True)
+    env = Parallel_Arm_2D(n_envs=n_envs,interpolate=True,n_plots=2)
     env1 = Arm_2D()
-
+    '''
     ts = time.time()
     for _ in range(n_envs):
         env1.reset()
@@ -576,7 +587,7 @@ if __name__ == '__main__':
     ts = time.time()
     env.reset()
     print(f'parallel reset : {time.time()-ts}')
-
+    '''
     for i in range(20):
         observations, rewards, dones, infos = env.step(torch.ones(env.n_envs,env.n_links))
         env.render()

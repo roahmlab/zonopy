@@ -47,14 +47,18 @@ if __name__ == '__main__':
     import time 
     env = Arm_2D(n_obs=2)
     video_folder = 'video_test'
-    os.makedirs(video_folder, exist_ok=True)
-    base_path = os.path.join(video_folder,'video')
-    video_recorder = VideoRecorder(env,base_path)
+    #os.makedirs(video_folder, exist_ok=True)
 
-    ts = time.time()
-    for t in range(10):
-        env.step(torch.rand(2))
-        video_recorder.capture_frame()
-    video_recorder.close()
+    
+
+    for i in range(2):
+        base_path = os.path.join(video_folder,f'video_{i}')
+        video_recorder = VideoRecorder(env,base_path)
+        ts = time.time()
+        for t in range(10):
+            env.step(torch.rand(2))
+            video_recorder.capture_frame()
+        video_recorder.close()
+        env.reset()
 
     print(f'Time elasped: {time.time()-ts}')
