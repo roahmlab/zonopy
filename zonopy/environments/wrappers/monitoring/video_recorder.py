@@ -9,7 +9,7 @@ class VideoRecorder:
         dpi=None,
         frame_rate=5,
         show=False,
-        format = 'gif'
+        format = 'mp4'
         ):
         #assert format == 'mp4' or format == 'gif'
         self.env =env 
@@ -33,7 +33,8 @@ class VideoRecorder:
             '-r', fr, # frame rate of video
             '-pix_fmt', 'yuv420p',
             #'-crf','25', # quality of video, lower means better
-            '-s', '640x480',
+            '-vcodec','h264',
+            '-s', '1280x960',
             self.video_path + '.mp4'
         ],stdout=subprocess.DEVNULL,
         stderr=subprocess.STDOUT)   
