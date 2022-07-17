@@ -226,7 +226,7 @@ class Parallel_Arm_2D:
             _,bi = buff.project([0,1]).polytope()
             buff = link_goal[j][idx]-obs
             _,bg = buff.project([0,1]).polytope()   
-            safe_flag[idx] *= ((bi.min(1).values < 1e-6) * (bg.min(1).values < 1e-6)) # Ture for safe envs, -1e-6: more conservative, 1e-6: less conservative
+            safe_flag[idx] *= ((bi.min(1).values < -1e-5) * (bg.min(1).values < -1e-5)) # Ture for safe envs, -1e-6: more conservative, 1e-6: less conservative
 
         return obs_Z[safe_flag[idx]], safe_flag
 
@@ -392,13 +392,18 @@ class Parallel_Arm_2D:
             if self.fig is None:
                 if show:
                     plt.ion()
-                if save_kwargs is not None:
-                    os.makedirs(save_kwargs['save_path'],exist_ok=True)
                 if self.n_plots == 1:
                     self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
                     self.axs = np.array([self.fig.gca()])
                 else:
                     self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2],dpi=dpi)
+                if save_kwargs is not None:
+                    os.makedirs(save_kwargs['save_path'],exist_ok=True)
+                    if self.n_plots == 1:
+                        fontsize = 10
+                    else:
+                        fontsize = 7 + self.plot_grid_size[0]
+                    self.axs.reshape(self.plot_grid_size)[0,-1].set_title(save_kwargs['text'],fontsize=fontsize,loc='right')
 
             self.render_flag = False
             self.one_time_patches, self.FO_patches, self.link_patches= [], [], []

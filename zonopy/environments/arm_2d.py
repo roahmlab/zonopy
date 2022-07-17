@@ -127,12 +127,12 @@ class Arm_2D:
                 for j in range(self.n_links):
                     buff = link_init[j]-obs
                     _,b = buff.project([0,1]).polytope()
-                    if min(b) > 1e-6:
+                    if min(b) > -1e-5:
                         safe_flag = False
                         break
                     buff = link_goal[j]-obs
                     _,b = buff.project([0,1]).polytope()
-                    if min(b) > 1e-6:
+                    if min(b) > -1e-5:
                         safe_flag = False
                         break
 
@@ -193,11 +193,11 @@ class Arm_2D:
             for j in range(self.n_links):
                 buff = link_init[j]-obs
                 _,b = buff.project([0,1]).polytope()
-                if min(b) > 1e-6:
+                if min(b) > -1e-5:
                     assert False, 'given obstacle position is in collision with initial and goal configuration.'
                 buff = link_goal[j]-obs
                 _,b = buff.project([0,1]).polytope()
-                if min(b) > 1e-6:
+                if min(b) > -1e-5:
                     assert False, 'given obstacle position is in collision with initial and goal configuration.'
             self.obs_zonos.append(obs)
 
@@ -379,11 +379,11 @@ class Arm_2D:
             if self.fig is None:
                 if show:
                     plt.ion()
+                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
+                self.ax = self.fig.gca()
                 if save_kwargs is not None:
                     os.makedirs(save_kwargs['save_path'],exist_ok=True)
-                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
-                #self.fig.canvas.manager.window.move(100,400)
-                self.ax = self.fig.gca()
+                    self.ax.set_title(save_kwargs['text'],fontsize=10,loc='right')
 
             self.render_flag = False
             self.FO_patches = self.ax.add_collection(PatchCollection([]))
@@ -409,6 +409,18 @@ class Arm_2D:
                 self.FO_patches.remove()
                 for j in range(self.n_links):
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
+                    
+                    FO_link_polygons = FO_link_slc.polygon().cpu()
+                    import pdb;pdb.set_trace()
+
+                    # P1 =FO_link_polygons[0]
+                    # P2=FO_link_slc[0].polygon()
+
+                    #FO_patches.extend(FO_link_polygons)
+                    for FO_link_polygon in FO_link_polygons:
+                        FO_patches.append(Polygon(FO_link_polygon[~FO_link_polygon[:,0].isnan()],alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2))
+
+                    '''
                     if self.check_collision_FO:
                         c_link_slc = FO_link[j].center_slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
                         for o,obs in enumerate(self.obs_zonos):
@@ -426,6 +438,7 @@ class Arm_2D:
                         for t in range(100): 
                             FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
                             FO_patches.append(FO_patch)
+                    '''
                 self.FO_patches = PatchCollection(FO_patches, match_original=True)
                 self.ax.add_collection(self.FO_patches)            
 
@@ -458,7 +471,7 @@ class Arm_2D:
                 P = R@self.P0[j] + P
                 R = R@self.R0[j]@R_q[:,j]
                 link_trace_polygons[:,5*j:5*(j+1)] = (self.link_polygon[j]@R[:,:2,:2].transpose(-1,-2)+P[:,:2].unsqueeze(-2)).cpu()
-
+            
             for t in range(len(R_q)):
                 self.link_patches.remove()    
                 link_trace_patches = [Polygon(link_trace_polygons[t,5*j:5*(j+1)],alpha=.5,edgecolor='blue',facecolor='blue',linewidth=.2) for j in range(self.n_links)]
@@ -466,6 +479,7 @@ class Arm_2D:
                 self.ax.add_collection(self.link_patches)
                 ax_scale = 1.2
                 axis_lim = ax_scale*self.n_links
+                
                 plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()

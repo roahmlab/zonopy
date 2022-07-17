@@ -147,12 +147,12 @@ class Arm_3D:
                 for j in range(self.n_links):
                     buff = link_init[j]-obs
                     _,b = buff.polytope(self.combs)
-                    if min(b) > 1e-6:
+                    if min(b) > -1e-5:
                         safe_flag = False
                         break
                     buff = link_goal[j]-obs
                     _,b = buff.polytope(self.combs)
-                    if min(b) > 1e-6:
+                    if min(b) > -1e-5:
                         safe_flag = False
                         break
 
@@ -208,11 +208,11 @@ class Arm_3D:
             for j in range(self.n_links):
                 buff = link_init[j]-obs
                 _,b = buff.polytope(self.combs)
-                if min(b) > 1e-6:
+                if min(b) > -1e-5:
                     assert False, 'given obstacle position is in collision with initial and goal configuration.'
                 buff = link_goal[j]-obs
                 _,b = buff.polytope(self.combs)
-                if min(b) > 1e-6:
+                if min(b) > -1e-5:
                     assert False, 'given obstacle position is in collision with initial and goal configuration.'    
             self.obs_zonos.append(obs)
         self.fail_safe_count = 0
@@ -383,10 +383,12 @@ class Arm_3D:
             if self.fig is None:
                 if show:
                     plt.ion()
-                if save_kwargs is not None:
-                    os.makedirs(save_kwargs['save_path'],exist_ok=True)                
                 self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
                 self.ax = a3.Axes3D(self.fig)
+                if save_kwargs is not None:
+                    os.makedirs(save_kwargs['save_path'],exist_ok=True) 
+                    self.ax.set_title(save_kwargs['text'],fontsize=10,loc='right') 
+
             
             self.render_flag = False
             self.FO_patches = self.ax.add_collection3d(Poly3DCollection([]))
