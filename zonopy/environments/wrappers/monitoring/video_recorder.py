@@ -9,6 +9,7 @@ class VideoRecorder:
         dpi=None,
         frame_rate=5,
         show=False,
+        text=None,
         format = 'mp4'
         ):
         #assert format == 'mp4' or format == 'gif'
@@ -17,7 +18,7 @@ class VideoRecorder:
         self.format = format
         self.video_path = base_path 
         self.frame_dir_path = os.path.join(head,'frames')
-        self.save_kwargs = {'frame_rate':frame_rate,'save_path':self.frame_dir_path, 'dpi':dpi}
+        self.save_kwargs = {'frame_rate':frame_rate,'save_path':self.frame_dir_path, 'dpi':dpi, 'text':text}
         self.show = show
 
     def capture_frame(self,FO_link=None):
@@ -34,7 +35,7 @@ class VideoRecorder:
             '-pix_fmt', 'yuv420p',
             #'-crf','25', # quality of video, lower means better
             '-vcodec','h264',
-            '-s', '1280x960',
+            '-s', '1280x960', # '1280x960', '640x480', '320x240'
             self.video_path + '.mp4'
         ],stdout=subprocess.DEVNULL,
         stderr=subprocess.STDOUT)   
@@ -66,13 +67,13 @@ if __name__ == '__main__':
     import time 
     parallel = True
     if parallel:
-        env = Parallel_Arm_2D(n_links = 2 ,n_obs = 2,T_len=24,n_envs=9,n_plots=4)
+        env = Parallel_Arm_2D(n_links = 2 ,n_obs = 2,T_len=24,n_envs=9,n_plots=1)
         video_folder = 'video_test'
 
         ts = time.time()
-        for i in range(2):
+        for i in range(1):
             base_path = os.path.join(video_folder,f'video_{i}')
-            video_recorder = VideoRecorder(env,base_path,frame_rate=3,format='gif',show=False)
+            video_recorder = VideoRecorder(env,base_path,frame_rate=3,format='mp4',show=True,text='Step 1,000,000')
             for t in range(10):
                 env.step(torch.rand(env.n_envs,env.n_links))
                 video_recorder.capture_frame()
