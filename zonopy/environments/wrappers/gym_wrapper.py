@@ -77,6 +77,8 @@ class GymWrapper(Wrapper, Env):
 
     def compute_reward(self, achieved_goal, desired_goal, info):
         return self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype()))
+    def close(self):
+        self.env.close()
 
 class ParallelGymWrapper(GymWrapper):
     def __init__(self, env, keys=None):
