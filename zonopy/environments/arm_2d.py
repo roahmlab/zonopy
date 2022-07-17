@@ -372,7 +372,6 @@ class Arm_2D:
         save_kwargs = {'frame_rate':frame_rate,'save_path':save_path, 'dpi':dpi}
         self._frame_steps = 0
         '''
-        figs_output = []
         if self.render_flag:
             if self.fig is None:
                 if show:
@@ -430,9 +429,12 @@ class Arm_2D:
         if self.interpolate:
             
             timesteps = int(T_PLAN/T_FULL*self.T_len) # NOTE: length match??
-            if show or save_kwargs is None:
-                plot_freq = timesteps//save_kwargs['frame_rate']
+            if show and save_kwargs is None:
+                plot_freq = 1
                 R_q = self.rot(self.qpos_to_peak[1:])
+            elif show:
+                plot_freq = timesteps//save_kwargs['frame_rate']
+                R_q = self.rot(self.qpos_to_peak[1:])      
             else:
                 plot_freq = 1
                 t_idx = torch.arange(timesteps+1,device=self.device)%(timesteps//save_kwargs['frame_rate'] ) == 1
@@ -493,7 +495,6 @@ class Arm_2D:
                 self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
                 self._frame_steps+=1
 
-        return figs_output
     def close(self):
         if self.render_flag == False:
             self.one_time_patches.remove()

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #from matplotlib.collections import PatchCollection
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d as a3
-
+import os
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
@@ -44,8 +44,9 @@ class Arm_3D:
 
         #### load
         params, _ = zp.load_sinlge_robot_arm_params('Kinova3')
-        self.link_zonos = params['link_zonos'] # NOTE: zonotope, should it be poly zonotope?
-        self.link_zonos = [(self.scale*self.link_zonos[j]).to(dtype=dtype,device=device).to_polyZonotope() for j in range(n_links)]
+        self.__link_zonos = [(self.scale*params['link_zonos'][j]).to(dtype=dtype,device=device) for j in range(n_links)] # NOTE: zonotope, should it be poly zonotope?
+        self.link_polyhedron = [zono.polyhedron_patch() for zono in self.__link_zonos]
+        self.link_zonos = [self.__link_zonos[j].to_polyZonotope() for j in range(n_links)]
         self.P0 = [self.scale*P.to(dtype=dtype,device=device) for P in params['P']]
         self.R0 = [R.to(dtype=dtype,device=device) for R in params['R']]
         self.joint_axes = torch.vstack(params['joint_axes']).to(dtype=dtype,device=device)
@@ -127,10 +128,8 @@ class Arm_3D:
             Pg = Rg@self.P0[j] + Pg
             Ri = Ri@self.R0[j]@R_qi[j]
             Rg = Rg@self.R0[j]@R_qg[j]
-            link = (Ri@self.link_zonos[j]+Pi).to_zonotope()
-            link_init.append(link)
-            link = (Rg@self.link_zonos[j]+Pg).to_zonotope()
-            link_goal.append(link)
+            link_init.append(Ri@self.__link_zonos[j]+Pi)
+            link_goal.append(Rg@self.__link_zonos[j]+Pg)
 
         for _ in range(self.n_obs):
             while True:
@@ -199,10 +198,8 @@ class Arm_3D:
             Pg = Rg@self.P0[j] + Pg
             Ri = Ri@self.R0[j]@R_qi[j]
             Rg = Rg@self.R0[j]@R_qg[j]
-            link = (Ri@self.link_zonos[j]+Pi).to_zonotope()
-            link_init.append(link)
-            link = (Rg@self.link_zonos[j]+Pg).to_zonotope()
-            link_goal.append(link)
+            link_init.append(Ri@self.__link_zonos[j]+Pi)
+            link_goal.append(Rg@self.__link_zonos[j]+Pg)
         for pos in obs_pos:
             obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),torch.eye(3,dtype=self.dtype,device=self.device))))
             for j in range(self.n_links):
@@ -368,7 +365,7 @@ class Arm_3D:
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
                     R = R@self.R0[j]@R_q[j]
-                    link = (R@self.link_zonos[j]+P).to_zonotope()
+                    link = R@self.__link_zonos[j]+P
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
                         _,b = buff.polytope(self.combs)
@@ -378,11 +375,14 @@ class Arm_3D:
   
         return False
 
-    def render(self,FO_link=None):
+    def render(self,FO_link=None,show=True,dpi=None,save_kwargs=None):
         if self.render_flag:
             if self.fig is None:
-                plt.ion()
-                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8])
+                if show:
+                    plt.ion()
+                if save_kwargs is not None:
+                    os.makedirs(save_kwargs['save_path'],exist_ok=True)                
+                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
                 self.ax = a3.Axes3D(self.fig)
             
             self.render_flag = False
@@ -394,15 +394,14 @@ class Arm_3D:
                 obs_patches.extend(self.obs_zonos[o].polyhedron_patch())
             self.obs_patches = self.ax.add_collection3d(Poly3DCollection(obs_patches,edgecolor='red',facecolor='red',alpha=0.2,linewidths=0.2))
 
-            goal_patches = []
+            link_goal_patches = []
             R_q = self.rot(self.qgoal)
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)            
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[j]
-                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
-                goal_patches.extend(link_patch)
-            self.link_goal_patches = self.ax.add_collection3d(Poly3DCollection(goal_patches,edgecolor='gray',facecolor='gray',alpha=0.15,linewidths=0.5))
+                link_goal_patches.extend((self.link_polyhedron[j]@R.T+P).cpu())
+            self.link_goal_patches = self.ax.add_collection3d(Poly3DCollection(link_goal_patches,edgecolor='gray',facecolor='gray',alpha=0.15,linewidths=0.5))
                 
         if FO_link is not None: 
             FO_patches = []
@@ -418,40 +417,58 @@ class Arm_3D:
                 self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.2)) 
 
         if self.interpolate:
-            R_q = self.rot(self.qpos_to_peak)
-            time_steps = int(T_PLAN/T_FULL*self.T_len)
-            for t in range(time_steps):
-                R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
-                link_patches = []
+            timesteps = int(T_PLAN/T_FULL*self.T_len)
+            if show and save_kwargs is None:
+                plot_freq = 1
+                R_q = self.rot(self.qpos_to_peak[1:]).unsqueeze(1)
+            elif show:
+                plot_freq = timesteps//save_kwargs['frame_rate']
+                R_q = self.rot(self.qpos_to_peak[1:]).unsqueeze(1)                
+            else:
+                plot_freq = 1
+                t_idx = torch.arange(timesteps+1,device=self.device)%(timesteps//save_kwargs['frame_rate'] ) == 1
+                R_q = self.rot(self.qpos_to_peak[t_idx]).unsqueeze(1)
+                timesteps = len(R_q)
+             
+            link_trace_polyhedron =  torch.zeros(timesteps,12*self.n_links,3,3,dtype=self.dtype,device='cpu')
+            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(1,3,dtype=self.dtype,device=self.device)
+            for j in range(self.n_links):
+                P = R@self.P0[j] + P
+                R = R@self.R0[j]@R_q[:,:,j]
+                link_trace_polyhedron[:,12*j:12*(j+1)] = (self.link_polyhedron[j]@R.transpose(-1,-2)+P.unsqueeze(-3)).cpu()
+            
+            for t in range(timesteps):                
                 self.link_patches.remove()
-                for j in range(self.n_links):
-                    P = R@self.P0[j] + P
-                    R = R@self.R0[j]@R_q[t,j]
-                    link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
-                    link_patches.extend(link_patch)            
-                self.link_patches = self.ax.add_collection(Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5))
+                self.link_patches = self.ax.add_collection3d(Poly3DCollection(list(link_trace_polyhedron[t]), edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5))
                 self.ax.set_xlim([-self.full_radius,self.full_radius])
                 self.ax.set_ylim([-self.full_radius,self.full_radius])
                 self.ax.set_zlim([-self.full_radius,self.full_radius])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
+                if save_kwargs is not None and t%plot_freq == 0:
+                    filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
+                    self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
+                    self._frame_steps+=1
 
         else:
             R_q = self.rot()
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
-            link_patches = []
-            self.link_patches.remove()
+            link_trace_patches = []
+            self.link_patches.remove()         
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[j]
-                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polyhedron_patch()
-                link_patches.extend(link_patch)
-            self.link_patches = self.ax.add_collection3d(Poly3DCollection(link_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5, linestyles=':'))
+                link_trace_patches.extend((self.link_polyhedron[j]@R.T+P).cpu())
+            self.link_patches = self.ax.add_collection3d(Poly3DCollection(link_trace_patches, edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5))
             self.ax.set_xlim([-self.full_radius,self.full_radius])
             self.ax.set_ylim([-self.full_radius,self.full_radius])
             self.ax.set_zlim([-self.full_radius,self.full_radius])
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
+            if save_kwargs is not None:
+                filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
+                self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
+                self._frame_steps+=1
 
     def close(self):
         if self.render_flag == False:
@@ -478,4 +495,4 @@ if __name__ == '__main__':
         for _ in range(10):
             env.step(torch.rand(7))
             env.render()
-            env.reset()
+            #env.reset()

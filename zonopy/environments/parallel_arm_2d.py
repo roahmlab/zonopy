@@ -455,9 +455,12 @@ class Parallel_Arm_2D:
         if self.interpolate:
             
             timesteps = int(T_PLAN/T_FULL*self.T_len) # NOTE
-            if show or save_kwargs is None:
-                plot_freq = timesteps//save_kwargs['frame_rate'] 
+            if show and save_kwargs is None:
+                plot_freq = 1
                 R_q = self.rot(self.qpos_to_peak[1:,:self.n_plots])
+            elif show:
+                plot_freq = timesteps//save_kwargs['frame_rate']
+                R_q = self.rot(self.qpos_to_peak[1:,:self.n_plots])    
             else:
                 plot_freq = 1
                 t_idx = torch.arange(timesteps+1,device=self.device)%(timesteps//save_kwargs['frame_rate'] ) == 1
