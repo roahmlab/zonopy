@@ -51,7 +51,10 @@ class Arm_2D:
 
 
         if interpolate:
-            self.T_len = T_len
+            if T_len % 2 != 0:
+                self.T_len = T_len + 1
+            else: 
+                self.T_len = T_len
             t_traj = torch.linspace(0,T_FULL,T_len+1,dtype=dtype,device=device)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len):] - T_PLAN

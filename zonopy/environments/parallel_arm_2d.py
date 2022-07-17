@@ -58,7 +58,10 @@ class Parallel_Arm_2D:
         self.PI = torch.tensor(torch.pi,dtype=dtype,device=device)
 
         if interpolate:
-            self.T_len = T_len
+            if T_len % 2 != 0:
+                self.T_len = T_len + 1
+            else: 
+                self.T_len = T_len
             t_traj = torch.linspace(0,T_FULL,T_len+1,dtype=dtype,device=device).reshape(-1,1,1)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len):] - T_PLAN

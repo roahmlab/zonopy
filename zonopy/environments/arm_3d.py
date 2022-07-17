@@ -66,7 +66,10 @@ class Arm_3D:
         self.interpolate = interpolate
         self.PI = torch.tensor(torch.pi,dtype=dtype,device=device)
         if interpolate:
-            self.T_len = T_len
+            if T_len % 2 != 0:
+                self.T_len = T_len + 1
+            else: 
+                self.T_len = T_len
             t_traj = torch.linspace(0,T_FULL,T_len+1,dtype=dtype,device=device)
             self.t_to_peak = t_traj[:int(T_PLAN/T_FULL*T_len)+1]
             self.t_to_brake = t_traj[int(T_PLAN/T_FULL*T_len):] - T_PLAN
@@ -490,7 +493,7 @@ class Arm_3D:
 
 if __name__ == '__main__':
 
-    env = Arm_3D(n_obs=3,T_len=20,interpolate=True)
+    env = Arm_3D(n_obs=3,T_len=50,interpolate=True)
     for _ in range(3):
         for _ in range(10):
             env.step(torch.rand(7))
