@@ -426,9 +426,10 @@ class zonotope:
                     V = V[K.vertices]
                 except:
                     V = V
-        K = ConvexHull(V)        
-        return [V[s] for s in K.simplices]
-
+        K = ConvexHull(V)
+        V = V.unsqueeze(0)        
+        return torch.cat([V[:,s] for s in K.simplices])
+ 
     def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
         '''
         plot 2 dimensional projection of a zonotope
