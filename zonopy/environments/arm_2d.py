@@ -2,6 +2,7 @@ import torch
 import zonopy as zp
 import matplotlib.pyplot as plt 
 from matplotlib.collections import PatchCollection
+from matplotlib.patches import Polygon
 import os
 #from .utils import locate_figure
 
@@ -34,7 +35,10 @@ class Arm_2D:
         self.dimension = 2
         self.n_links = n_links
         self.n_obs = n_obs
-        self.link_zonos = [zp.polyZonotope(torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device),0)]*n_links 
+        link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device)
+        self.link_zonos = [zp.polyZonotope(link_Z,0)]*n_links
+        self.__link_zonos = [zp.zonotope(link_Z)]*n_links 
+        self.link_polygon = [zono.project([0,1]).polygon() for zono in self.__link_zonos]
         self.P0 = [torch.tensor([0.0,0.0,0.0],dtype=dtype,device=device)]+[torch.tensor([1.0,0.0,0.0],dtype=dtype,device=device)]*(n_links-1)
         self.R0 = [torch.eye(3,dtype=dtype,device=device)]*n_links
         self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links,dtype=dtype,device=device)
@@ -104,9 +108,9 @@ class Arm_2D:
             Pg = Rg@self.P0[j] + Pg
             Ri = Ri@self.R0[j]@R_qi[j]
             Rg = Rg@self.R0[j]@R_qg[j]
-            link = (Ri@self.link_zonos[j]+Pi).to_zonotope()
+            link = (Ri@self.__link_zonos[j]+Pi)
             link_init.append(link)
-            link = (Rg@self.link_zonos[j]+Pg).to_zonotope()
+            link = (Rg@self.__link_zonos[j]+Pg)
             link_goal.append(link)
 
         for _ in range(self.n_obs):
@@ -175,9 +179,9 @@ class Arm_2D:
             Pg = Rg@self.P0[j] + Pg
             Ri = Ri@self.R0[j]@R_qi[j]
             Rg = Rg@self.R0[j]@R_qg[j]
-            link = (Ri@self.link_zonos[j]+Pi).to_zonotope()
+            link = (Ri@self.__link_zonos[j]+Pi)
             link_init.append(link)
-            link = (Rg@self.link_zonos[j]+Pg).to_zonotope()
+            link = (Rg@self.__link_zonos[j]+Pg)
             link_goal.append(link)
 
         for pos in obs_pos:
@@ -320,7 +324,7 @@ class Arm_2D:
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
                     R = R@self.R0[j]@R_q[j]
-                    link = (R@self.link_zonos[j]+P).to_zonotope()
+                    link = (R@self.__link_zonos[j]+P)
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
                         _,b = buff.project([0,1]).polytope()
@@ -386,12 +390,12 @@ class Arm_2D:
             for o in range(self.n_obs):
                 one_time_patches.append(self.obs_zonos[o].polygon_patch(edgecolor='red',facecolor='red'))
             R_q = self.rot(self.qgoal)
-            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)            
+            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device) 
             for j in range(self.n_links):
-                P = R@self.P0[j] + P 
+                P = R@self.P0[j] + P
                 R = R@self.R0[j]@R_q[j]
-                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polygon_patch(edgecolor='gray',facecolor='gray')
-                one_time_patches.append(link_patch)
+                link_goal_polygon = (self.link_polygon[0]@R[:2,:2].T+P[:2]).cpu()
+                one_time_patches.append(Polygon(link_goal_polygon,alpha=.5,edgecolor='gray',facecolor='gray',linewidth=.2))
             self.one_time_patches = PatchCollection(one_time_patches, match_original=True)
             self.ax.add_collection(self.one_time_patches)
 
@@ -424,49 +428,60 @@ class Arm_2D:
                 self.ax.add_collection(self.FO_patches)            
 
         if self.interpolate:
-            R_q = self.rot(self.qpos_to_peak)
-            time_steps = int(T_PLAN/T_FULL*self.T_len)
+            
+            timesteps = int(T_PLAN/T_FULL*self.T_len) # NOTE: length match??
+            if show or save_kwargs is None:
+                plot_freq = timesteps//save_kwargs['frame_rate']
+                R_q = self.rot(self.qpos_to_peak[1:])
+            else:
+                plot_freq = 1
+                t_idx = torch.arange(timesteps+1,device=self.device)%(timesteps//save_kwargs['frame_rate'] ) == 1
+                R_q = self.rot(self.qpos_to_peak[t_idx])
+                timesteps = len(R_q)
+
+            # NOTE: only compute one that in freq
             '''
             if not self.done:
-                time_steps = int(T_PLAN/T_FULL*self.T_len)
+                timesteps = int(T_PLAN/T_FULL*self.T_len)
             else:
-                time_steps = self.until_goal
+                timesteps = self.until_goal
             '''
-            for t in range(time_steps):
-                R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
-                link_patches = []
-                self.link_patches.remove()
-                for j in range(self.n_links):
-                    P = R@self.P0[j] + P
-                    R = R@self.R0[j]@R_q[t,j]
-                    link_patch = (R@self.link_zonos[j]+P).to_zonotope().polygon_patch(edgecolor='blue',facecolor='blue')
-                    link_patches.append(link_patch)            
-                self.link_patches = PatchCollection(link_patches, match_original=True)
+            link_trace_polygons =  torch.zeros(timesteps,5*self.n_links,2,dtype=self.dtype,device='cpu')
+            R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(1,3,dtype=self.dtype,device=self.device)
+            link_trace_patches = []
+            for j in range(self.n_links):
+                P = R@self.P0[j] + P
+                R = R@self.R0[j]@R_q[:,j]
+                link_trace_polygons[:,5*j:5*(j+1)] = (self.link_polygon[j]@R[:,:2,:2].transpose(-1,-2)+P[:,:2].unsqueeze(-2)).cpu()
+
+            for t in range(len(R_q)):
+                self.link_patches.remove()    
+                link_trace_patches = [Polygon(link_trace_polygons[t,5*j:5*(j+1)],alpha=.5,edgecolor='blue',facecolor='blue',linewidth=.2) for j in range(self.n_links)]
+                self.link_patches = PatchCollection(link_trace_patches, match_original=True)
                 self.ax.add_collection(self.link_patches)
                 ax_scale = 1.2
                 axis_lim = ax_scale*self.n_links
                 plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
-                if save_kwargs is not None:
-                    if t%(time_steps//save_kwargs['frame_rate']) == 0:
-                        filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
-                        self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
-                        self._frame_steps+=1
+                if save_kwargs is not None and t%plot_freq == 0:
+                    filename = "/frame_"+"{0:04d}".format(self._frame_steps)                    
+                    self.fig.savefig(save_kwargs['save_path']+filename,dpi=save_kwargs['dpi'])
+                    self._frame_steps+=1
 
 
                 
         else:
             R_q = self.rot()
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
-            link_patches = []
+            link_trace_patches = []
             self.link_patches.remove()
             for j in range(self.n_links):
                 P = R@self.P0[j] + P 
                 R = R@self.R0[j]@R_q[j]
-                link_patch = (R@self.link_zonos[j]+P).to_zonotope().polygon_patch(edgecolor='blue',facecolor='blue')
-                link_patches.append(link_patch)
-            self.link_patches = PatchCollection(link_patches, match_original=True)
+                link_trace_polygon = (self.link_polygon[0]@R[:2,:2].T+P[:2]).cpu()
+                link_trace_patches.append(Polygon(link_trace_polygon,alpha=.5,edgecolor='blue',facecolor='blue',linewidth=.2))
+            self.link_patches = PatchCollection(link_trace_patches, match_original=True)
             self.ax.add_collection(self.link_patches)
             ax_scale = 1.2
             axis_lim = ax_scale*self.n_links
@@ -485,6 +500,7 @@ class Arm_2D:
             self.FO_patches.remove()
             self.link_patches.remove()
         self.render_flag = True
+        self._frame_steps = 0
         plt.close()
         self.fig = None 
 

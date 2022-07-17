@@ -8,11 +8,14 @@ class VideoRecorder:
         enabled=None,
         dpi=None,
         frame_rate=5,
-        show=False
+        show=False,
+        format = 'gif'
         ):
+        #assert format == 'mp4' or format == 'gif'
         self.env =env 
         head, _ = os.path.split(base_path)
-        self.video_path = base_path+'.mp4' 
+        self.format = format
+        self.video_path = base_path 
         self.frame_dir_path = os.path.join(head,'frames')
         self.save_kwargs = {'frame_rate':frame_rate,'save_path':self.frame_dir_path, 'dpi':dpi}
         self.show = show
@@ -29,11 +32,24 @@ class VideoRecorder:
             '-i', os.path.join(self.frame_dir_path,'frame_%04d.png'), # frame images for video geneartion
             '-r', fr, # frame rate of video
             '-pix_fmt', 'yuv420p',
-            '-crf','25', # quality of video, lower means better
+            #'-crf','25', # quality of video, lower means better
             '-s', '640x480',
-            self.video_path
+            self.video_path + '.mp4'
         ],stdout=subprocess.DEVNULL,
         stderr=subprocess.STDOUT)   
+
+        # for some reason, direct .gif generation is poor.
+        if self.format == 'gif': 
+            subprocess.call([
+                'ffmpeg',
+                '-y',
+                '-i',self.video_path + '.mp4',
+                self.video_path + '.gif'
+
+            ],stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT)
+            subprocess.call(['rm','-rf',self.video_path + '.mp4'])
+
         if rm_frames:
             subprocess.call(['rm','-rf',self.frame_dir_path])
         self.env.close()
@@ -43,22 +59,39 @@ class VideoRecorder:
 
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
+    from zonopy.environments.parallel_arm_2d import Parallel_Arm_2D
+    
     import torch 
     import time 
-    env = Arm_2D(n_obs=2)
-    video_folder = 'video_test'
-    #os.makedirs(video_folder, exist_ok=True)
+    parallel = True
+    if parallel:
+        env = Parallel_Arm_2D(n_links = 2 ,n_obs = 2,T_len=24,n_envs=9,n_plots=4)
+        video_folder = 'video_test'
 
-    
-
-    for i in range(2):
-        base_path = os.path.join(video_folder,f'video_{i}')
-        video_recorder = VideoRecorder(env,base_path)
         ts = time.time()
-        for t in range(10):
-            env.step(torch.rand(2))
-            video_recorder.capture_frame()
-        video_recorder.close()
-        env.reset()
+        for i in range(2):
+            base_path = os.path.join(video_folder,f'video_{i}')
+            video_recorder = VideoRecorder(env,base_path,frame_rate=3,format='gif',show=False)
+            for t in range(10):
+                env.step(torch.rand(env.n_envs,env.n_links))
+                video_recorder.capture_frame()
+            video_recorder.close(True)
+            env.reset()
 
-    print(f'Time elasped: {time.time()-ts}')
+        print(f'Time elasped: {time.time()-ts}')    
+
+    else:
+        env = Arm_2D(n_links = 2 ,n_obs = 2,T_len=24)
+        video_folder = 'video_test'
+
+        ts = time.time()
+        for i in range(2):
+            base_path = os.path.join(video_folder,f'video_{i}')
+            video_recorder = VideoRecorder(env,base_path,frame_rate=3,format='gif')
+            for t in range(10):
+                env.step(torch.rand(env.n_links))
+                video_recorder.capture_frame()
+            video_recorder.close(True)
+            env.reset()
+
+        print(f'Time elasped: {time.time()-ts}')

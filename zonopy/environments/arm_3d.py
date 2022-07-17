@@ -460,6 +460,7 @@ class Arm_3D:
             self.FO_patches.remove()
             self.link_patches.remove()
         self.render_flag = True
+        self._frame_steps = 0
         plt.close()
         self.fig = None 
         
