@@ -90,7 +90,6 @@ class Arm_2D:
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         self.qgoal = torch.rand(self.n_links,dtype=self.dtype,device=self.device)*2*torch.pi - torch.pi
-        self.fail_safe_count = 0
         if self.interpolate:
             T_len_to_peak = int((1-T_PLAN/T_FULL)*self.T_len)+1  
             self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1)
@@ -244,8 +243,9 @@ class Arm_2D:
                 self.qvel_to_peak = torch.clone(self.qvel_to_brake)
                 self.qpos = self.qpos_to_peak[-1]
                 self.qvel = self.qvel_to_peak[-1]
-                self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(self.T_len,1)
-                self.qvel_to_brake = torch.zeros(self.T_len,self.n_links,dtype=self.dtype,device=self.device)
+                T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1  
+                self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_brake,1)
+                self.qvel_to_brake = torch.zeros(T_len_to_brake,self.n_links,dtype=self.dtype,device=self.device)
                 self.collision = self.collision_check(self.qpos_to_peak[1:])
         else:
             if self.safe:
@@ -403,13 +403,13 @@ class Arm_2D:
 
         if FO_link is not None: 
             FO_patches = []
-            if self.fail_safe_count != 1:
+            if self.fail_safe_count == 0:
                 #g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
                 g_ka = self.PI/24
                 self.FO_patches.remove()
                 for j in range(self.n_links):
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
-                    
+                    '''
                     FO_link_polygons = FO_link_slc.polygon().cpu()
                     import pdb;pdb.set_trace()
 
@@ -438,7 +438,7 @@ class Arm_2D:
                         for t in range(100): 
                             FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
                             FO_patches.append(FO_patch)
-                    '''
+                    
                 self.FO_patches = PatchCollection(FO_patches, match_original=True)
                 self.ax.add_collection(self.FO_patches)            
 
