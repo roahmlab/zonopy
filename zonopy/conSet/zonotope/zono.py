@@ -230,6 +230,7 @@ class zonotope:
         vertices_half = torch.vstack((torch.zeros(dim,device=self.device),2*G[ang_idx].cumsum(axis=0)))
         vertices_half[:,0] += x_max - torch.max(vertices_half[:,0])
         vertices_half[:,1] -= y_max
+
         full_vertices = torch.vstack((vertices_half,-vertices_half[1:] + vertices_half[0]+ vertices_half[-1])) + c
         return full_vertices
         

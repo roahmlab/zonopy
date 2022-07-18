@@ -234,23 +234,29 @@ class batchZonotope:
         '''
         dim = 2
         z = self.deleteZerosGenerators()
-        c = z.center[self.batch_idx_all+(slice(2),)].unsqueeze(-2).repeat((1,)*(self.batch_dim+2))
+        c = z.center[self.batch_idx_all+(slice(2),)].unsqueeze(-2)#.repeat((1,)*(self.batch_dim+2))
         G = torch.clone(z.generators[self.batch_idx_all+(slice(None),slice(2))])
         x_idx = self.batch_idx_all+(slice(None),0)
         y_idx = self.batch_idx_all+(slice(None),1)
         G_y = G[y_idx]
         x_max = torch.sum(abs(G[x_idx]),-1)
         y_max = torch.sum(abs(G_y),-1)
+        
         G[G_y<0] = - G[G_y<0]
         if nan:
             G[torch.linalg.norm(G,dim=-1)==0] = torch.nan
-        angles = torch.atan2(G[x_idx],G[y_idx])    
+        angles = torch.atan2(G[y_idx],G[x_idx])    
         ang_idx = torch.argsort(angles,dim=-1).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+(2,))
-        vertices_half = torch.cat((torch.zeros(self.batch_shape+(1,)+(2,)),2*G.gather(-2,ang_idx).cumsum(axis=self.batch_dim)),-2)
-        vertices_half[x_idx] += (x_max - torch.max(vertices_half[x_idx],dim=-1)[0]).unsqueeze(-1)
+        vertices_half = torch.cat((torch.zeros(self.batch_shape+(1,)+(2,),dtype=self.dtype,device=self.device),2*G.gather(-2,ang_idx).cumsum(axis=self.batch_dim)),-2)
+        vertices_half[x_idx] += (x_max - torch.max(vertices_half[x_idx].nan_to_num(-torch.inf),dim=-1)[0]).unsqueeze(-1)
         vertices_half[y_idx] -= y_max.unsqueeze(-1)
-        
-        temp = (vertices_half[self.batch_idx_all+(0,)]+ vertices_half[self.batch_idx_all+(-1,)]).unsqueeze(-2)
+        if nan:
+            last_idx = (z.n_generators-angles.isnan().sum(-1)).reshape(self.batch_shape+(1,1)).repeat((1,)*self.batch_dim+(1,2))
+            temp = (vertices_half[self.batch_idx_all+(0,)].unsqueeze(-2)+ vertices_half.gather(-2,last_idx))
+        else:
+            temp = (vertices_half[self.batch_idx_all+(0,)]+ vertices_half[self.batch_idx_all+(-1,)]).unsqueeze(-2)
+
+
         full_vertices = torch.cat((vertices_half,-vertices_half[self.batch_idx_all+(slice(1,None),)] + temp),dim=self.batch_dim) + c
         return full_vertices        
 
