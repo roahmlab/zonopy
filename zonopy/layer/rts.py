@@ -11,10 +11,8 @@ def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
 T_PLAN, T_FULL = 0.5, 1.0
-NUM_PROCESSES = 40
 
-
-def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = torch.float, device=torch.device('cpu'), budget = 200, std = 0.6, goal_bias = 0.2):
+def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = torch.float, device=torch.device('cpu'), budget = 200, std = 0.3, goal_bias = 0.2):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 2
     n_timesteps = 100
@@ -32,14 +30,12 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
             lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             observation = observation.to(dtype=dtype,device=device)
-            ka = g_ka * lambd
 
             n_batches = observation.shape[0]
             qpos = observation[:, :n_links]
             qvel = observation[:, n_links:2 * n_links]
             obstacle_pos = observation[:, -4 * n_obs:-2 * n_obs]
             obstacle_size = observation[:, -2 * n_obs:]
-            qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
 
             _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
             batch_FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
@@ -75,15 +71,15 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                 # Uncorrected actions
                 lambd_unsafe = lambd[rts_pass_indices]
                 # Lower and upper bound for [-1,1] and velocity limit
-                lb = torch.maximum((-PI_vel-qvel)/T_PLAN,-ONE)
-                ub = torch.minimum((PI_vel-qvel)/T_PLAN,ONE)
-                # Gaussian sample with clamp
+                lb = torch.maximum((-PI_vel-qvel[rts_pass_indices])/T_PLAN,-ONE)
+                ub = torch.minimum((PI_vel-qvel[rts_pass_indices])/T_PLAN,ONE)
+                # Gaussian sample with clamp and Uniform sample
                 Nsampler = torch.distributions.normal.Normal(lambd_unsafe,scale=std)
                 Usampler = torch.distributions.uniform.Uniform(lb,ub)
                 Nbudget = int(goal_bias*budget)
                 Ubudget = budget - Nbudget
-                lambda_candidates = torch.cat((Nsampler.sample((Nbudget,)).clamp(lb,ub),Usampler.sample((Ubudget,))),0)
-                
+
+                lambda_candidates = torch.cat((Nsampler.sample((Nbudget,)).clamp(lb,ub),Usampler.sample((Ubudget,))),0)          
                 lambda_candidates_to_slc = lambda_candidates.unsqueeze(-2).repeat(1,1,n_timesteps,1) # budget, n_batches, n_timesteps, dimension
                 # Check safety of sampled actions
                 rts_flags = torch.zeros(budget,n_problems,dtype=bool,device=device) # (false) success, (true) fail
@@ -96,7 +92,7 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                                                         compress=0)
                     c_k = FO_link_budgets.center_slice_all_dep(lambda_candidates_to_slc).unsqueeze(-1) 
                     for o in range(n_obs): 
-                        h_obs = ((As[j,o] @ c_k).squeeze(-1) - bs[j,o]).nan_to_num(-torch.inf) 
+                        h_obs = ((As[j,o][:,rts_pass_indices] @ c_k).squeeze(-1) - bs[j,o][:,rts_pass_indices]).nan_to_num(-torch.inf) 
                         rts_flags += (torch.max(h_obs, -1)[0] < 1e-6).any(-1) 
                 # Pick the closest safe action from the original action
                 lambda_candidates[rts_flags.to(dtype=bool)] = torch.inf # set infinity for unsafe action
@@ -106,7 +102,8 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                 rts_success = (~rts_flags).any(0) # (true) success, (false) fail
                 rts_success_indices = rts_pass_indices_tensor[rts_success]
                 # Parse rts output
-                lambd[rts_success_indices] = lambda_best[rts_success_indices]
+
+                lambd[rts_success_indices] = lambda_best
                 flags[rts_pass_indices] = (~rts_success).to(dtype=flags.dtype)
 
             zp.reset()
@@ -122,6 +119,7 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
 if __name__ == '__main__':
     
     from zonopy.environments.arm_2d import Arm_2D
+    from zonopy.environments.parallel_arm_2d import Parallel_Arm_2D
     import time
     from zonopy.conSet import PROPERTY_ID
     ##### 0. SET DEVICE #####
@@ -134,11 +132,12 @@ if __name__ == '__main__':
 
     ##### 1. SET ENVIRONMENT #####
     n_links = 2
-    env = Arm_2D(n_links=n_links, n_obs=1)
-    observation = env.set_initial(qpos=torch.tensor([0.1 * torch.pi, 0.1 * torch.pi]), 
-                                  qvel=torch.zeros(n_links),
-                                  qgoal=torch.tensor([-0.5 * torch.pi, -0.8 * torch.pi]),
-                                  obs_pos=[torch.tensor([-1, -0.9])])
+    n_batch = 9
+    env = Parallel_Arm_2D(n_envs = n_batch, n_links=n_links, n_obs=1, n_plots = 4)
+    observation = env.set_initial(qpos=torch.tensor([[0.1 * torch.pi, 0.1 * torch.pi]]).repeat(n_batch,1), 
+                                  qvel=torch.zeros(n_batch,n_links),
+                                  qgoal=torch.tensor([[-0.5 * torch.pi, -0.8 * torch.pi]]).repeat(n_batch,1),
+                                  obs_pos=[torch.tensor([[-1, -0.9]]).repeat(n_batch,1)])
 
     ##### 2. GENERATE RTS LAYER #####    
     P,R,link_zonos = [],[],[]
@@ -152,15 +151,15 @@ if __name__ == '__main__':
 
     ##### 3. RUN RTS #####
     t_forward = 0
+    t_render = 0
     n_steps = 30
-    n_batch = 40
     print('='*90)
     for _ in range(n_steps):
         ts = time.time()
-        observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys()])
+        observ_temp = torch.hstack([observation[key].reshape(n_batch,-1) for key in observation.keys()])
 
-        lam = torch.tensor([0.8, 0.8])
-        lam, FO_link, flag = RTS(torch.vstack(([lam] * n_batch)), torch.vstack(([observ_temp] * n_batch)))
+        lam_hat = torch.tensor([0.8, 0.8],device=device,dtype=dtype)
+        lam, FO_link, flag = RTS(torch.vstack(([lam_hat] * n_batch)), observ_temp)
               
         print(f'action: {lam[0]}')
         print(f'flag: {flag[0]}')
@@ -169,10 +168,8 @@ if __name__ == '__main__':
         print(f'Time elasped for RTS forward:{t_elasped}')
         print('='*90)
         t_forward += t_elasped
-        observation, reward, done, info = env.step(lam[0].cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag[0].cpu().to(dtype=torch.get_default_dtype()))
+        observation, reward, done, info = env.step(lam.cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag.cpu().to(dtype=torch.get_default_dtype()))
         
-        PROPERTY_ID.update(n_links)
-        FO_link = [fo[0] for fo in FO_link]
         env.render(FO_link)
 
     print(f'Total time elasped for RTS forward with {n_steps} steps: {t_forward}')

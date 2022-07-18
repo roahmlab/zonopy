@@ -63,6 +63,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
     class RTS_star_2D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx, lambd, observation):
+            zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
@@ -82,7 +83,8 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
             As = np.zeros((n_batches,n_links,n_obs),dtype=object)
             bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
-            FO_links = np.zeros((n_batches,n_links),dtype=object)
+            FO_links_nlp = np.zeros((n_batches,n_links),dtype=object)
+            FO_links = np.zeros((n_links,),dtype=object)
             lambda_to_slc = lambd.reshape(n_batches, 1, dimension).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
@@ -98,8 +100,8 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
                     As[:,j,o] = list(A_temp.cpu().numpy())
                     bs[:,j,o] = list(b_temp.cpu().numpy())
-                FO_links[:,j] = [fo for fo in FO_link_temp.cpu()]
-
+                FO_links_nlp[:,j] = [fo for fo in FO_link_temp.cpu()]
+                FO_links[j] = FO_link_temp
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
             flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             infos = [None for _ in range(n_batches)]
@@ -114,7 +116,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                             [x for x in
                             zip(As[rts_pass_indices],
                                 bs[rts_pass_indices],
-                                FO_links[rts_pass_indices],
+                                FO_links_nlp[rts_pass_indices],
                                 qpos.cpu().numpy()[rts_pass_indices],
                                 qvel.cpu().numpy()[rts_pass_indices],
                                 qgoal.cpu().numpy()[rts_pass_indices],
@@ -138,7 +140,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 else:
                     rts_lambd_opts, rts_flags = [], []                    
                     for idx in rts_pass_indices:
-                        rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links[idx],qpos.cpu().numpy()[idx],qvel.cpu().numpy()[idx],qgoal.cpu().numpy()[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd[idx])
+                        rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links_nlp[idx],qpos.cpu().numpy()[idx],qvel.cpu().numpy()[idx],qgoal.cpu().numpy()[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd[idx])
                         infos[idx] = info
                         rts_lambd_opts.append(rts_lambd_opt)
                         rts_flags.append(rts_flag)
@@ -157,6 +159,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 if __name__ == '__main__':
     
     from zonopy.environments.arm_2d import Arm_2D
+    from zonopy.environments.parallel_arm_2d import Parallel_Arm_2D
     import time
     ##### 0. SET DEVICE #####
     if torch.cuda.is_available():
@@ -168,11 +171,13 @@ if __name__ == '__main__':
 
     ##### 1. SET ENVIRONMENT #####
     n_links = 2
-    env = Arm_2D(n_links=n_links, n_obs=1)
-    observation = env.set_initial(qpos=torch.tensor([0.1 * torch.pi, 0.1 * torch.pi]), 
-                                  qvel=torch.zeros(n_links),
-                                  qgoal=torch.tensor([-0.5 * torch.pi, -0.8 * torch.pi]),
-                                  obs_pos=[torch.tensor([-1, -0.9])])
+    #env = Arm_2D(n_links=n_links, n_obs=1)
+    n_batch = 9
+    env = Parallel_Arm_2D(n_envs = n_batch, n_links=n_links, n_obs=1, n_plots = 4)
+    observation = env.set_initial(qpos=torch.tensor([[0.1 * torch.pi, 0.1 * torch.pi]]).repeat(n_batch,1), 
+                                  qvel=torch.zeros(n_batch,n_links),
+                                  qgoal=torch.tensor([[-0.5 * torch.pi, -0.8 * torch.pi]]).repeat(n_batch,1),
+                                  obs_pos=[torch.tensor([[-1, -0.9]]).repeat(n_batch,1)])
 
     ##### 2. GENERATE RTS LAYER #####    
     P,R,link_zonos = [],[],[]
@@ -186,15 +191,16 @@ if __name__ == '__main__':
 
     ##### 3. RUN RTS #####
     t_forward = 0
+    t_render = 0
     n_steps = 30
-    n_batch = 40
+    
     print('='*90)
     for _ in range(n_steps):
         ts = time.time()
-        observ_temp = torch.hstack([observation[key].flatten() for key in observation.keys()])
+        observ_temp = torch.hstack([observation[key].reshape(n_batch,-1) for key in observation.keys()])
 
         lam = torch.tensor([0.8, 0.8])
-        lam, FO_link, flag, nlp_info = RTS(torch.vstack(([lam] * n_batch)), torch.vstack(([observ_temp] * n_batch)))
+        lam, FO_link, flag, nlp_info = RTS(torch.vstack(([lam] * n_batch)), observ_temp)
               
         print(f'action: {lam[0]}')
         print(f'flag: {flag[0]}')
@@ -203,9 +209,13 @@ if __name__ == '__main__':
         print(f'Time elasped for RTS forward:{t_elasped}')
         print('='*90)
         t_forward += t_elasped
-        observation, reward, done, info = env.step(lam[0].cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag[0].cpu().to(dtype=torch.get_default_dtype()))
+        observation, reward, done, info = env.step(lam.cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag.cpu().to(dtype=torch.get_default_dtype()))
 
-    
-        env.render(FO_link[0])
+        ts = time.time()
+        env.render(FO_link)
+        t_render += time.time()-ts 
+
+
 
     print(f'Total time elasped for RTS forward with {n_steps} steps: {t_forward}')
+    print(f'Total time elasped for rendering with {n_steps} steps: {t_render}')
