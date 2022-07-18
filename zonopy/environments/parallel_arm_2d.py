@@ -6,6 +6,8 @@ import matplotlib.patches as patches
 import os
 import numpy as np
 
+from zonopy.conSet import PROPERTY_ID
+
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
@@ -205,7 +207,74 @@ class Parallel_Arm_2D:
         self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=self.device)
         self.reward_com = torch.zeros(self.n_envs,dtype=self.dtype,device=self.device)
         return self.get_observations()
+
+    def set_initial(self,qpos,qvel,qgoal,obs_pos):
+        self.qpos = qpos.to(dtype=self.dtype,device=self.device)
+        self.qpos_int = torch.clone(self.qpos)
+        self.qvel = qvel.to(dtype=self.dtype,device=self.device)
+        self.qvel_int = torch.clone(self.qvel)
+        self.qpos_prev = torch.clone(self.qpos)
+        self.qvel_prev = torch.clone(self.qvel)
+        self.qgoal = qgoal.to(dtype=self.dtype,device=self.device)
+
+        if self.interpolate:
+            T_len_to_peak = int(T_PLAN/T_FULL*self.T_len)+1
+            T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1
+            self.qpos_to_peak = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1,1)
+            self.qvel_to_peak = torch.zeros(T_len_to_peak,self.n_envs,self.n_links,dtype=self.dtype,device=self.device)
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_brake,1,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_brake,self.n_envs,self.n_links,dtype=self.dtype,device=self.device)        
+        else:
+            self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
+            self.qvel_brake = torch.zeros(self.n_envs,self.n_links,dtype=self.dtype,device=self.device)     
+        self.obs_zonos = []
         
+        R_qi = self.rot()
+        R_qg = self.rot(self.qgoal)
+        Ri, Pi = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)       
+        Rg, Pg = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)               
+        link_init, link_goal = [], []
+        for j in range(self.n_links):
+            
+            Pi = Ri@self.P0[j] + Pi 
+            Pg = Rg@self.P0[j] + Pg
+            Ri = Ri@self.R0[j]@R_qi[:,j]
+            Rg = Rg@self.R0[j]@R_qg[:,j]
+            
+            link = Ri@self.__link_zonos[j]+Pi
+            link_init.append(link)
+            link = Rg@self.__link_zonos[j]+Pg
+            link_goal.append(link)
+
+
+        for pos in obs_pos:
+            obs = torch.cat((torch.cat((pos.unsqueeze(1),self.obstacle_config['side_length']),1),self.obstacle_config['zero_pad']),-1)
+            obs = zp.batchZonotope(obs)
+            for j in range(self.n_links):            
+                buff = link_init[j]-obs
+                _,bi = buff.project([0,1]).polytope()
+                if any(bi.min(1).values > -1e-5):
+                    assert False, 'given obstacle position is in collision with initial and goal configuration.'
+                buff = link_goal[j]-obs
+                _,bg = buff.project([0,1]).polytope()   
+                if any(bg.min(1).values > -1e-5):
+                    assert False, 'given obstacle position is in collision with initial and goal configuration.'
+            self.obs_zonos.append(obs)
+
+        self.fail_safe_count = torch.zeros(self.n_envs,dtype=int,device=self.device)
+        if self.render_flag == False:
+            for b in range(self.n_plots):
+                self.one_time_patches[b].remove()
+                self.FO_patches[b].remove()
+                self.link_patches[b].remove()
+        self.render_flag = True
+        self._frame_steps = 0
+
+        self.done = torch.zeros(self.n_envs,dtype=bool,device=self.device)
+        self.collision = torch.zeros(self.n_envs,dtype=bool,device=self.device)
+        self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=self.device)
+        self.reward_com = torch.zeros(self.n_envs,dtype=self.dtype,device=self.device)
+        return self.get_observations()        
     def obstacle_sample(self,link_init,link_goal,idx):
         '''
         if idx is None:
@@ -234,10 +303,11 @@ class Parallel_Arm_2D:
         if flag is None:
             self.step_flag = torch.zeros(self.n_envs,dtype=int,device=self.device)
         else:
-            self.step_flag = flag.to(dtype=int,device=self.device)
+            self.step_flag = flag.to(dtype=int,device=self.device).detach()
         self.safe = self.step_flag <= 0
         # -torch.pi<qvel+k*T_PLAN < torch.pi
         # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
+        ka = ka.detach()
         self.ka = ka.clamp((-self.PI-self.qvel)/T_PLAN,(self.PI-self.qvel)/T_PLAN) # velocity clamp
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
@@ -432,34 +502,32 @@ class Parallel_Arm_2D:
                 self.FO_patches.append(ax.add_collection(PatchCollection([])))
                 self.link_patches.append(ax.add_collection(PatchCollection([])))
         
-        '''
         if FO_link is not None: 
-            FO_patches = []
-            if self.fail_safe_count != 1:
-                g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
-                self.FO_patches.remove()
+            FO_patch = []
+            FO_render_idx = (self.fail_safe_count[:self.n_plots] == 0).nonzero().reshape(-1)
+            if FO_render_idx.numel() != 0:
+                g_ka = self.PI/24 
+                FO_link_polygons = []
                 for j in range(self.n_links):
-                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
-                    if self.check_collision_FO:
-                        c_link_slc = FO_link[j].center_slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
-                        for o,obs in enumerate(self.obs_zonos):
-                            obs_Z = obs.Z[:,:self.dimension].unsqueeze(0).repeat(100,1,1)
-                            A, b = zp.batchZonotope(torch.cat((obs_Z,FO_link[j].Grest),-2)).polytope()
-                            cons, _ = torch.max((A@c_link_slc.unsqueeze(-1)).squeeze(-1) - b,-1)
-                            for t in range(100):                            
-                                if cons[t] < 1e-6:
-                                    color = 'red'
-                                else:
-                                    color = 'green'
-                                FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor=color)
-                                FO_patches.append(FO_patch)
-                    else:
-                        for t in range(100): 
-                            FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
-                            FO_patches.append(FO_patch)
-                self.FO_patches = PatchCollection(FO_patches, match_original=True)
-                self.ax.add_collection(self.FO_patches)            
-        '''
+                    FO_patch = []
+                    PROPERTY_ID.update(self.n_links)
+                    FO_link_slc = FO_link[j][FO_render_idx].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka[FO_render_idx]/g_ka).unsqueeze(1).repeat(1,100,1))
+                    zp.reset()
+                    FO_link_polygons.append(FO_link_slc.polygon().detach())
+            
+                for idx, b in enumerate(FO_render_idx.tolist()):
+                    self.FO_patches[b].remove()
+                    FO_patch = []
+                    for j in range(self.n_links):
+                        render_seperate_FO = True
+                        if render_seperate_FO:
+                            FO_patch.extend([patches.Polygon(polygon,alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons[j][idx]])
+                        else:
+                            FO_patch.append(patches.Polygon(FO_link_polygons[j][idx].reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))                        
+                            
+                    self.FO_patches[b] = PatchCollection(FO_patch, match_original=True)
+                    self.axs.flat[b].add_collection(self.FO_patches[b])
+  
         if self.interpolate:
             
             timesteps = int(T_PLAN/T_FULL*self.T_len) # NOTE

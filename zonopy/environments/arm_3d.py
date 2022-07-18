@@ -233,6 +233,7 @@ class Arm_3D:
         self.safe = flag <= 0
         # -torch.pi<qvel+k*T_PLAN < torch.pi
         # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
+        ka = ka.detach()
         self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
@@ -417,7 +418,7 @@ class Arm_3D:
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)).reduce(4)
                     for t in range(100): 
                         if t % self.FO_freq == 0:
-                            FO_patch = FO_link_slc[t].polyhedron_patch()
+                            FO_patch = FO_link_slc[t].polyhedron_patch().detach()
                             FO_patches.extend(FO_patch)
                 self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.2)) 
 

@@ -220,6 +220,7 @@ class Arm_2D:
         self.safe = flag <= 0
         # -torch.pi<qvel+k*T_PLAN < torch.pi
         # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
+        ka = ka.detach()
         self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
@@ -408,37 +409,35 @@ class Arm_2D:
                 g_ka = self.PI/24
                 self.FO_patches.remove()
                 for j in range(self.n_links):
-                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
-                    '''
-                    FO_link_polygons = FO_link_slc.polygon().cpu()
-                    import pdb;pdb.set_trace()
-
-                    # P1 =FO_link_polygons[0]
-                    # P2=FO_link_slc[0].polygon()
-
-                    #FO_patches.extend(FO_link_polygons)
-                    for FO_link_polygon in FO_link_polygons:
-                        FO_patches.append(Polygon(FO_link_polygon[~FO_link_polygon[:,0].isnan()],alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2))
-
-                    '''
-                    if self.check_collision_FO:
-                        c_link_slc = FO_link[j].center_slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
-                        for o,obs in enumerate(self.obs_zonos):
-                            obs_Z = obs.Z[:,:self.dimension].unsqueeze(0).repeat(100,1,1)
-                            A, b = zp.batchZonotope(torch.cat((obs_Z,FO_link[j].Grest),-2)).polytope()
-                            cons, _ = torch.max((A@c_link_slc.unsqueeze(-1)).squeeze(-1) - b,-1)
-                            for t in range(100):                            
-                                if cons[t] < 1e-6:
-                                    color = 'red'
-                                else:
-                                    color = 'green'
-                                FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor=color)
-                                FO_patches.append(FO_patch)
-                    else:
-                        for t in range(100): 
-                            FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
-                            FO_patches.append(FO_patch)
+                    FO_link_slc = FO_link[j].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
                     
+                    FO_link_polygons = FO_link_slc.polygon().detach()
+                    
+                    render_seperate_FO = False
+                    if render_seperate_FO:
+                        FO_patches.extend([Polygon(polygon,alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
+                    else:
+                        FO_patches.append(Polygon(FO_link_polygons.reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))                        
+
+                    '''
+                    NOTE: different methods to plot FO
+                    Option 0: Plot all 100 timesteps and joints FO as a single geometry
+
+                    Option 1: Plot all 100 timestep FO as a single geometry
+                    FO_patches.append(Polygon(FO_link_polygons.reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))
+
+                    Options 2: Plot all 100 timestep FO with seperate geometries + possibly pass NaN value
+                    FO_patches.extend([Polygon(polygon,alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
+                    
+                    Options 3: Plot all 100 timestep FO with seperate geometries + possibly pass NaN value
+                    FO_patches.append([Polygon(polygon[~polygon[:,0].isnan()],alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
+
+                    Option 4: Just collect polytope for every single timestep without using batch computation
+                    for t in range(100): 
+                        FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
+                        FO_patches.append(FO_patch)
+                    '''
+
                 self.FO_patches = PatchCollection(FO_patches, match_original=True)
                 self.ax.add_collection(self.FO_patches)            
 
