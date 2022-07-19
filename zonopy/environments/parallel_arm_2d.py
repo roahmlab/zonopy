@@ -138,7 +138,7 @@ class Parallel_Arm_2D:
                 if safe_flag.all():
                     break
         
-        self.fail_safe_count[idx] = 0
+        #self.fail_safe_count[idx] = 0
         #self.done[idx] = False
         #self.collision[idx] = False
         self._elapsed_steps[idx] = 0
@@ -504,7 +504,7 @@ class Parallel_Arm_2D:
         
         if FO_link is not None: 
             FO_patch = []
-            FO_render_idx = (self.fail_safe_count[:self.n_plots] == 0).nonzero().reshape(-1)
+            FO_render_idx = (self.fail_safe_count[:self.n_plots] == 0).nonzero().reshape(-1) # NOTE: deal with _reset()
             if FO_render_idx.numel() != 0:
                 g_ka = self.PI/24 
                 FO_link_polygons = []
