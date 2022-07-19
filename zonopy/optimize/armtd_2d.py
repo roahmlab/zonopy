@@ -179,6 +179,7 @@ if __name__ == '__main__':
     ##### 2. RUN ARMTD #####
     planner = ARMTD_2D_planner(env,device=device,dtype=dtype)
     t_armtd = 0
+    t_render = 0
     n_steps = 30
     print('='*90)    
     for _ in range(n_steps):
@@ -188,8 +189,11 @@ if __name__ == '__main__':
         print(f'Time elasped for ARMTD-2d:{t_elasped}')
         t_armtd += t_elasped
         observations, reward, done, info = env.step(ka.cpu(),flag)
-        env.render(planner.FO_link)
 
+        ts =time.time()
+        env.render(planner.FO_link)
+        t_render += time.time()-ts
     print(f'Total time elasped for ARMTD-2D with {n_steps} steps: {t_armtd}')
+    print(f'Total time elasped for rendering with {n_steps} steps: {t_render}')
     import pdb;pdb.set_trace()
 
