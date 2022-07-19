@@ -33,6 +33,8 @@ class Parallel_Arm_2D:
             reward_shaping=True,
             max_episode_steps = 100,
             n_plots = None,
+            FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
+            ticks = False,
             dtype= torch.float,
             device = torch.device('cpu')
             ):
@@ -86,6 +88,9 @@ class Parallel_Arm_2D:
         self.fig = None
         self.render_flag = True
         self._frame_steps = 0
+        assert FO_render_level<4
+        self.FO_render_level = FO_render_level
+        self.ticks = ticks
 
         self._max_episode_steps = max_episode_steps
         self._elapsed_steps = torch.zeros(self.n_envs,dtype=int,device=device)
@@ -467,6 +472,9 @@ class Parallel_Arm_2D:
                     self.axs = np.array([self.fig.gca()])
                 else:
                     self.fig, self.axs = plt.subplots(self.plot_grid_size[0],self.plot_grid_size[1],figsize=[self.plot_grid_size[1]*6.4/2,self.plot_grid_size[0]*4.8/2],dpi=dpi)
+                if not self.ticks: 
+                    plt.tick_params(top=False, bottom=False, left=False, right=False,labelleft=False, labelbottom=False)
+                plt.setp(self.axs,xticks=[],xticklabels=[],yticks=[],yticklabels=[])
                 if save_kwargs is not None:
                     os.makedirs(save_kwargs['save_path'],exist_ok=True)
                     if self.n_plots == 1:
@@ -518,13 +526,19 @@ class Parallel_Arm_2D:
                 for idx, b in enumerate(FO_render_idx.tolist()):
                     self.FO_patches[b].remove()
                     FO_patch = []
-                    for j in range(self.n_links):
-                        render_seperate_FO = True
-                        if render_seperate_FO:
+                    if self.FO_render_level == 3:
+                        for j in range(self.n_links):
                             FO_patch.extend([patches.Polygon(polygon,alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons[j][idx]])
-                        else:
-                            FO_patch.append(patches.Polygon(FO_link_polygons[j][idx].reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))                        
-                            
+                    elif self.FO_render_level == 2:
+                        for j in range(self.n_links):
+                            FO_patch.append(patches.Polygon(FO_link_polygons[j][idx].reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))  
+                    '''
+                    elif self.FO_render_level == 1:
+                        FO_link_polygons_temp = []
+                        for j in range(self.n_links):
+                            FO_link_polygons_temp.append(FO_link_polygons[j][idx].reshape(-1,2))
+                        FO_patch.append(patches.Polygon(torch.vstack(FO_link_polygons_temp),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))
+                    '''
                     self.FO_patches[b] = PatchCollection(FO_patch, match_original=True)
                     self.axs.flat[b].add_collection(self.FO_patches[b])
   

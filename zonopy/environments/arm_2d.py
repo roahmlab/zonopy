@@ -28,6 +28,8 @@ class Arm_2D:
             hyp_fail_safe = - 1,
             reward_shaping=True,
             max_episode_steps = 100,
+            FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
+            ticks = False,
             dtype= torch.float,
             device = torch.device('cpu')
             ):
@@ -77,6 +79,9 @@ class Arm_2D:
 
         self.fig = None
         self.render_flag = True
+        assert FO_render_level<4
+        self.FO_render_level = FO_render_level
+        self.ticks = ticks
 
         self._max_episode_steps = max_episode_steps
         self._elapsed_steps = 0
@@ -382,6 +387,9 @@ class Arm_2D:
                     plt.ion()
                 self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
                 self.ax = self.fig.gca()
+                if not self.ticks:
+                    plt.tick_params(which='both',bottom=False,top=False,left=False,right=False, labelbottom=False, labelleft=False) 
+
                 if save_kwargs is not None:
                     os.makedirs(save_kwargs['save_path'],exist_ok=True)
                     self.ax.set_title(save_kwargs['text'],fontsize=10,loc='right')
@@ -408,35 +416,43 @@ class Arm_2D:
                 #g_ka = torch.maximum(self.PI/24,abs(self.qvel_prev/3)) # NOTE: is it correct?
                 g_ka = self.PI/24
                 self.FO_patches.remove()
-                for j in range(self.n_links):
-                    FO_link_slc = FO_link[j].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
-                    
-                    FO_link_polygons = FO_link_slc.polygon().detach()
-                    
-                    render_seperate_FO = False
-                    if render_seperate_FO:
+                if self.FO_render_level == 3:
+                    for j in range(self.n_links):
+                        FO_link_slc = FO_link[j].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
+                        FO_link_polygons = FO_link_slc.polygon().detach()
                         FO_patches.extend([Polygon(polygon,alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
-                    else:
-                        FO_patches.append(Polygon(FO_link_polygons.reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))                        
+                elif self.FO_render_level == 2:
+                    for j in range(self.n_links):
+                        FO_link_slc = FO_link[j].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
+                        FO_link_polygons = FO_link_slc.polygon().detach()
+                        FO_patches.append(Polygon(FO_link_polygons.reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))   
+                '''
+                elif self.FO_render_level == 1:
+                    FO_link_polygons = []
+                    for j in range(self.n_links):
+                        FO_link_slc = FO_link[j].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)) 
+                        FO_link_polygons.append(FO_link_slc.polygon().detach().reshape(-1,2))
+                    FO_patches.append(Polygon(torch.vstack(FO_link_polygons),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))
+                        
+                '''
+                '''
+                NOTE: different methods to plot FO
+                Option 0: Plot all 100 timesteps and joints FO as a single geometry
 
-                    '''
-                    NOTE: different methods to plot FO
-                    Option 0: Plot all 100 timesteps and joints FO as a single geometry
+                Option 1: Plot all 100 timestep FO as a single geometry
+                FO_patches.append(Polygon(FO_link_polygons.reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))
 
-                    Option 1: Plot all 100 timestep FO as a single geometry
-                    FO_patches.append(Polygon(FO_link_polygons.reshape(-1,2),alpha=0.3,edgecolor='none',facecolor='green',linewidth=.2))
+                Options 2: Plot all 100 timestep FO with seperate geometries + possibly pass NaN value
+                FO_patches.extend([Polygon(polygon,alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
+                
+                Options 3: Plot all 100 timestep FO with seperate geometries + possibly pass NaN value
+                FO_patches.append([Polygon(polygon[~polygon[:,0].isnan()],alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
 
-                    Options 2: Plot all 100 timestep FO with seperate geometries + possibly pass NaN value
-                    FO_patches.extend([Polygon(polygon,alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
-                    
-                    Options 3: Plot all 100 timestep FO with seperate geometries + possibly pass NaN value
-                    FO_patches.append([Polygon(polygon[~polygon[:,0].isnan()],alpha=0.1,edgecolor='green',facecolor='none',linewidth=.2) for polygon in FO_link_polygons])
-
-                    Option 4: Just collect polytope for every single timestep without using batch computation
-                    for t in range(100): 
-                        FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
-                        FO_patches.append(FO_patch)
-                    '''
+                Option 4: Just collect polytope for every single timestep without using batch computation
+                for t in range(100): 
+                    FO_patch = FO_link_slc[t].polygon_patch(alpha=0.1,edgecolor='green')
+                    FO_patches.append(FO_patch)
+                '''
 
                 self.FO_patches = PatchCollection(FO_patches, match_original=True)
                 self.ax.add_collection(self.FO_patches)            
