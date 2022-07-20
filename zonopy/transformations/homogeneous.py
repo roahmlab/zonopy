@@ -12,7 +12,7 @@ def gen_batch_H_from_jrs_trig(bPZ,rot_axis):
     # normalize
     w = rot_axis/torch.norm(rot_axis)
     # skew-sym. mat for cross prod 
-    w_hat = torch.tensor([[0,-w[2],w[1],0],[w[2],0,-w[0],0],[-w[1],w[0],0,0],[0,0,0,0]])
+    w_hat = torch.tensor([[0,-w[2],w[1],0],[w[2],0,-w[0],0],[-w[1],w[0],0,0],[0,0,0,0]]) # one at the last
     cosq = bPZ.c[bPZ.batch_idx_all+(slice(cos_dim,cos_dim+1),)].unsqueeze(-1)
     sinq = bPZ.c[bPZ.batch_idx_all+(slice(sin_dim,sin_dim+1),)].unsqueeze(-1)
     C = torch.eye(4) + sinq*w_hat + (1-cosq)*w_hat@w_hat

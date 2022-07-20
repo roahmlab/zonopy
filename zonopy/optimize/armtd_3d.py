@@ -48,14 +48,15 @@ class ARMTD_3D_planner():
         for i in range(self.max_combs):
             self.combs.append(torch.combinations(torch.arange(i+1,device=self.device),2))
 
-    def prepare_constraints(self,qpos,qvel,obstacles,db_flag):
+    def prepare_constraints(self,qpos,qvel,obstacles):
+        #t1 = time.time()
         _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos.to(dtype=self.dtype,device=self.device),qvel.to(dtype=self.dtype,device=self.device),self.joint_axes)
         self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
+                
+        #t2 = time.time()
+        #print(f'FO time: {t2-t1}')
         self.A = np.zeros((self.n_links,self.n_obs),dtype=object)
         self.b = np.zeros((self.n_links,self.n_obs),dtype=object)
-
-        self.A2 = np.zeros((self.n_links,self.n_obs),dtype=object)
-        self.b2 = np.zeros((self.n_links,self.n_obs),dtype=object)
 
         self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
         for j in range(self.n_links):
@@ -69,11 +70,40 @@ class ARMTD_3D_planner():
                 #self.A2[j,o] = A2.cpu()
                 #self.b2[j,o] = b2.cpu()
 
-
+        #print(f'Polytope time: {time.time()-t2}')
         self.qpos = qpos.to(dtype=self.dtype,device='cpu')
         self.qvel = qvel.to(dtype=self.dtype,device='cpu')
 
-    def trajopt(self,qgoal,ka_0,db_flag):
+    def prepare_constraints2(self,qpos,qvel,obstacles):
+        t1 = time.time()
+        _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos.to(dtype=self.dtype,device=self.device),qvel.to(dtype=self.dtype,device=self.device),self.joint_axes)
+        self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
+        t2 = time.time()
+        print(f'FO time: {t2-t1}')
+
+        self.A = np.zeros((self.n_links),dtype=object)
+        self.b = np.zeros((self.n_links),dtype=object)
+
+        self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
+
+        obs_Z = []
+        for obs in obstacles:
+            obs_Z.append(obs.Z.unsqueeze(0))
+        obs_Z = torch.cat(obs_Z,0).unsqueeze(1).repeat(1,self.n_timesteps,1,1)
+
+        
+        for j in range(self.n_links):
+            self.FO_link[j] = self.FO_link[j].cpu()
+            import pdb;pdb.set_trace()
+            A,b  = zp.batchZonotope(torch.cat((obs_Z,self.FO_link[j].Grest.unsqueeze(0).repeat(self.n_obs,1,1,1)),-2)).polytope(self.combs)
+            self.A[j] = A.cpu()
+            self.b[j] = b.cpu()
+        print(f'Polytope time: {time.time()-t2}')
+        import pdb;pdb.set_trace()
+        self.qpos = qpos.to(dtype=self.dtype,device='cpu')
+        self.qvel = qvel.to(dtype=self.dtype,device='cpu')
+
+    def trajopt(self,qgoal,ka_0):
         M_obs = self.n_links*self.n_timesteps*self.n_obs
         M = M_obs+2*self.n_links+6*self.n_pos_lim
 
@@ -84,12 +114,12 @@ class ARMTD_3D_planner():
         class nlp_setup():
             x_prev = np.zeros(self.n_links)*np.nan
             def objective(p,x):
-                qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
+                qplan = self.qpos + self.qvel*T_PLAN + 0.5*self.g_ka*x*T_PLAN**2
                 return torch.sum(wrap_to_pi(qplan-qgoal)**2)
 
             def gradient(p,x):
-                qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
-                qplan_grad = 0.5*T_PLAN**2
+                qplan = self.qpos + self.qvel*T_PLAN + 0.5*self.g_ka*x*T_PLAN**2
+                qplan_grad = 0.5*self.g_ka*T_PLAN**2
                 return (2*qplan_grad*wrap_to_pi(qplan-qgoal)).numpy()
 
             def constraints(p,x): 
@@ -102,22 +132,22 @@ class ARMTD_3D_planner():
 
             def compute_constraints_jacobian(p,x):
                 if (p.x_prev!=x).any():                
-                    ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
-                    Cons = torch.zeros(M)      
-                    Jac = torch.zeros(M,self.n_links)
+                    ka = torch.tensor(x,dtype=self.dtype).unsqueeze(0).repeat(self.n_timesteps,1)
+                    Cons = torch.zeros(M,dtype=self.dtype)
+                    Jac = torch.zeros(M,self.n_links,dtype=self.dtype)
                     # position and velocity constraints
                     t_peak_optimum = -self.qvel/(self.g_ka*ka[0]) # time to optimum of first half traj.
                     qpos_peak_optimum = (t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*ka[0])*t_peak_optimum**2).nan_to_num()
                     grad_qpos_peak_optimum = torch.diag((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2).nan_to_num())
                     qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * (self.g_ka * ka[0]) * T_PLAN**2
-                    grad_qpos_peak = 0.5 * self.g_ka * T_PLAN**2 * torch.eye(self.n_links)
+                    grad_qpos_peak = 0.5 * self.g_ka * T_PLAN**2 * torch.eye(self.n_links,dtype=self.dtype)
                     qvel_peak = self.qvel + self.g_ka * ka[0] * T_PLAN
-                    grad_qvel_peak = self.g_ka * T_PLAN * torch.eye(self.n_links)
+                    grad_qvel_peak = self.g_ka * T_PLAN * torch.eye(self.n_links,dtype=self.dtype)
 
                     bracking_accel = (0 - qvel_peak)/(T_FULL - T_PLAN)
                     qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2
                     # can be also, qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL+T_PLAN) + 0.5 * (self.g_ka * ka[0]) * T_PLAN * T_FULL
-                    grad_qpos_brake = 0.5 * self.g_ka * T_PLAN * T_FULL * torch.eye(self.n_links) # NOTE: need to verify equation
+                    grad_qpos_brake = 0.5 * self.g_ka * T_PLAN * T_FULL * torch.eye(self.n_links,dtype=self.dtype) # NOTE: need to verify equation
 
                     qpos_possible_max_min = torch.vstack((qpos_peak_optimum,qpos_peak,qpos_brake))[:,self.lim_flag] 
                     qpos_ub = (qpos_possible_max_min - self.actual_pos_lim[:,0]).flatten()
@@ -130,8 +160,8 @@ class ARMTD_3D_planner():
                     Jac[M_obs:] = torch.vstack((grad_qvel_peak, -grad_qvel_peak, grad_qpos_ub, grad_qpos_lb))                    
 
                     for j in range(self.n_links):
-                        c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
-                        grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
+                        c_k = self.FO_link[j].center_slice_all_dep(ka)
+                        grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka)
                         for o in range(self.n_obs):
                             h_obs = (self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o]
                             cons_obs, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1) # shape: n_timsteps, SAFE if >=1e-6 
@@ -151,8 +181,8 @@ class ARMTD_3D_planner():
         n = self.n_links,
         m = M,
         problem_obj=nlp_setup(),
-        lb = [-self.g_ka]*self.n_links,
-        ub = [self.g_ka]*self.n_links,
+        lb = [-1]*self.n_links,
+        ub = [1]*self.n_links,
         cl = [-1e20]*M,
         cu = [-1e-6]*M,
         )
@@ -162,26 +192,22 @@ class ARMTD_3D_planner():
         k_opt, self.info = nlp.solve(ka_0.cpu().numpy())
 
         for b in self.b.flatten():
-            if ((b==torch.inf)+(b==torch.inf)).any():
+            if ((b==-torch.inf)+(b==torch.inf)).any():
                 print('there are +-inf values')
             if b.isnan().any():
                 print('there are nan values')
                 break
                 
-
-        if db_flag:
-            print('traj opt')
-            import pdb;pdb.set_trace()
-        return torch.tensor(k_opt,dtype=self.dtype,device=self.device), self.info['status']
+        return torch.tensor(self.g_ka*k_opt,dtype=self.dtype,device=self.device), self.info['status']
         
-    def plan(self,env,ka_0,db_flag=False):
+    def plan(self,env,ka_0):
         zp.reset()
         #t1 = time.time()
-        self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos,db_flag)
+        self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
         #t2 = time.time()
-        k_opt, flag = self.trajopt(env.qgoal,ka_0,db_flag)
-        #t3 = time.time()
         #print(f'FO time: {t2-t1}')
+        k_opt, flag = self.trajopt(env.qgoal,ka_0)
+        #t3 = time.time()
         #print(f'NLP time: {t3-t2}')
         return k_opt, flag
 

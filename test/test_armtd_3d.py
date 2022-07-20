@@ -53,15 +53,18 @@ else:
 
 
     i = debug_test[0]
-    env = Arm_3D(n_obs=len(collision_info[i]['obs_pos']))
+    env = Arm_3D(n_obs=len(collision_info[i]['obs_pos']),dtype=torch.float64)
     env.set_initial(qpos = collision_info[i]['qpos_init'],qvel= torch.zeros(env.n_links), qgoal = collision_info[i]['qgoal'],obs_pos=collision_info[i]['obs_pos'])
     #env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),qvel= torch.zeros(n_links), qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),obs_pos=[torch.tensor([-1,-0.9])])
     
-    planner = ARMTD_3D_planner(env,device='cpu')
+    planner = ARMTD_3D_planner(env,device='cpu',dtype=torch.float64)
     for t in range(n_timesteps):
         print(f'time step: {t}')
-        ka, flag = planner.plan(env,torch.zeros(env.n_links),t>=4)
+        ka, flag = planner.plan(env,torch.zeros(env.n_links))
         observations, reward, done, info = env.step(ka.cpu(),flag)
-        env.render(planner.FO_link)
+        #env.render(planner.FO_link)
+        env.render()
+        
+        import pdb;pdb.set_trace()
         if info['collision']:
             import pdb;pdb.set_trace()

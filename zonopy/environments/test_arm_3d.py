@@ -347,24 +347,24 @@ class Arm_3D:
             
             R_q = self.rot(qs)
             if len(R_q.shape) == 4:
-                time_steps = len(R_q)
+                timesteps = len(R_q)
                 R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
                     R = R@self.R0[j]@R_q[:,j]
-                    link =zp.batchZonotope(self.link_zonos[j].Z.unsqueeze(0).repeat(time_steps,1,1))
+                    link =zp.batchZonotope(self.link_zonos[j].Z.unsqueeze(0).repeat(timesteps,1,1))
                     link = R@link+P
                     for o in range(self.n_obs):
                         buff = link - self.obs_zonos[o]
                         _,b = buff.polytope(self.combs)
                         unsafe = b.min(dim=-1)[0]>1e-6
                         if any(unsafe):
-                            import pdb;pdb.set_trace()
+                            #import pdb;pdb.set_trace()
                             self.qpos_collision = qs[unsafe]
                             return True
 
             else:
-                time_steps = 1
+                timesteps = 1
                 R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)
                 for j in range(self.n_links):
                     P = R@self.P0[j] + P
@@ -411,16 +411,50 @@ class Arm_3D:
                 
         if FO_link is not None: 
             FO_patches = []
+            ######################################################
+            FO_col_patches = []
+            ######################################################
             if self.fail_safe_count == 0:
                 g_ka = self.PI/24
                 self.FO_patches.remove()
+                ######################################################
+                if hasattr(self,'FO_col_patches'):
+                    self.FO_col_patches.remove()
+                ######################################################
                 for j in range(self.n_links): 
-                    FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)).reduce(4)
+                    #FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)).reduce(4)
+                    ######################################################
+                    FO_link_col = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1))
+                    FO_link_slc = FO_link_col.reduce(4)
+                    unsafe_flag_temp = torch.zeros(100,dtype=bool,device=self.device)
+                    for o in range(self.n_obs):
+                        buff = FO_link_col - self.obs_zonos[o]
+                        _,b = buff.polytope(self.combs)
+                        unsafe_flag_temp += b.nan_to_num(torch.inf).min(dim=-1)[0]>1e-6
+                    print(f'{j}-th link FO collision timestep: {unsafe_flag_temp.nonzero().reshape(-1)}')
+                    if unsafe_flag_temp.nonzero().reshape(-1).numel() > 0:
+                        import pdb;pdb.set_trace()
+                    ######################################################
                     for t in range(100): 
-                        if t % self.FO_freq == 0:
+                        #if t % self.FO_freq == self.FO_freq-1:
+                        if t % 20 == 20-1:
+                            '''
                             FO_patch = FO_link_slc[t].polyhedron_patch().detach()
                             FO_patches.extend(FO_patch)
-                self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.2)) 
+                            '''
+                            ######################################################
+                            if unsafe_flag_temp[t]:
+                                FO_patch = FO_link_slc[t].polyhedron_patch().detach()
+                                FO_col_patches.extend(FO_patch)
+                            else:
+                                FO_patch = FO_link_slc[t].polyhedron_patch().detach()
+                                FO_patches.extend(FO_patch)     
+                            ######################################################                           
+                self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.02,edgecolor='green',facecolor='green',linewidths=0.2)) 
+                ######################################################  
+                self.FO_col_patches = self.ax.add_collection3d(Poly3DCollection(FO_col_patches,alpha=0.02,edgecolor='purple',facecolor='purple',linewidths=0.2))
+                ######################################################  
+
 
         if self.interpolate:
             timesteps = int(T_PLAN/T_FULL*self.T_len)
@@ -438,14 +472,44 @@ class Arm_3D:
              
             link_trace_polyhedron =  torch.zeros(timesteps,12*self.n_links,3,3,dtype=self.dtype,device='cpu')
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(1,3,dtype=self.dtype,device=self.device)
+            ######################################################
+            unsafe_flag_temp = torch.zeros(self.n_links,timesteps,dtype=bool,device=self.device)
+            ######################################################
             for j in range(self.n_links):
                 P = R@self.P0[j] + P
                 R = R@self.R0[j]@R_q[:,:,j]
                 link_trace_polyhedron[:,12*j:12*(j+1)] = (self.link_polyhedron[j]@R.transpose(-1,-2)+P.unsqueeze(-3)).cpu()
-            
+                
+                ######################################################
+                link =zp.batchZonotope(self.link_zonos[j].Z.unsqueeze(0).repeat(timesteps,1,1))
+                link = R.squeeze(1)@link+P.reshape(-1,3)
+                for o in range(self.n_obs):
+                    buff = link - self.obs_zonos[o]
+                    _,b = buff.polytope(self.combs)
+                    unsafe_flag_temp[j] += b.min(dim=-1)[0]>1e-6
+                
+                print(f'{j}-th link link collision timestep: {unsafe_flag_temp.nonzero().reshape(-1)}')
+                if unsafe_flag_temp.nonzero().reshape(-1).numel() > 0:
+                    import pdb;pdb.set_trace()
+            #import pdb; pdb.set_trace()
+
+                ######################################################
             for t in range(timesteps):                
+                '''
                 self.link_patches.remove()
                 self.link_patches = self.ax.add_collection3d(Poly3DCollection(list(link_trace_polyhedron[t]), edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5))
+                '''
+                #import pdb;pdb.set_trace()
+                
+                ########################################################
+                self.link_patches.remove()
+                if hasattr(self,'collision_link_patches'):
+                    self.collision_link_patches.remove()
+                temp = link_trace_polyhedron[t].reshape(self.n_links,12,3,3)
+                self.link_patches = self.ax.add_collection3d(Poly3DCollection(list(temp[unsafe_flag_temp[:,t]].reshape(-1,3,3)), edgecolor='orange',facecolor='orange',alpha=0.2,linewidths=0.5))
+                self.collision_link_patches = self.ax.add_collection3d(Poly3DCollection(list(temp[~unsafe_flag_temp[:,t]].reshape(-1,3,3)), edgecolor='blue',facecolor='blue',alpha=0.2,linewidths=0.5))
+                #########################################################
+
                 self.ax.set_xlim([-self.full_radius,self.full_radius])
                 self.ax.set_ylim([-self.full_radius,self.full_radius])
                 self.ax.set_zlim([-self.full_radius,self.full_radius])
@@ -496,7 +560,7 @@ class Arm_3D:
 
 if __name__ == '__main__':
 
-    env = Arm_3D(n_obs=3,T_len=50,interpolate=True)
+    env = Arm_3D(n_obs=10,T_len=50,interpolate=True)
     for _ in range(3):
         for _ in range(10):
             env.step(torch.rand(7))
