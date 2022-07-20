@@ -189,15 +189,7 @@ class ARMTD_3D_planner():
 
         nlp.add_option('sb', 'yes')
         nlp.add_option('print_level', 0)
-        k_opt, self.info = nlp.solve(ka_0.cpu().numpy())
-
-        for b in self.b.flatten():
-            if ((b==-torch.inf)+(b==torch.inf)).any():
-                print('there are +-inf values')
-            if b.isnan().any():
-                print('there are nan values')
-                break
-                
+        k_opt, self.info = nlp.solve(ka_0.cpu().numpy())                
         return torch.tensor(self.g_ka*k_opt,dtype=self.dtype,device=self.device), self.info['status']
         
     def plan(self,env,ka_0):

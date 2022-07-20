@@ -5,7 +5,7 @@ def forward_occupancy(rotatos,link_zonos,robot_params):
     '''
     P: <list>
     '''
-    zono_order = 40
+    zono_order = 20
     dtype, device = rotatos[0].dtype, rotatos[0].device
     n_joints = robot_params['n_joints']
     P = robot_params['P']
