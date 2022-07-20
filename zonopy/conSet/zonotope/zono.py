@@ -343,7 +343,7 @@ class zonotope:
                 comb = combs[n_gens]
             
             Q = torch.hstack((G[comb[:,0]],G[comb[:,1]]))
-            C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]-Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
+            C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]+Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
             C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
         elif dim >=4 and dim<=7:
             assert False
@@ -352,7 +352,7 @@ class zonotope:
         
         index = torch.sum(torch.isnan(C),dim=1) == 0
         C = C[index]
-        deltaD = torch.sum(abs(C@G.T),dim=1)
+        deltaD = torch.sum(abs(C@self.generators.T),dim=1)
         d = (C@c)
         PA = torch.vstack((C,-C))
         Pb = torch.hstack((d+deltaD,-d+deltaD))
