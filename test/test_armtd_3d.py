@@ -10,15 +10,19 @@ import pickle
 
 
 
-test_flag = False 
+test_flag = True 
 n_test = 50
 n_timesteps = 100
 N_OBS = torch.randint(10,25,(n_test,))
+if torch.cuda.is_available():
+    device = 'cuda:0'
+else:
+    device = 'cpu'
 if test_flag:
     collision_info = []
     for i in range(n_test):
         env = Arm_3D(n_obs=int(N_OBS[i]))
-        planner = ARMTD_3D_planner(env,device='cuda:0')
+        planner = ARMTD_3D_planner(env,device=device)
         for _ in range(n_timesteps):
             ka, flag = planner.plan(env,torch.zeros(env.n_links))
             observations, reward, done, info = env.step(ka.cpu(),flag)
@@ -57,7 +61,7 @@ else:
     env.set_initial(qpos = collision_info[i]['qpos_init'],qvel= torch.zeros(env.n_links), qgoal = collision_info[i]['qgoal'],obs_pos=collision_info[i]['obs_pos'])
     #env.set_initial(qpos = torch.tensor([0.1*torch.pi,0.1*torch.pi]),qvel= torch.zeros(n_links), qgoal = torch.tensor([-0.5*torch.pi,-0.8*torch.pi]),obs_pos=[torch.tensor([-1,-0.9])])
     
-    planner = ARMTD_3D_planner(env,device='cpu',dtype=torch.float64)
+    planner = ARMTD_3D_planner(env,device=device,dtype=torch.float64)
     for t in range(n_timesteps):
         print(f'time step: {t}')
         ka, flag = planner.plan(env,torch.zeros(env.n_links))
