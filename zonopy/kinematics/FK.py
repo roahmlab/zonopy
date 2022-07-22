@@ -1,11 +1,10 @@
 import torch
 from zonopy import polyZonotope, matPolyZonotope
 
-def forward_kinematics(rotatos,robot_params):
+def forward_kinematics(rotatos,robot_params,zono_order= 20):
     '''
     P: <list>
     '''
-    zono_order= 40
     n_joints = robot_params['n_joints']
     P = robot_params['P']
     R = robot_params['R']
