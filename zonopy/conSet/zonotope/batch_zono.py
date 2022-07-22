@@ -302,7 +302,7 @@ class batchZonotope:
             temp2 = (-Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),5)]+Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
             temp3 = (Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),4)]-Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
             C = torch.cat((temp1,temp2,temp3),dim=-1)
-            C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
+            C = C/torch.norm(C,dim=-1,keepdim=True)
         elif dim >=4 and dim<=7:
             assert False
         else:
