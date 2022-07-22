@@ -104,11 +104,11 @@ class ARMTD_3D_planner():
             obs_buff_Grest = zp.batchZonotope(torch.cat((obs_Z,temp.Grest.unsqueeze(0).repeat(self.n_obs,1,1,1)),-2))
             A_Grest, b_Grest  = obs_buff_Grest.polytope(self.combs)
             obs_buff = obs_buff_Grest - zp.batchZonotope(temp.Z[temp.batch_idx_all+(slice(temp.n_dep_gens+1),)].unsqueeze(0).repeat(self.n_obs,1,1,1))
-            _, b_obs = obs_buff.reduce(2).polytope(self.combs)
+            _, b_obs = obs_buff.reduce(3).polytope(self.combs)
             
             
             obs_unsafe_flag += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
-    
+            self.FO_link[j] = self.FO_link[j].cpu()
             self.A[j] = A_Grest
             self.b[j] = b_Grest
         
