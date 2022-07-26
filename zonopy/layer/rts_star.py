@@ -9,15 +9,11 @@ import cyipopt
 from torch.multiprocessing import Pool
 import zonopy as zp
 
-from zonopy.layer.nlp_setup import NLP_setup
+from zonopy.layer.nlp_setup import NlpSetup2D
 
 # torch.multiprocessing.set_start_method('spawn', force=True)
 # os.environ['OMP_NUM_THREADS'] = '2'
 import time 
-
-def wrap_to_pi(phases):
-    return (phases + torch.pi) % (2 * torch.pi) - torch.pi
-
 
 T_PLAN, T_FULL = 0.5, 1.0
 NUM_PROCESSES = 40
@@ -26,7 +22,7 @@ NUM_PROCESSES = 40
 def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat):
     M_obs = n_timesteps * n_links * n_obs
     M = M_obs + 2 * n_links
-    nlp_obj = NLP_setup(qpos,qvel,qgoal,n_timesteps,n_links,dimension,n_obs,g_ka,FO_link,A,b)
+    nlp_obj = NlpSetup2D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,n_obs,dimension,g_ka)
     NLP = cyipopt.Problem(
         n=n_links,
         m=M,
@@ -85,7 +81,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
             FO_links_nlp = np.zeros((n_batches,n_links),dtype=object)
             FO_links = np.zeros((n_links,),dtype=object)
-            lambda_to_slc = lambd.reshape(n_batches, 1, dimension).repeat(1, n_timesteps, 1)
+            lambda_to_slc = lambd.reshape(n_batches, 1, n_links).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
             unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(-1)
@@ -103,12 +99,18 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 FO_links_nlp[:,j] = [fo for fo in FO_link_temp.cpu()]
                 FO_links[j] = FO_link_temp
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
+            rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
+            n_problems = len(rts_pass_indices)
+
             flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             infos = [None for _ in range(n_batches)]
 
-            rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
-            n_problems = len(rts_pass_indices)
             if n_problems > 0:
+                qpos_np = qpos.cpu().numpy()
+                qvel_np = qvel.cpu().numpy()
+                qgoal_np = qgoal.cpu().numpy()
+                lambd_np = lambd.cpu().numpy()
+
                 if multi_process:
                     with Pool(processes=min(num_processes, n_problems)) as pool:
                         results = pool.starmap(
@@ -117,16 +119,16 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                             zip(As[rts_pass_indices],
                                 bs[rts_pass_indices],
                                 FO_links_nlp[rts_pass_indices],
-                                qpos.cpu().numpy()[rts_pass_indices],
-                                qvel.cpu().numpy()[rts_pass_indices],
-                                qgoal.cpu().numpy()[rts_pass_indices],
+                                qpos_np[rts_pass_indices],
+                                qvel_np[rts_pass_indices],
+                                qgoal_np[rts_pass_indices],
                                 [n_timesteps] * n_problems,
                                 [n_links] * n_problems,
                                 [n_obs] * n_problems,
                                 [dimension] * n_problems,
                                 [g_ka] * n_problems,
                                 [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
-                                lambd.cpu()[rts_pass_indices]
+                                lambd_np[rts_pass_indices]
                             )
                             ]
                         )
@@ -140,7 +142,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 else:
                     rts_lambd_opts, rts_flags = [], []                    
                     for idx in rts_pass_indices:
-                        rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links_nlp[idx],qpos.cpu().numpy()[idx],qvel.cpu().numpy()[idx],qgoal.cpu().numpy()[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd[idx])
+                        rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links_nlp[idx],qpos_np[idx],qvel_np[idx],qgoal_np[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd_np[idx])
                         infos[idx] = info
                         rts_lambd_opts.append(rts_lambd_opt)
                         rts_flags.append(rts_flag)
@@ -158,7 +160,6 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
 if __name__ == '__main__':
     
-    from zonopy.environments.arm_2d import Arm_2D
     from zonopy.environments.parallel_arm_2d import Parallel_Arm_2D
     import time
     ##### 0. SET DEVICE #####

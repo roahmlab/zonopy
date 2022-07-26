@@ -5,8 +5,9 @@ T_PLAN, T_FULL = 0.5, 1.0
 def wrap_to_pi(phases):
     return (phases + np.pi) % (2 * np.pi) - np.pi
 
-class NLP_setup():
-    def __init__(self,qpos,qvel,qgoal,n_timesteps,n_links,dimension,n_obs,g_ka,FO_link,A,b):
+
+class NlpSetup():
+    def __init__(self,A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,n_obs,dimension,g_ka):
         self.qpos = qpos
         self.qvel = qvel 
         self.qgoal = qgoal 
@@ -67,6 +68,8 @@ class NLP_setup():
                 ls_trials):
         pass
 
+
+class NlpSetup2D(NlpSetup):
     def compute_constraints_jacobian(self,x):
         #ka = np.expand_dims(x,0).repeat(self.n_timesteps,axis=0)
         if (self.x_prev!=x).any():
@@ -90,3 +93,147 @@ class NLP_setup():
                     self.jac[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = jac
            
             self.x_prev = np.copy(x)   
+
+
+
+
+
+class NlpSetup3D(NlpSetup):
+    def __init__(self,A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,n_obs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka):
+        self.A = A 
+        self.b = b
+        self.qpos = qpos
+        self.qvel = qvel 
+        self.qgoal = qgoal 
+        self.x_prev = np.zeros(n_links)*np.nan
+        self.n_timesteps = n_timesteps
+        self.n_links = n_links 
+        self.n_obs = n_obs 
+        self.n_obs_cons = self.n_timesteps*self.n_obs
+        self.M_obs = self.n_links*self.n_obs_cons
+        self.M = self.M_obs+2*self.n_links+6*n_pos_lim
+        self.dimension = dimension
+        self.g_ka = g_ka
+        self.parse_FO_link(FO_link)
+
+        self.actual_pos_lim = actual_pos_lim
+        self.vel_lim = vel_lim
+        self.lim_flag = lim_flag
+
+    def compute_constraints_jacobian(self,x):
+        if (self.x_prev!=x).any(): 
+            self.cons = np.zeros((self.M))
+            self.jac = np.zeros((self.M, self.n_links))
+            
+            # position and velocity constraints
+            t_peak_optimum = -self.qvel/(self.g_ka*x) # time to optimum of first half traj.
+            qpos_peak_optimum = np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*x)*t_peak_optimum**2), 0)
+            grad_qpos_peak_optimum = np.diag(np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2),0))
+            qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * (self.g_ka * x) * T_PLAN**2
+            grad_qpos_peak = 0.5 * self.g_ka * T_PLAN**2 * np.eye(self.n_links)
+            qvel_peak = self.qvel + self.g_ka * x * T_PLAN
+            grad_qvel_peak = self.g_ka * T_PLAN * np.eye(self.n_links)
+
+            bracking_accel = (0 - qvel_peak)/(T_FULL - T_PLAN)
+            qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2
+            # can be also, qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL+T_PLAN) + 0.5 * (self.g_ka * x) * T_PLAN * T_FULL
+            grad_qpos_brake = 0.5 * self.g_ka * T_PLAN * T_FULL * np.eye(self.n_links)
+
+            qpos_possible_max_min = np.vstack((qpos_peak_optimum,qpos_peak,qpos_brake))[:,self.lim_flag] 
+            qpos_ub = (qpos_possible_max_min - self.actual_pos_lim[:,0]).flatten()
+            qpos_lb = (self.actual_pos_lim[:,1] - qpos_possible_max_min).flatten()
+            
+            grad_qpos_ub = np.vstack((grad_qpos_peak_optimum[self.lim_flag],grad_qpos_peak[self.lim_flag],grad_qpos_brake[self.lim_flag]))
+            grad_qpos_lb = - grad_qpos_ub
+
+            self.cons[self.M_obs:] = np.hstack((qvel_peak-self.vel_lim, -self.vel_lim-qvel_peak,qpos_ub,qpos_lb))
+            self.jac[self.M_obs:] = np.vstack((grad_qvel_peak, -grad_qvel_peak, grad_qpos_ub, grad_qpos_lb))                    
+
+            if self.n_obs > 0:
+            #if True:
+                for j in range(self.n_links):
+                    c_k = np.expand_dims(self.FO_center_slice_all_dep(x,j),-1)
+                    grad_c_k = self.FO_grad_center_slice_all_dep(x,j)
+                    h_obs = (self.A[j]@c_k).squeeze(-1) - self.b[j]
+                    
+                    ind = np.argmax(np.nan_to_num(h_obs,-np.inf),-1) 
+                    cons = - np.take_along_axis(h_obs,ind.reshape(self.n_obs,self.n_timesteps,1),axis=-1).squeeze(-1) # shape: n_obs, n_timsteps, SAFE if <=-1e-6 
+                    jac = - (np.take_along_axis(self.A[j],ind.reshape(self.n_obs,self.n_timesteps,1,1),axis=-2)@grad_c_k).squeeze(-2)# shape: n_obs, n_timsteps, n_links                    
+
+                    self.cons[j*self.n_obs_cons:(j+1)*self.n_obs_cons] = cons.reshape(self.n_obs_cons)
+                    self.jac[j*self.n_obs_cons:(j+1)*self.n_obs_cons]  = jac.reshape(self.n_obs_cons,self.n_links)
+        
+            self.x_prev = np.copy(x)
+
+
+
+class NlpSetupLocked3D(NlpSetup3D):
+    def __init__(self,A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,dof,n_obs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka):
+        
+        super().__init__(
+            A,
+            b,
+            FO_link,
+            qpos,
+            qvel,
+            qgoal,
+            n_timesteps,
+            n_links,
+            n_obs,
+            n_pos_lim,
+            actual_pos_lim,
+            vel_lim,
+            lim_flag,
+            dimension,
+            g_ka)
+        self.dof = dof
+        self.x_prev = np.zeros(self.dof)*np.nan
+        self.M_obs = self.n_links*self.n_obs_cons
+        self.M = self.M_obs+2*self.dof+6*n_pos_lim
+        
+
+    def compute_constraints_jacobian(self,x):
+
+        if (self.x_prev!=x).any(): 
+        
+            self.cons = np.zeros((self.M))
+            self.jac = np.zeros((self.M, self.dof))
+            
+            # position and velocity constraints
+            t_peak_optimum = -self.qvel/(self.g_ka*x) # time to optimum of first half traj.
+            qpos_peak_optimum = np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*x)*t_peak_optimum**2), 0)
+            grad_qpos_peak_optimum = np.diag(np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2),0))
+            qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * (self.g_ka * x) * T_PLAN**2
+            grad_qpos_peak = 0.5 * self.g_ka * T_PLAN**2 * np.eye(self.dof)
+            qvel_peak = self.qvel + self.g_ka * x * T_PLAN
+            grad_qvel_peak = self.g_ka * T_PLAN * np.eye(self.dof)
+
+            bracking_accel = (0 - qvel_peak)/(T_FULL - T_PLAN)
+            qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2
+            # can be also, qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL+T_PLAN) + 0.5 * (self.g_ka * x) * T_PLAN * T_FULL
+            grad_qpos_brake = 0.5 * self.g_ka * T_PLAN * T_FULL * np.eye(self.dof)
+
+            qpos_possible_max_min = np.vstack((qpos_peak_optimum,qpos_peak,qpos_brake))[:,self.lim_flag] 
+            qpos_ub = (qpos_possible_max_min - self.actual_pos_lim[:,0]).flatten()
+            qpos_lb = (self.actual_pos_lim[:,1] - qpos_possible_max_min).flatten()
+            
+            grad_qpos_ub = np.vstack((grad_qpos_peak_optimum[self.lim_flag],grad_qpos_peak[self.lim_flag],grad_qpos_brake[self.lim_flag]))
+            grad_qpos_lb = - grad_qpos_ub
+
+            self.cons[self.M_obs:] = np.hstack((qvel_peak-self.vel_lim, -self.vel_lim-qvel_peak,qpos_ub,qpos_lb))
+            self.jac[self.M_obs:] = np.vstack((grad_qvel_peak, -grad_qvel_peak, grad_qpos_ub, grad_qpos_lb))                    
+
+            if self.n_obs > 0:
+                for j in range(self.n_links):
+                    c_k = np.expand_dims(self.FO_center_slice_all_dep(x,j),-1)
+                    grad_c_k = self.FO_grad_center_slice_all_dep(x,j)
+                    h_obs = (self.A[j]@c_k).squeeze(-1) - self.b[j]
+                    
+                    ind = np.argmax(np.nan_to_num(h_obs,-np.inf),-1) 
+                    cons = - np.take_along_axis(h_obs,ind.reshape(self.n_obs,self.n_timesteps,1),axis=-1).squeeze(-1) # shape: n_obs, n_timsteps, SAFE if <=-1e-6 
+                    jac = - (np.take_along_axis(self.A[j],ind.reshape(self.n_obs,self.n_timesteps,1,1),axis=-2)@grad_c_k).squeeze(-2)# shape: n_obs, n_timsteps, n_links                    
+
+                    self.cons[j*self.n_obs_cons:(j+1)*self.n_obs_cons] = cons.reshape(self.n_obs_cons)
+                    self.jac[j*self.n_obs_cons:(j+1)*self.n_obs_cons]  = jac.reshape(self.n_obs_cons,self.dof)
+        
+            self.x_prev = np.copy(x)

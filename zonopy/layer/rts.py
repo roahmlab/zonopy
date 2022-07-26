@@ -7,9 +7,6 @@ from zonopy.conSet.zonotope.batch_zono import batchZonotope
 #import os
 import zonopy as zp
 
-def wrap_to_pi(phases):
-    return (phases + torch.pi) % (2 * torch.pi) - torch.pi
-
 T_PLAN, T_FULL = 0.5, 1.0
 
 def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = torch.float, device=torch.device('cpu'), budget = 200, std = 0.3, goal_bias = 0.2):
@@ -43,7 +40,7 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
             As = np.zeros((n_links,n_obs),dtype=object)
             bs = np.zeros((n_links,n_obs),dtype=object)
             FO_links = np.zeros((n_links),dtype=object)
-            lambda_to_slc = lambd.reshape(n_batches, 1, dimension).repeat(1, n_timesteps, 1)
+            lambda_to_slc = lambd.reshape(n_batches, 1, n_links).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
             unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(-1)
@@ -61,12 +58,12 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                 #FO_links[j] = [fo for fo in FO_link_temp.cpu()]
 
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
-            flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
-
             rts_pass_indices_tensor = unsafe_flag.nonzero().reshape(-1)
             rts_pass_indices = rts_pass_indices_tensor.tolist()
-
             n_problems = len(rts_pass_indices)
+            
+            flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
+            
             if n_problems > 0:
                 # Uncorrected actions
                 lambd_unsafe = lambd[rts_pass_indices]

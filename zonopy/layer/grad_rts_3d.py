@@ -4,8 +4,6 @@ from zonopy.kinematics.FO import forward_occupancy
 from zonopy.joint_reachable_set.jrs_trig.process_jrs_trig import process_batch_JRS_trig_ic
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_trig
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
-from zonopy.conSet import PROPERTY_ID
-import zonopy as zp
 import cyipopt
 
 import gurobipy as gp
@@ -13,31 +11,31 @@ from gurobipy import GRB
 import scipy.sparse as sp
 from scipy.linalg import block_diag
 
-#import os
 from torch.multiprocessing import Pool
+import zonopy as zp
 
-from zonopy.layer.nlp_setup import NlpSetup2D
+from zonopy.layer.nlp_setup import NlpSetup3D
 
-#os.environ['OMP_NUM_THREADS'] = '2'
+# torch.multiprocessing.set_start_method('spawn', force=True)
+# os.environ['OMP_NUM_THREADS'] = '2'
+import time 
 
 T_PLAN, T_FULL = 0.5, 1.0
-
 NUM_PROCESSES = 40
 
-
-def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat):
-    M_obs = n_timesteps * n_links * n_obs
-    M = M_obs + 2 * n_links
-    nlp_obj = NlpSetup2D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,n_obs,dimension,g_ka)
+def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
+    M_obs = n_links * n_timesteps * int(n_obs_in_frs)
+    M = M_obs+2*n_links+6*n_pos_lim
+    nlp_obj = NlpSetup3D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,int(n_obs_in_frs),n_pos_lim,actual_pos_lim,vel_lim,lim_flag,dimension,g_ka)
     NLP = cyipopt.Problem(
         n=n_links,
         m=M,
         problem_obj=nlp_obj,
-        lb=[-1] * n_links,
-        ub=[1] * n_links,
-        cl=[-1e20] * M_obs + [-1e20] * 2 * n_links,
-        cu=[-1e-6] * M_obs + [-1e-6] * 2 * n_links,
-    )
+        lb = [-1]*n_links,
+        ub = [1]*n_links,
+        cl = [-1e20]*M,
+        cu = [-1e-6]*M,
+        )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
     k_opt, info = NLP.solve(ka_0)
@@ -53,15 +51,25 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
     return lambd_opt, flag, info
 
 
-def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
+# batch
+
+def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
-    dimension = 2
+    dimension = 3
     n_timesteps = 100
-    #ka_0 = np.zeros(n_links)
+
     PI_vel = torch.tensor(torch.pi - 1e-6,dtype=dtype, device=device)
     g_ka = torch.pi / 24
 
-    class grad_RTS_2D_Layer(torch.autograd.Function):
+    actual_pos_lim = pos_lim[lim_flag]
+    n_pos_lim = int(lim_flag.sum().cpu())
+
+    max_combs = 200 
+    combs = [torch.tensor([],device=device)]
+    for i in range(max_combs):
+        combs.append(torch.combinations(torch.arange(i+1,device=device),2))
+
+    class RTS_grad_3D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx, lambd, observation, FO_link):
             zp.reset()
@@ -70,47 +78,78 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             ctx.lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             observation = observation.to(dtype=dtype,device=device)
-            ka = g_ka * ctx.lambd
+            ka = g_ka * ctx.lambd 
 
             n_batches = observation.shape[0]
             qpos = observation[:, :n_links]
             qvel = observation[:, n_links:2 * n_links]
-            obstacle_pos = observation[:, -4 * n_obs:-2 * n_obs]
-            obstacle_size = observation[:, -2 * n_obs:]
+            obstacle_center = observation[:, -6 * n_obs:-3 * n_obs].reshape(n_batches,n_obs,1,dimension)
+            obstacle_generators = torch.diag_embed(observation[:, -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+            obs_Z = torch.cat((obstacle_center,obstacle_generators),-2).unsqueeze(-3).repeat(1,1,n_timesteps,1,1)
+            
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
 
-            if FO_link is None:
-                _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
-                FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
-            else:
-                PROPERTY_ID.update(n_links)
+            _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
+            batch_FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
 
-            As = np.zeros((n_batches,n_links,n_obs),dtype=object)
-            bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
+            As = np.zeros((n_batches,n_links),dtype=object)
+            bs = np.zeros((n_batches,n_links),dtype=object)
+
             FO_links_nlp = np.zeros((n_batches,n_links),dtype=object)
             FO_links = np.zeros((n_links,),dtype=object)
             lambda_to_slc = ctx.lambd.reshape(n_batches, 1, n_links).repeat(1, n_timesteps, 1)
 
-            # unsafe_flag = torch.zeros(n_batches)
-            unsafe_flag = (abs(qvel + ctx.lambd * g_ka * T_PLAN) > PI_vel).any(-1)
+            # pos and vel lim
+
+            # position and velocity constraints
+            t_peak_optimum = -qvel/ka # time to optimum of first half traj.
+            qpos_peak_optimum = (t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(qpos+qvel*t_peak_optimum+0.5*ka*t_peak_optimum**2).nan_to_num()
+            qpos_peak = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN**2
+            qvel_peak = qvel + ka * T_PLAN
+
+            bracking_accel = (0 - qvel_peak)/(T_FULL - T_PLAN)
+            qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2
+            # can be also, qpos_brake = qpos + 0.5*qvel*(T_FULL+T_PLAN) + 0.5 * ka * T_PLAN * T_FULL
+
+            # qpos+qvel*t_peak_optimum+0.5*ka*t_peak_optimum**2 < ub
+            # qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN**2 < ub
+            # qpos + 0.5*qvel*(T_FULL+T_PLAN) + 0.5 * ka * T_PLAN * T_FULL < ub
+
+            # ka < (ub - qpos - qvel*t_peak_optimum) / (0.5*t_peak_optimum**2)
+            # ka  < (ub - qpos - qvel * T_PLAN) / (0.5 * T_PLAN**2)
+            # ka  < (ub - qpos - 0.5*qvel*(T_FULL+T_PLAN)) / (0.5 * T_PLAN * T_FULL)
+
+            qpos_possible_max_min = torch.cat((qpos_peak_optimum.unsqueeze(-2),qpos_peak.unsqueeze(-2),qpos_brake.unsqueeze(-2)),-2)[:,:,lim_flag] 
+            qpos_ub = (qpos_possible_max_min - actual_pos_lim[:,0]).reshape(n_batches,-1)
+            qpos_lb = (actual_pos_lim[:,1] - qpos_possible_max_min).reshape(n_batches,-1)
+            
+            unsafe_flag = (abs(qvel_peak)>vel_lim).any(-1) + (qpos_ub>0).any(-1) + (qpos_lb>0).any(-1)
+            obs_in_reach_idx = torch.zeros(n_batches,n_obs, dtype=bool,device=device)
+            
             lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
+            
             for j in range(n_links):
-                FO_link_temp = FO_link[j].project([0, 1])
-                c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
-                for o in range(n_obs):
-                    obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2), torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
-                    A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
-                    h_obs = ((A_temp @ c_k).squeeze(-1) - b_temp).nan_to_num(-torch.inf)
-                    unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
-                    As[:,j,o] = list(A_temp.cpu().numpy())
-                    bs[:,j,o] = list(b_temp.cpu().numpy())
+                FO_link_temp = batch_FO_link[j]
+                c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).reshape(n_batches,1,n_timesteps,dimension,1)  # FOR, safety check
+                obs_buff_Grest = zp.batchZonotope(torch.cat((obs_Z,FO_link_temp.Grest.unsqueeze(1).repeat(1,n_obs,1,1,1)),-2))
+                A_Grest, b_Grest  = obs_buff_Grest.polytope(combs)
+                h_obs = ((A_Grest @ c_k).squeeze(-1) - b_Grest).nan_to_num(-torch.inf)
+                unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1).any(1)  # NOTE: this might not work on gpu FOR, safety check
+                                
+                obs_buff = obs_buff_Grest - zp.batchZonotope(FO_link_temp.Z[FO_link_temp.batch_idx_all+(slice(FO_link_temp.n_dep_gens+1),)].unsqueeze(1).repeat(1,n_obs,1,1,1))
+                _, b_obs = obs_buff.reduce(6).polytope(combs)
+                
+                obs_in_reach_idx += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
+
+                As[-1,j] = A_Grest.cpu().numpy()
+                bs[-1,j] = b_Grest.cpu().numpy()
                 FO_links_nlp[:,j] = [fo for fo in FO_link_temp.cpu()]
                 FO_links[j] = FO_link_temp
 
-            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
+            unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
             n_problems = len(rts_pass_indices)
-
+    
             ctx.flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             ctx.infos = [None for _ in range(n_batches)]
 
@@ -119,7 +158,20 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 qvel_np = qvel.cpu().numpy()
                 qgoal_np = qgoal.cpu().numpy()
                 lambd_np = ctx.lambd.cpu().numpy()
+
+                actual_pos_lim_np = actual_pos_lim.cpu().numpy()
+                vel_lim_np =  vel_lim.cpu().numpy()
+                lim_flag_np = lim_flag.cpu().numpy()         
+                
+                obs_in_reach_idx_list = obs_in_reach_idx.tolist()
+                N_obs_in_frs = obs_in_reach_idx.sum(-1).cpu().numpy()
+                
                 if multi_process:
+                    for idx in rts_pass_indices:
+                        obs_idx = obs_in_reach_idx_list[idx]
+                        for j in range(n_links):
+                            As[idx,j] = As[-1,j][idx,obs_idx]
+                            bs[idx,j] = bs[-1,j][idx,obs_idx]
                     with Pool(processes=min(num_processes, n_problems)) as pool:
                         results = pool.starmap(
                             rts_pass,
@@ -132,7 +184,11 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                                 qgoal_np[rts_pass_indices],
                                 [n_timesteps] * n_problems,
                                 [n_links] * n_problems,
-                                [n_obs] * n_problems,
+                                N_obs_in_frs[rts_pass_indices], 
+                                [n_pos_lim] * n_problems,
+                                [actual_pos_lim_np] * n_problems,
+                                [vel_lim_np] * n_problems,
+                                [lim_flag_np] * n_problems, 
                                 [dimension] * n_problems,
                                 [g_ka] * n_problems,
                                 [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
@@ -148,16 +204,37 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
                     ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
                 else:
-                    rts_lambd_opts, rts_flags = [], []
+                    rts_lambd_opts, rts_flags = [], []                    
                     for idx in rts_pass_indices:
-                        rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links_nlp[idx],qpos_np[idx],qvel_np[idx],qgoal_np[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd_np[idx])
+                        
+                        obs_idx = obs_in_reach_idx_list[idx]
+                        for j in range(n_links):
+                            As[idx,j] = As[-1,j][idx,obs_idx]
+                            bs[idx,j] = bs[-1,j][idx,obs_idx]
+                        rts_lambd_opt, rts_flag, info = rts_pass(
+                                                                As[idx],
+                                                                bs[idx],
+                                                                FO_links_nlp[idx],
+                                                                qpos_np[idx],
+                                                                qvel_np[idx],
+                                                                qgoal_np[idx],
+                                                                n_timesteps,
+                                                                n_links,
+                                                                N_obs_in_frs[idx],
+                                                                n_pos_lim,
+                                                                actual_pos_lim_np,
+                                                                vel_lim_np,
+                                                                lim_flag_np, 
+                                                                dimension,
+                                                                g_ka,
+                                                                lambd0[idx],
+                                                                lambd_np[idx])
                         ctx.infos[idx] = info
                         rts_lambd_opts.append(rts_lambd_opt)
                         rts_flags.append(rts_flag)
                     ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
                     ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
-
-
+            
             zp.reset()
             return ctx.lambd, FO_links, ctx.flags, ctx.infos
 
@@ -229,32 +306,24 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 # NOTE: for fail-safe, keep into zeros             
             return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device), None)
 
-    return grad_RTS_2D_Layer.apply
+    return RTS_grad_3D_Layer.apply
 
 
 if __name__ == '__main__':
-    from zonopy.environments.arm_2d import Arm_2D
-    from zonopy.environments.parallel_arm_2d import Parallel_Arm_2D
+    
+    from zonopy.environments.parallel_arm_3d import Parallel_Arm_3D
     import time
-
-    ##### 0.DEVICE CUDA #####
+    ##### 0. SET DEVICE #####
     if torch.cuda.is_available():
         device = 'cuda:0'
-        #device = 'cpu'
-        dtype = torch.float64
+        dtype = torch.float
     else:
         device = 'cpu'
         dtype = torch.float
 
-
     ##### 1. SET ENVIRONMENT #####
-    n_links = 2
     n_batch = 9
-    env = Parallel_Arm_2D(n_envs = n_batch, n_links=n_links, n_obs=1, n_plots = 4)
-    observation = env.set_initial(qpos=torch.tensor([[0.1 * torch.pi, 0.1 * torch.pi]]).repeat(n_batch,1), 
-                                  qvel=torch.zeros(n_batch,n_links),
-                                  qgoal=torch.tensor([[-0.5 * torch.pi, -0.8 * torch.pi]]).repeat(n_batch,1),
-                                  obs_pos=[torch.tensor([[-1, -0.9]]).repeat(n_batch,1)])
+    env = Parallel_Arm_3D(n_envs = n_batch, n_obs=10, n_plots = 4)
 
     ##### 2. GENERATE RTS LAYER #####    
     P,R,link_zonos = [],[],[]
@@ -264,21 +333,23 @@ if __name__ == '__main__':
         link_zonos.append(l.to(device=device,dtype=dtype))
     params = {'n_joints': env.n_links, 'P': P, 'R': R}
     joint_axes = [j for j in env.joint_axes.to(device=device,dtype=dtype)]
-    RTS = gen_grad_RTS_2D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, params,device=device,dtype=dtype)
+    RTS = gen_grad_RTS_3D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, env.pos_lim, env.vel_lim, env.lim_flag, params,device=device,dtype=dtype)
 
     ##### 3. RUN RTS #####
     t_forward, t_backward = 0, 0 
     t_render = 0
     n_steps = 30
+    
     print('='*90)
+    observation = env.reset()
     for _ in range(n_steps):
         ts = time.time()
         observ_temp = torch.hstack([observation[key].reshape(n_batch,-1) for key in observation.keys()])
 
-        lam_hat = torch.tensor([0.8, 0.8],device=device,dtype=dtype)
+        lam = torch.tensor([0.8]*7,device=device,dtype=dtype)
         bias = torch.full((n_batch, 1), 0.0, requires_grad=True,device=device,dtype=dtype)
-        lam, FO_link, flag, nlp_info = RTS(torch.vstack([lam_hat] * n_batch)+bias, observ_temp, None)
-        
+        lam, FO_link, flag, nlp_info = RTS(torch.vstack(([lam] * n_batch))+bias, observ_temp, None)
+              
         print(f'action: {lam[0]}')
         print(f'flag: {flag[0]}')
 
@@ -292,10 +363,16 @@ if __name__ == '__main__':
         t_backward += t_elasped
         print(f'Time elasped for RTS backward:{t_elasped}')
         print('='*90)
+        
         observation, reward, done, info = env.step(lam.cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag.cpu().to(dtype=torch.get_default_dtype()))
 
-        env.render(FO_link)
+        ts = time.time()
+        #env.render(FO_link)
+        env.render()        
+        t_render += time.time()-ts 
+
 
 
     print(f'Total time elasped for RTS forward with {n_steps} steps: {t_forward}')
     print(f'Total time elasped for RTS backward with {n_steps} steps: {t_backward}')
+    print(f'Total time elasped for rendering with {n_steps} steps: {t_render}')
