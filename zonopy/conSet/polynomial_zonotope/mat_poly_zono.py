@@ -140,12 +140,17 @@ class matPolyZonotope():
         return <matPolyZonotope>
         '''
         if isinstance(other, torch.Tensor):
-            assert other.shape[0] == self.n_cols
-            Z = self.Z @ other
+            assert other.shape[0] == self.n_cols or other.shape[-2] == self.n_cols
+            
             if len(other.shape) == 1:
+                Z = self.Z @ other
                 return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
             elif len(other.shape) == 2:
+                Z = self.Z @ other
                 return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
+            else:
+                Z = self.Z @ other.unsqueeze(-3)
+                return zp.batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
 
         # NOTE: this is 'OVERAPPROXIMATED' multiplication for keeping 'fully-k-sliceables'
         # The actual multiplication should take

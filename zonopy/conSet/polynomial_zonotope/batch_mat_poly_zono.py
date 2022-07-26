@@ -155,10 +155,15 @@ class batchMatPolyZonotope():
         return <matPolyZonotope>
         '''
         if isinstance(other, torch.Tensor):
-            Z = self.Z @ other
+            
             if len(other.shape) == 1:
+                Z = self.Z @ other
                 return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
+            elif len(other.shape) == 2:
+                Z = self.Z @ other
+                return batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
             else:
+                Z = self.Z @ other.unsqueeze(-3)
                 return batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
 
         elif isinstance(other,(batchPolyZonotope,zp.polyZonotope)):
