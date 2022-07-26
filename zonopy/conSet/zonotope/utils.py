@@ -35,11 +35,11 @@ def pickedBatchGenerators(bZ,order):
             Gunred = Gsorted[bZ.batch_idx_all+(slice(nReduced,None),)]
 
         else:
-            Gred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
+            Gred = torch.tensor([],dtype=bZ.dtype,device=bZ.device).reshape(bZ.batch_shape+(0,)+bZ.shape)
             Gunred = G
     else:
-        Gred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
-        Gunred = torch.tensor([]).reshape(bZ.batch_shape+(0,)+bZ.shape)
+        Gred = torch.tensor([],dtype=bZ.dtype,device=bZ.device).reshape(bZ.batch_shape+(0,)+bZ.shape)
+        Gunred = torch.tensor([],dtype=bZ.dtype,device=bZ.device).reshape(bZ.batch_shape+(0,)+bZ.shape)
     return c, Gunred, Gred
 
 
@@ -69,11 +69,11 @@ def pickedGenerators(c,G,order):
             # unreduced generators
             Gunred = G[ind_rem]
         else:
-            Gred = torch.tensor([]).reshape((0,)+dim)
+            Gred = torch.tensor([],dtype=c.dtype,device=c.device).reshape((0,)+dim)
             Gunred = G
     else:
-        Gred = torch.tensor([]).reshape((0,)+dim)
-        Gunred = torch.tensor([]).reshape((0,)+dim)
+        Gred = torch.tensor([],dtype=c.dtype,device=c.device).reshape((0,)+dim)
+        Gunred = torch.tensor([],dtype=c.dtype,device=c.device).reshape((0,)+dim)
     return c, Gunred, Gred
 
 
