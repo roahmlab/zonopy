@@ -43,7 +43,7 @@ class Parallel_Arm_2D:
         self.n_envs = n_envs
 
         self.dimension = 2
-        self.n_links = n_links
+        self.dof = self.n_links = n_links
         self.n_obs = n_obs
 
         link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device)
@@ -331,7 +331,7 @@ class Parallel_Arm_2D:
         else:
             unsafe = ~self.safe
             self.fail_safe_count = (unsafe)*(self.fail_safe_count+1)
-            self.qpos[self.safe] += wrap_to_pi(self.qvel[self.safe]*T_PLAN + 0.5*self.ka[self.safe]*T_PLAN**2)
+            self.qpos[self.safe] = wrap_to_pi(self.qpos[self.safe] + self.qvel[self.safe]*T_PLAN + 0.5*self.ka[self.safe]*T_PLAN**2)
             self.qvel[self.safe] += self.ka[self.safe]*T_PLAN
 
             bracking_accel = (0 - self.qvel[self.safe])/(T_FULL - T_PLAN)            

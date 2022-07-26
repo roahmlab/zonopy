@@ -81,7 +81,7 @@ class Wrapper:
                 - (np.array) minimum (low) action values
                 - (np.array) maximum (high) action values
         """
-        return (-np.pi/24*np.ones(self.env.n_links),np.pi/24*np.ones(self.env.n_links))
+        return (-np.pi/24*np.ones(self.env.dof),np.pi/24*np.ones(self.env.dof))
 
     @property
     def action_dim(self):
@@ -90,7 +90,7 @@ class Wrapper:
         Returns:
             int: Action space dimension
         """
-        return self.env.n_links
+        return self.env.dof
 
     @property
     def unwrapped(self):

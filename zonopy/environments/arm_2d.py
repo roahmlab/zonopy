@@ -35,7 +35,7 @@ class Arm_2D:
             ):
 
         self.dimension = 2
-        self.n_links = n_links
+        self.dof = self.n_links = n_links
         self.n_obs = n_obs
         link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device)
         self.link_zonos = [zp.polyZonotope(link_Z,0)]*n_links
@@ -251,7 +251,7 @@ class Arm_2D:
         else:
             if self.safe:
                 self.fail_safe_count = 0
-                self.qpos += wrap_to_pi(self.qvel*T_PLAN + 0.5*self.ka*T_PLAN**2)
+                self.qpos = wrap_to_pi(self.qpos + self.qvel*T_PLAN + 0.5*self.ka*T_PLAN**2)
                 self.qvel += self.ka*T_PLAN
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_brake = wrap_to_pi(self.qpos + self.qvel*(T_FULL-T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2)

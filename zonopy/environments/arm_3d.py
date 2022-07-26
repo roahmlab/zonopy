@@ -19,14 +19,14 @@ class Arm_3D:
             check_collision = True, # flag for whehter check collision
             check_collision_FO = False, # flag for whether check collision for FO rendering
             collision_threshold = 1e-6, # collision threshold
-            goal_threshold = 0.05, # goal threshold
+            goal_threshold = 0.1, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -200,
-            hyp_success = 50,
+            hyp_collision = -1000,
+            hyp_success = 100,
             hyp_fail_safe = - 1,
             reward_shaping=True,
-            max_episode_steps = 100,
+            max_episode_steps = 300,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
             FO_render_freq = 10,
             ticks = False,
@@ -45,7 +45,7 @@ class Arm_3D:
 
         #### load
         params, _ = zp.load_sinlge_robot_arm_params(robot)
-        self.n_links = params['n_joints']
+        self.dof = self.n_links = params['n_joints']
         self.__link_zonos = [(self.scale*params['link_zonos'][j]).to(dtype=dtype,device=device) for j in range(self.n_links)] # NOTE: zonotope, should it be poly zonotope?
         self.link_polyhedron = [zono.polyhedron_patch() for zono in self.__link_zonos]
         self.link_zonos = [self.__link_zonos[j].to_polyZonotope() for j in range(self.n_links)]
@@ -104,7 +104,12 @@ class Arm_3D:
         self.dtype = dtype
         self.device = device
         self.reset()
-    
+
+    def wrap_cont_joint_to_pi(self,phases):
+        phases_new = torch.clone(phases)
+        phases_new[~self.lim_flag] = (phases[~self.lim_flag] + torch.pi) % (2 * torch.pi) - torch.pi
+        return phases_new
+
     def generate_combinations_upto(self):
         self.combs = [torch.tensor([0],device=self.device)]
         for i in range(self.max_combs):
@@ -273,7 +278,7 @@ class Arm_3D:
         else:
             if self.safe:
                 self.fail_safe_count = 0
-                self.qpos += wrap_to_pi(self.qvel*T_PLAN + 0.5*self.ka*T_PLAN**2)
+                self.qpos = wrap_to_pi(self.qpos + self.qvel*T_PLAN + 0.5*self.ka*T_PLAN**2)
                 self.qvel += self.ka*T_PLAN
                 bracking_accel = (0 - self.qvel)/(T_FULL - T_PLAN)
                 self.qpos_brake = wrap_to_pi(self.qpos + self.qvel*(T_FULL-T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2)
@@ -324,7 +329,7 @@ class Arm_3D:
             qpos = self.qpos
             qgoal = self.qgoal
 
-        self.goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
+        self.goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal))
         self.success = self.goal_dist < self.goal_threshold 
         success = self.success.to(dtype=self.dtype)
         
@@ -603,6 +608,12 @@ class Locked_Arm_3D(Arm_3D):
         self.lim_flag = self.lim_flag[self.unlocked_idx] # NOTE, wrap???
 
         self.reset()
+
+    def wrap_cont_joint_to_pi(self,phases):
+        phases_new = torch.clone(phases)
+        idx = self.unlocked_idx[~self.lim_flag]
+        phases_new[idx] = (phases[idx] + torch.pi) % (2 * torch.pi) - torch.pi
+        return phases_new
 
     def set_initial(self,qpos,qvel,qgoal,obs_pos):
         self.qpos = qpos.to(dtype=self.dtype,device=self.device)
