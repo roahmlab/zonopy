@@ -6,7 +6,7 @@ def wrap_to_pi(phases):
     return (phases + np.pi) % (2 * np.pi) - np.pi
 
 def wrap_cont_joint_to_pi(phases,lim_flag):
-    phases_new = torch.clone(phases)
+    phases_new = np.copy(phases)
     phases_new[~lim_flag] = (phases[~lim_flag] + torch.pi) % (2 * torch.pi) - torch.pi
     return phases_new
 
