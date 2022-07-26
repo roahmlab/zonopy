@@ -12,7 +12,7 @@ T_PLAN, T_FULL = 0.5, 1
 
 class Arm_3D:
     def __init__(self,
-            n_links=7, # number of links
+            robot='Kinova3', # robot model
             n_obs=1, # number of obstacles
             T_len=50, # number of discritization of time interval
             interpolate = True, # flag for interpolation
@@ -27,9 +27,11 @@ class Arm_3D:
             hyp_fail_safe = - 1,
             reward_shaping=True,
             max_episode_steps = 100,
-            scale = 10,
+            FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
+            FO_render_freq = 10,
+            ticks = False,
+            scale = 1,
             max_combs = 200,
-            FO_freq = 10,
             dtype= torch.float,
             device = torch.device('cpu')
             ):
@@ -38,15 +40,15 @@ class Arm_3D:
         self.device = device
         self.generate_combinations_upto()
         self.dimension = 3
-        self.n_links = n_links
         self.n_obs = n_obs
         self.scale = scale
 
         #### load
-        params, _ = zp.load_sinlge_robot_arm_params('Kinova3')
-        self.__link_zonos = [(self.scale*params['link_zonos'][j]).to(dtype=dtype,device=device) for j in range(n_links)] # NOTE: zonotope, should it be poly zonotope?
+        params, _ = zp.load_sinlge_robot_arm_params(robot)
+        self.n_links = params['n_joints']
+        self.__link_zonos = [(self.scale*params['link_zonos'][j]).to(dtype=dtype,device=device) for j in range(self.n_links)] # NOTE: zonotope, should it be poly zonotope?
         self.link_polyhedron = [zono.polyhedron_patch() for zono in self.__link_zonos]
-        self.link_zonos = [self.__link_zonos[j].to_polyZonotope() for j in range(n_links)]
+        self.link_zonos = [self.__link_zonos[j].to_polyZonotope() for j in range(self.n_links)]
         self.P0 = [self.scale*P.to(dtype=dtype,device=device) for P in params['P']]
         self.R0 = [R.to(dtype=dtype,device=device) for R in params['R']]
         self.joint_axes = torch.vstack(params['joint_axes']).to(dtype=dtype,device=device)
@@ -65,6 +67,7 @@ class Arm_3D:
         self.fig_scale = 1
         self.interpolate = interpolate
         self.PI = torch.tensor(torch.pi,dtype=dtype,device=device)
+
         if interpolate:
             if T_len % 2 != 0:
                 self.T_len = T_len + 1
@@ -90,12 +93,16 @@ class Arm_3D:
 
         self.fig = None
         self.render_flag = True
+        assert FO_render_level<4
+        self.FO_render_level = FO_render_level
+        self.FO_render_freq = FO_render_freq
+        self.ticks = ticks
 
         self._max_episode_steps = max_episode_steps
         self._elapsed_steps = 0
-
-        self.FO_freq = FO_freq
-
+        self._frame_steps = 0     
+        self.dtype = dtype
+        self.device = device
         self.reset()
     
     def generate_combinations_upto(self):
@@ -107,13 +114,14 @@ class Arm_3D:
         self.qpos = self.pos_sampler.sample()
         self.qpos_int = torch.clone(self.qpos)
         self.qvel = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)
+        self.qvel_init = torch.clone(self.qvel)
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         self.qgoal = self.pos_sampler.sample()
         if self.interpolate:
-            T_len_to_peak = int((1-T_PLAN/T_FULL)*self.T_len)+1
-            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1)
-            self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links,dtype=self.dtype,device=self.device)        
+            T_len_to_brake = int((1-T_PLAN/T_FULL)*self.T_len)+1
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_brake,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_brake,self.n_links,dtype=self.dtype,device=self.device)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
             self.qvel_brake = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)            
@@ -135,11 +143,11 @@ class Arm_3D:
 
         for _ in range(self.n_obs):
             while True:
-                obs_pos = torch.rand(3,dtype=self.dtype,device=self.device)*2*8-8
+                obs_pos = self.scale*(torch.rand(3,dtype=self.dtype,device=self.device)*2*0.8-0.8)
 
                 # NOTE
                 #rho, th, psi 
-                obs = zp.zonotope(torch.vstack((obs_pos,torch.eye(3,dtype=self.dtype,device=self.device))))
+                obs = zp.zonotope(torch.vstack((obs_pos,(self.scale*0.1)*torch.eye(3,dtype=self.dtype,device=self.device))))
                 
                 
                 safe_flag = True
@@ -169,9 +177,10 @@ class Arm_3D:
         self.done = False
         self.collision = False
 
-        self._elapsed_steps = 0
-        
+        self._elapsed_steps = 0   
         self.reward_com = 0
+
+        return self.get_observations()
 
     def set_initial(self,qpos,qvel,qgoal,obs_pos):
         self.qpos = qpos.to(dtype=self.dtype,device=self.device)
@@ -186,8 +195,7 @@ class Arm_3D:
             self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links,dtype=self.dtype,device=self.device)        
         else:
             self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
-            self.qvel_brake = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)           
-        
+            self.qvel_brake = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)   
         self.obs_zonos = []
 
         R_qi = self.rot()
@@ -225,8 +233,9 @@ class Arm_3D:
         self.collision = False
 
         self._elapsed_steps = 0
-        
         self.reward_com = 0
+
+        return self.get_observations()
 
     def step(self,ka,flag=0):
         self.step_flag = flag
@@ -291,7 +300,7 @@ class Arm_3D:
             collision_info = {
                 'qpos_collision':self.qpos_collision,
                 'qpos_init':self.qpos_int,
-                'qvel_int':torch.zeros(self.n_links),
+                'qvel_int':torch.zeros(self.n_links,dtype=self.dtype,device=self.device),
                 'obs_pos':[self.obs_zonos[o].center for o in range(self.n_obs)],
                 'qgoal':self.qgoal
             }
@@ -359,7 +368,6 @@ class Arm_3D:
                         _,b = buff.polytope(self.combs)
                         unsafe = b.min(dim=-1)[0]>1e-6
                         if any(unsafe):
-                            import pdb;pdb.set_trace()
                             self.qpos_collision = qs[unsafe]
                             return True
 
@@ -384,22 +392,28 @@ class Arm_3D:
             if self.fig is None:
                 if show:
                     plt.ion()
-                self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
-                self.ax = a3.Axes3D(self.fig)
+                #self.fig = plt.figure(figsize=[self.fig_scale*6.4,self.fig_scale*4.8],dpi=dpi)
+                #self.ax = a3.Axes3D(self.fig)
+
+                self.fig = plt.figure()
+                self.ax = plt.axes(projection='3d')
+                if not self.ticks:
+                    plt.tick_params(which='both',bottom=False,top=False,left=False,right=False, labelbottom=False, labelleft=False)
                 if save_kwargs is not None:
                     os.makedirs(save_kwargs['save_path'],exist_ok=True) 
-                    self.ax.set_title(save_kwargs['text'],fontsize=10,loc='right') 
-
+                    self.ax.set_title(save_kwargs['text'],fontsize=10,loc='right')
             
             self.render_flag = False
             self.FO_patches = self.ax.add_collection3d(Poly3DCollection([]))
             self.link_patches = self.ax.add_collection3d(Poly3DCollection([]))
-            
+
+            #  Collect patches of polyhedron representation of obstacle
             obs_patches = []
             for o in range(self.n_obs):
                 obs_patches.extend(self.obs_zonos[o].polyhedron_patch())
             self.obs_patches = self.ax.add_collection3d(Poly3DCollection(obs_patches,edgecolor='red',facecolor='red',alpha=0.2,linewidths=0.2))
 
+            # Collect patches of polyhedron representation of link in goal configuration
             link_goal_patches = []
             R_q = self.rot(self.qgoal)
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)            
@@ -408,7 +422,8 @@ class Arm_3D:
                 R = R@self.R0[j]@R_q[j]
                 link_goal_patches.extend((self.link_polyhedron[j]@R.T+P).cpu())
             self.link_goal_patches = self.ax.add_collection3d(Poly3DCollection(link_goal_patches,edgecolor='gray',facecolor='gray',alpha=0.15,linewidths=0.5))
-                
+
+        # Collect patches of polyhedron representation of forward reachable set
         if FO_link is not None: 
             FO_patches = []
             if self.fail_safe_count == 0:
@@ -416,31 +431,33 @@ class Arm_3D:
                 self.FO_patches.remove()
                 for j in range(self.n_links): 
                     FO_link_slc = FO_link[j].slice_all_dep((self.ka/g_ka).unsqueeze(0).repeat(100,1)).reduce(4)
-                    for t in range(100): 
-                        if t % self.FO_freq == 0:
+                    #FO_link_slc = FO_link[j].to_batchZonotope().reduce(1)
+                    for t in range(100):
+                        if t % self.FO_render_freq == 0:
                             FO_patch = FO_link_slc[t].polyhedron_patch().detach()
                             FO_patches.extend(FO_patch)
-                self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.2)) 
+                self.FO_patches = self.ax.add_collection3d(Poly3DCollection(FO_patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.2))
 
         if self.interpolate:
             timesteps = int(T_PLAN/T_FULL*self.T_len)
             if show and save_kwargs is None:
                 plot_freq = 1
-                R_q = self.rot(self.qpos_to_peak[1:]).unsqueeze(1)
+                R_q = self.rot(self.qpos_to_peak[1:]).unsqueeze(-3)
             elif show:
                 plot_freq = timesteps//save_kwargs['frame_rate']
-                R_q = self.rot(self.qpos_to_peak[1:]).unsqueeze(1)                
+                R_q = self.rot(self.qpos_to_peak[1:]).unsqueeze(-3) 
             else:
                 plot_freq = 1
                 t_idx = torch.arange(timesteps+1,device=self.device)%(timesteps//save_kwargs['frame_rate'] ) == 1
-                R_q = self.rot(self.qpos_to_peak[t_idx]).unsqueeze(1)
+                R_q = self.rot(self.qpos_to_peak[t_idx]).unsqueeze(-3)
                 timesteps = len(R_q)
-             
+
             link_trace_polyhedron =  torch.zeros(timesteps,12*self.n_links,3,3,dtype=self.dtype,device='cpu')
             R, P = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(1,3,dtype=self.dtype,device=self.device)
             for j in range(self.n_links):
                 P = R@self.P0[j] + P
-                R = R@self.R0[j]@R_q[:,:,j]
+                R = R@self.R0[j]@R_q[:,j]
+                #import pdb;pdb.set_trace()
                 link_trace_polyhedron[:,12*j:12*(j+1)] = (self.link_polyhedron[j]@R.transpose(-1,-2)+P.unsqueeze(-3)).cpu()
             
             for t in range(timesteps):                
@@ -492,13 +509,179 @@ class Arm_3D:
             q = self.qpos
         q = q.reshape(q.shape+(1,1))
         return torch.eye(3,dtype=self.dtype,device=self.device) + torch.sin(q)*self.rot_skew_sym + (1-torch.cos(q))*self.rot_skew_sym@self.rot_skew_sym
+    
+    @property
+    def action_spec(self):
+        pass
+    @property
+    def action_dim(self):
+        pass
+    @property 
+    def action_space(self):
+        pass 
+    @property 
+    def observation_space(self):
+        pass 
+    @property 
+    def obs_dim(self):
+        pass
+
+
+
+
+
+
+
+
+class Locked_Arm_3D(Arm_3D):
+    def __init__(self,
+            robot='Kinova3', # number of links
+            n_obs=1, # number of obstacles
+            T_len=50, # number of discritization of time interval
+            interpolate = True, # flag for interpolation
+            check_collision = True, # flag for whehter check collision
+            check_collision_FO = False, # flag for whether check collision for FO rendering
+            collision_threshold = 1e-6, # collision threshold
+            goal_threshold = 0.05, # goal threshold
+            hyp_effort = 1.0, # hyperpara
+            hyp_dist_to_goal = 1.0,
+            hyp_collision = -200,
+            hyp_success = 50,
+            hyp_fail_safe = - 1,
+            reward_shaping=True,
+            max_episode_steps = 100,
+            FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
+            FO_render_freq = 10,
+            ticks = False,
+            scale = 1,
+            max_combs = 200,
+            dtype= torch.float,
+            device = torch.device('cpu'),
+            locked_idx = [],
+            locked_qpos = [],
+            ):
+        self.unlocked_idx = []
+        super().__init__(
+            robot=robot,
+            n_obs=n_obs, 
+            T_len=T_len, 
+            interpolate = interpolate, 
+            check_collision = check_collision, 
+            check_collision_FO = check_collision_FO, 
+            collision_threshold = collision_threshold, 
+            goal_threshold = goal_threshold,
+            hyp_effort = hyp_effort,
+            hyp_dist_to_goal = hyp_dist_to_goal,
+            hyp_collision = hyp_collision,
+            hyp_success = hyp_success,
+            hyp_fail_safe = hyp_fail_safe,
+            reward_shaping = reward_shaping,
+            max_episode_steps = max_episode_steps,
+            FO_render_level = FO_render_level,
+            FO_render_freq = FO_render_freq,
+            ticks = ticks,
+            scale = scale,
+            max_combs = max_combs,
+            dtype= dtype,
+            device = device)
+
+        self.locked_idx = torch.tensor(locked_idx,dtype=int,device=device)
+        self.locked_qpos = torch.tensor(locked_qpos,dtype=dtype,device=device)
+        self.dof = self.n_links - len(locked_idx)
+    
+        self.unlocked_idx = torch.ones(self.n_links,dtype=bool,device=device)
+        self.unlocked_idx[self.locked_idx] = False
+        self.unlocked_idx = self.unlocked_idx.nonzero().reshape(-1)
+
+        locked_pos_lim = self.pos_lim.clone()
+        locked_pos_lim[self.locked_idx,0] = locked_pos_lim[self.locked_idx,1] = self.locked_qpos
+        self.pos_sampler = torch.distributions.Uniform(locked_pos_lim[:,1],locked_pos_lim[:,0],validate_args=False)
+
+        self.pos_lim = self.pos_lim[self.unlocked_idx]
+        self.vel_lim = self.vel_lim[self.unlocked_idx]
+        self.tor_lim = self.tor_lim[self.unlocked_idx]
+        self.lim_flag = self.lim_flag[self.unlocked_idx] # NOTE, wrap???
+
+        self.reset()
+
+    def set_initial(self,qpos,qvel,qgoal,obs_pos):
+        self.qpos = qpos.to(dtype=self.dtype,device=self.device)
+        self.qpos[self.locked_idx] = self.locked_qpos
+        self.qpos_int = torch.clone(self.qpos)
+        self.qvel = qvel.to(dtype=self.dtype,device=self.device)
+        self.qpos_prev = torch.clone(self.qpos)
+        self.qvel_prev = torch.clone(self.qvel)
+        self.qgoal = qgoal.to(dtype=self.dtype,device=self.device)   
+        self.qgoal[self.locked_idx] = self.locked_qpos
+
+        if self.interpolate:
+            T_len_to_peak = int((1-T_PLAN/T_FULL)*self.T_len)+1            
+            self.qpos_to_brake = self.qpos.unsqueeze(0).repeat(T_len_to_peak,1)
+            self.qvel_to_brake = torch.zeros(T_len_to_peak,self.n_links,dtype=self.dtype,device=self.device)        
+        else:
+            self.qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL-T_PLAN)
+            self.qvel_brake = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)   
+        self.obs_zonos = []
+
+        R_qi = self.rot()
+        R_qg = self.rot(self.qgoal)    
+        Ri, Pi = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)       
+        Rg, Pg = torch.eye(3,dtype=self.dtype,device=self.device), torch.zeros(3,dtype=self.dtype,device=self.device)               
+        link_init, link_goal = [], []
+        for j in range(self.n_links):
+            Pi = Ri@self.P0[j] + Pi 
+            Pg = Rg@self.P0[j] + Pg
+            Ri = Ri@self.R0[j]@R_qi[j]
+            Rg = Rg@self.R0[j]@R_qg[j]
+            link_init.append(Ri@self.__link_zonos[j]+Pi)
+            link_goal.append(Rg@self.__link_zonos[j]+Pg)
+        for pos in obs_pos:
+            obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),torch.eye(3,dtype=self.dtype,device=self.device))))
+            for j in range(self.n_links):
+                buff = link_init[j]-obs
+                _,b = buff.polytope(self.combs)
+                if min(b) > -1e-5:
+                    assert False, 'given obstacle position is in collision with initial and goal configuration.'
+                buff = link_goal[j]-obs
+                _,b = buff.polytope(self.combs)
+                if min(b) > -1e-5:
+                    assert False, 'given obstacle position is in collision with initial and goal configuration.'    
+            self.obs_zonos.append(obs)
+        self.fail_safe_count = 0
+        if self.render_flag == False:
+            self.obs_patches.remove()
+            self.link_goal_patches.remove()
+            self.FO_patches.remove()
+            self.link_patches.remove()
+        self.render_flag = True
+        self.done = False
+        self.collision = False
+
+        self._elapsed_steps = 0
+        self.reward_com = 0
+
+        return self.get_observations()
+
+    def step(self,ka,flag=0):
+
+        ka_all = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)
+        ka_all[self.unlocked_idx] = ka
+
+        return super().step(ka_all,flag)
+    
+    def get_observations(self):
+        observation = {'qpos':self.qpos[self.unlocked_idx],'qvel':self.qvel[self.unlocked_idx],'qgoal':self.qgoal[self.unlocked_idx]}
+        if self.n_obs > 0:
+            observation['obstacle_pos']= torch.vstack([self.obs_zonos[o].center for o in range(self.n_obs)])
+            observation['obstacle_size'] = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
+        return observation
 
 
 if __name__ == '__main__':
 
-    env = Arm_3D(n_obs=3,T_len=50,interpolate=True)
+    env = Locked_Arm_3D(n_obs=3,T_len=50,interpolate=True,locked_idx=[1,2],locked_qpos = [0,0])
     for _ in range(3):
         for _ in range(10):
-            env.step(torch.rand(7))
+            env.step(torch.rand(env.dof))
             env.render()
             #env.reset()
