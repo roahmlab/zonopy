@@ -5,6 +5,10 @@ T_PLAN, T_FULL = 0.5, 1.0
 def wrap_to_pi(phases):
     return (phases + np.pi) % (2 * np.pi) - np.pi
 
+def wrap_cont_joint_to_pi(phases,lim_flag):
+    phases_new = torch.clone(phases)
+    phases_new[~lim_flag] = (phases[~lim_flag] + torch.pi) % (2 * torch.pi) - torch.pi
+    return phases_new
 
 class NlpSetup():
     def __init__(self,A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,n_obs,dimension,g_ka):
@@ -119,6 +123,14 @@ class NlpSetup3D(NlpSetup):
         self.actual_pos_lim = actual_pos_lim
         self.vel_lim = vel_lim
         self.lim_flag = lim_flag
+
+    def objective(self,x):
+        qplan = self.qpos + self.qvel*T_PLAN + 0.5*self.g_ka*x*T_PLAN**2
+        return np.sum(wrap_cont_joint_to_pi(qplan-self.qgoal,self.lim_flag)**2)
+
+    def gradient(self,x):
+        qplan = self.qpos + self.qvel*T_PLAN + 0.5*self.g_ka*x*T_PLAN**2
+        return self.g_ka* T_PLAN**2*wrap_cont_joint_to_pi(qplan - self.qgoal,self.lim_flag)
 
     def compute_constraints_jacobian(self,x):
         if (self.x_prev!=x).any(): 

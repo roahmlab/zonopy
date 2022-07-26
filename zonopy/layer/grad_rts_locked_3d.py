@@ -57,7 +57,7 @@ def rot(q,joint_axes):
     rot_skew_sym = (w@joint_axes.to(dtype=dtype,device=device).T).transpose(0,-1)
     return torch.eye(3,dtype=dtype,device=device) + torch.sin(q)*rot_skew_sym + (1-torch.cos(q))*rot_skew_sym@rot_skew_sym
 
-def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, dof, n_obs, pos_lim, vel_lim, lim_flag, locked_idx, locked_qpos, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
+def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, locked_idx, locked_qpos, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 3
     n_timesteps = 100
@@ -365,7 +365,7 @@ if __name__ == '__main__':
         link_zonos.append(l.to(device=device,dtype=dtype))
     params = {'n_joints': env.n_links, 'P': P, 'R': R}
     joint_axes = [j for j in env.joint_axes.to(device=device,dtype=dtype)]
-    RTS = gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, env.n_links, env.dof, env.n_obs, env.pos_lim, env.vel_lim, env.lim_flag, env.locked_idx, env.locked_qpos, params,device=device,dtype=dtype)
+    RTS = gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, env.pos_lim, env.vel_lim, env.lim_flag, env.locked_idx, env.locked_qpos, params,device=device,dtype=dtype)
 
     ##### 3. RUN RTS #####
     t_forward, t_backward = 0, 0 
