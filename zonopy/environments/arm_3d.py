@@ -22,9 +22,11 @@ class Arm_3D:
             goal_threshold = 0.1, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -1000,
-            hyp_success = 100,
+            hyp_collision = -2000,
+            hyp_success = 150,
             hyp_fail_safe = - 1,
+            hyp_stuck = -1500,
+            stuck_threshold = 1,
             reward_shaping=True,
             max_episode_steps = 300,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
@@ -88,6 +90,8 @@ class Arm_3D:
         self.hyp_collision = hyp_collision
         self.hyp_success = hyp_success
         self.hyp_fail_safe = hyp_fail_safe
+        self.hyp_stuck = hyp_stuck
+        self.stuck_threshold = stuck_threshold
         self.reward_shaping = reward_shaping
         self.discount = 1
 
@@ -294,7 +298,7 @@ class Arm_3D:
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
         self.reward_com *= self.discount
         self.reward_com += self.reward
-        self.done = self.success or self.collision
+        self.done = self.success or self.collision or (self.fail_safe_count > self.stuck_threshold)
         observations = self.get_observations()
         info = self.get_info()
         return observations, self.reward, self.done, info
@@ -342,14 +346,17 @@ class Arm_3D:
             return reward
 
         # otherwise continue to calculate the dense reward
+        until_terminate = (self._max_episode_steps - self._elapsed_steps)/self._max_episode_steps
         # reward for position term
         reward -= self.hyp_dist_to_goal * self.goal_dist
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action)
         # Add collision if needed
-        reward += self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
+        reward += self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype) * until_terminate
         # Add fail-safe if needed
         reward += self.hyp_fail_safe * (1-bool(self.safe))
+        # Add stuck if needed
+        reward += self.hyp_stuck * torch.tensor(self.fail_safe_count > self.stuck_threshold,dtype=self.dtype) * until_terminate
         # Add success if wanted
         reward += self.hyp_success * success
 

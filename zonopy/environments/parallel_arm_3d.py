@@ -27,9 +27,11 @@ class Parallel_Arm_3D:
             goal_threshold = 0.1, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -1000,
-            hyp_success = 100,
+            hyp_collision = -2000,
+            hyp_success = 150,
             hyp_fail_safe = - 1,
+            hyp_stuck = -1500,
+            stuck_threshold = 1,
             reward_shaping=True,
             max_episode_steps = 300,
             n_plots = None,
@@ -100,6 +102,8 @@ class Parallel_Arm_3D:
         self.hyp_collision = hyp_collision
         self.hyp_success = hyp_success
         self.hyp_fail_safe = hyp_fail_safe
+        self.hyp_stuck = hyp_stuck
+        self.stuck_threshold = stuck_threshold
         self.reward_shaping = reward_shaping
         self.discount = 1
 
@@ -375,7 +379,7 @@ class Parallel_Arm_3D:
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
         self.reward_com *= self.discount
         self.reward_com += self.reward
-        self.done = self.success + self.collision
+        self.done = self.success + self.collision + (self.fail_safe_count > self.stuck_threshold)
 
         infos = self.get_info()
         if self.done.sum()>0:
@@ -434,14 +438,17 @@ class Parallel_Arm_3D:
             return reward
 
         # otherwise continue to calculate the dense reward
+        until_terminate = (self._max_episode_steps - self._elapsed_steps)/self._max_episode_steps
         # reward for position term
         reward -= self.hyp_dist_to_goal * self.goal_dist
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action,dim=-1)
         # Add collision if needed
-        reward += self.hyp_collision * self.collision
+        reward += self.hyp_collision * self.collision * until_terminate
         # Add fail-safe if needed
         reward += self.hyp_fail_safe * (1 - self.safe.to(dtype=self.dtype))
+        # Add stuck if needed
+        reward += self.hyp_stuck * (self.fail_safe_count > self.stuck_threshold) * until_terminate
         # Add success if wanted
         reward += self.hyp_success * success
 
@@ -735,7 +742,6 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
             dtype= dtype,
             device = device
             )
-
         self.locked_idx = torch.tensor(locked_idx,dtype=int,device=device)
         self.locked_qpos = torch.tensor(locked_qpos,dtype=dtype,device=device)
         self.dof = self.n_links - len(locked_idx)
@@ -842,7 +848,9 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
 
 if __name__ == '__main__':
     n_envs = 9
-    env = Parallel_Locked_Arm_3D(n_envs = n_envs, n_obs=20,T_len=50,interpolate=False,n_plots=3,locked_idx = [0,1], locked_qpos = [0,0])
+    # [2,4,5,6], [0,0,0,0]
+    # [2,5], [0,0]
+    env = Parallel_Locked_Arm_3D(n_envs = n_envs, n_obs=2,T_len=50,interpolate=True,n_plots=1,locked_idx = [2,5], locked_qpos = [0,0])
     for _ in range(3):
         for _ in range(10):
             env.step(torch.rand(n_envs,env.dof))
