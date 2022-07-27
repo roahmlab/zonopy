@@ -33,6 +33,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_fr
         )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
+    NLP.add_option('max_cpu_time', 0.2)
     k_opt, info = NLP.solve(ka_0)
 
     # NOTE: for training, dont care about fail-safe
