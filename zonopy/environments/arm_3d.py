@@ -48,6 +48,7 @@ class Arm_3D:
         #### load
         params, _ = zp.load_sinlge_robot_arm_params(robot)
         self.dof = self.n_links = params['n_joints']
+        self.joint_id = torch.arange(self.n_links,dtype=int,device=device)
         self.__link_zonos = [(self.scale*params['link_zonos'][j]).to(dtype=dtype,device=device) for j in range(self.n_links)] # NOTE: zonotope, should it be poly zonotope?
         self.link_polyhedron = [zono.polyhedron_patch() for zono in self.__link_zonos]
         self.link_zonos = [self.__link_zonos[j].to_polyZonotope() for j in range(self.n_links)]
@@ -613,7 +614,7 @@ class Locked_Arm_3D(Arm_3D):
         self.vel_lim = self.vel_lim[self.unlocked_idx]
         self.tor_lim = self.tor_lim[self.unlocked_idx]
         self.lim_flag = self.lim_flag[self.unlocked_idx] # NOTE, wrap???
-
+        self.joint_id = self.joint_id[self.unlocked_idx]
         self.reset()
 
     def wrap_cont_joint_to_pi(self,phases):

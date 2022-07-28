@@ -36,6 +36,7 @@ class Arm_2D:
 
         self.dimension = 2
         self.dof = self.n_links = n_links
+        self.joint_id = torch.arange(self.n_links,dtype=int,device=device)
         self.n_obs = n_obs
         link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device)
         self.link_zonos = [zp.polyZonotope(link_Z,0)]*n_links
