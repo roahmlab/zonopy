@@ -23,15 +23,16 @@ class Parallel_Arm_3D:
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
             check_collision_FO = False, # flag for whether check collision for FO rendering
+            check_joint_limit = True,
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.1, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -2000,
+            hyp_collision = 2500,
             hyp_success = 150,
-            hyp_fail_safe = - 1,
-            hyp_stuck = -1500,
-            stuck_threshold = 1,
+            hyp_fail_safe = 1,
+            hyp_stuck =2000,
+            stuck_threshold = None,
             reward_shaping=True,
             max_episode_steps = 300,
             n_plots = None,
@@ -72,6 +73,13 @@ class Parallel_Arm_3D:
         self.vel_lim = torch.tensor(params['vel_lim'],dtype=dtype,device=device)
         self.tor_lim = torch.tensor(params['tor_lim'],dtype=dtype,device=device)
         self.lim_flag = torch.tensor(params['lim_flag'],dtype=bool,device=device)
+
+        self._pos_lim = self.pos_lim.clone()
+        self._vel_lim = self.vel_lim.clone()
+        self._tor_lim = self.tor_lim.clone()
+        self._lim_flag = self.lim_flag.clone()
+        self._actual_pos_lim = self._pos_lim[self._lim_flag]
+
         self.pos_sampler = torch.distributions.Uniform(self.pos_lim[:,1],self.pos_lim[:,0])
         self.full_radius = self.scale*0.8
 
@@ -95,6 +103,7 @@ class Parallel_Arm_3D:
         self.obstacle_generators = 0.1*torch.eye(3,dtype=dtype,device=device).unsqueeze(0).repeat(n_envs,1,1)
         self.check_collision = check_collision
         self.check_collision_FO = check_collision_FO
+        self.check_joint_limit = check_joint_limit
         self.collision_threshold = collision_threshold
         
         self.goal_threshold = goal_threshold
@@ -104,7 +113,10 @@ class Parallel_Arm_3D:
         self.hyp_success = hyp_success
         self.hyp_fail_safe = hyp_fail_safe
         self.hyp_stuck = hyp_stuck
-        self.stuck_threshold = stuck_threshold
+        if stuck_threshold is None:
+            self.stuck_threshold = max_episode_steps
+        else:
+            self.stuck_threshold = stuck_threshold
         self.reward_shaping = reward_shaping
         self.discount = 1
 
@@ -328,15 +340,16 @@ class Parallel_Arm_3D:
 
 
     def step(self,ka,flag=None):
+        ka = ka.detach()
+        self.ka = ka.clamp((-self.PI-self.qvel)/T_PLAN,(self.PI-self.qvel)/T_PLAN) # velocity clamp
+        self.joint_limit_check()
+
         if flag is None:
             self.step_flag = torch.zeros(self.n_envs,dtype=int,device=self.device)
         else:
             self.step_flag = flag.to(dtype=int,device=self.device).detach()
-        self.safe = self.step_flag <= 0
-        # -torch.pi<qvel+k*T_PLAN < torch.pi
-        # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
-        ka = ka.detach()
-        self.ka = ka.clamp((-self.PI-self.qvel)/T_PLAN,(self.PI-self.qvel)/T_PLAN) # velocity clamp
+        self.safe = (self.step_flag <= 0) + self.exceed_joint_limit
+        
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         if self.interpolate:
@@ -380,7 +393,8 @@ class Parallel_Arm_3D:
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
         self.reward_com *= self.discount
         self.reward_com += self.reward
-        self.done = self.success + self.collision + (self.fail_safe_count > self.stuck_threshold)
+        self.stuck = self.fail_safe_count > self.stuck_threshold
+        self.done = self.success + self.collision + self.stuck
 
         infos = self.get_info()
         if self.done.sum()>0:
@@ -395,7 +409,8 @@ class Parallel_Arm_3D:
                 'is_success':bool(self.success[idx]),
                 'collision':bool(self.collision[idx]),
                 'safe_flag':bool(self.safe[idx]),
-                'step_flag':int(self.step_flag[idx])
+                'step_flag':int(self.step_flag[idx]),
+                'stuck': bool(self.stuck[idx])
                 }
             if self.collision[idx]:
                 collision_info = {
@@ -434,27 +449,44 @@ class Parallel_Arm_3D:
 
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
-            reward += self.hyp_collision * self.collision
+            reward -= self.hyp_collision * self.collision
             reward += success - 1 + self.hyp_success * success
             return reward
 
         # otherwise continue to calculate the dense reward
-        until_terminate = (self._max_episode_steps - self._elapsed_steps)/self._max_episode_steps
         # reward for position term
         reward -= self.hyp_dist_to_goal * self.goal_dist
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action,dim=-1)
         # Add collision if needed
-        reward += self.hyp_collision * self.collision * until_terminate
+        reward -= self.hyp_collision * self.collision
         # Add fail-safe if needed
-        reward += self.hyp_fail_safe * (1 - self.safe.to(dtype=self.dtype))
+        reward -= self.hyp_fail_safe * (1 - self.safe.to(dtype=self.dtype))
         # Add stuck if needed
-        reward += self.hyp_stuck * (self.fail_safe_count > self.stuck_threshold) * until_terminate
+        reward -= self.hyp_stuck * (self.fail_safe_count > self.stuck_threshold)
         # Add success if wanted
         reward += self.hyp_success * success
 
         return reward    
 
+    def joint_limit_check(self):
+        if self.check_joint_limit:
+            t_peak_optimum = -self.qvel/self.ka # time to optimum of first half traj.
+            qpos_peak_optimum = (t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*self.ka*t_peak_optimum**2).nan_to_num()
+            qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * self.ka * T_PLAN**2
+            qvel_peak = self.qvel + self.ka * T_PLAN
+
+            bracking_accel = (0 - qvel_peak)/(T_FULL - T_PLAN)
+            qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2
+            # can be also, qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL+T_PLAN) + 0.5 * self.ka * T_PLAN * T_FULL
+            qpos_possible_max_min = torch.cat((qpos_peak_optimum.unsqueeze(-2),qpos_peak.unsqueeze(-2),qpos_brake.unsqueeze(-2)),-2)[:,:,self._lim_flag]
+
+            qpos_ub = (qpos_possible_max_min - self._actual_pos_lim[:,0]).reshape(self.n_envs,-1)
+            qpos_lb = (self._actual_pos_lim[:,1] - qpos_possible_max_min).reshape(self.n_envs,-1)
+            self.exceed_joint_limit = (abs(qvel_peak)>self._vel_lim).any(-1) + (qpos_ub>0).any(-1) + (qpos_lb>0).any(-1)
+
+        self.exceed_joint_limit = torch.zeros(self.n_envs,dtype=bool)
+    
     def collision_check(self,qs):
         unsafe = torch.zeros(self.n_envs,dtype=bool)
         if self.check_collision:
@@ -700,9 +732,11 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -200,
+            hyp_collision = 200,
             hyp_success = 50,
-            hyp_fail_safe = - 1,
+            hyp_fail_safe = 1,
+            hyp_stuck =1500,
+            stuck_threshold = None,
             reward_shaping=True,
             max_episode_steps = 300,
             n_plots = None,
@@ -732,6 +766,8 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
             hyp_collision = hyp_collision,
             hyp_success = hyp_success,
             hyp_fail_safe = hyp_fail_safe,
+            hyp_stuck = hyp_stuck,
+            stuck_threshold = stuck_threshold,
             reward_shaping=reward_shaping,
             max_episode_steps = max_episode_steps,
             n_plots = n_plots,

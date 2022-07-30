@@ -23,9 +23,11 @@ class Arm_2D:
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -200,
+            hyp_collision = 300,
             hyp_success = 50,
-            hyp_fail_safe = - 1,
+            hyp_fail_safe = 1,
+            hyp_stuck = 250,
+            stuck_threshold = None,
             reward_shaping=True,
             max_episode_steps = 100,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
@@ -74,6 +76,11 @@ class Arm_2D:
         self.hyp_collision = hyp_collision
         self.hyp_success = hyp_success
         self.hyp_fail_safe = hyp_fail_safe
+        self.hyp_stuck = hyp_stuck
+        if stuck_threshold is None:
+            self.stuck_threshold = max_episode_steps
+        else:
+            self.stuck_threshold = stuck_threshold
         self.reward_shaping = reward_shaping
         self.discount = 1
 
@@ -311,7 +318,7 @@ class Arm_2D:
 
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
-            reward += self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
+            reward -= self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
             reward += success - 1 + self.hyp_success * success
             return reward
 
@@ -321,9 +328,11 @@ class Arm_2D:
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action)
         # Add collision if needed
-        reward += self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
+        reward -= self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
         # Add fail-safe if needed
-        reward += self.hyp_fail_safe * (1-bool(self.safe))
+        reward -= self.hyp_fail_safe * (1-bool(self.safe))
+        # Add stuck if needed
+        reward -= self.hyp_stuck * (self.fail_safe_count > self.stuck_threshold)
         # Add success if wanted
         reward += self.hyp_success * success
 

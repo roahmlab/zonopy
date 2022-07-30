@@ -18,15 +18,16 @@ class Arm_3D:
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
             check_collision_FO = False, # flag for whether check collision for FO rendering
+            check_joint_limit = True,
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.1, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -2000,
+            hyp_collision = 2000,
             hyp_success = 150,
-            hyp_fail_safe = - 1,
-            hyp_stuck = -1500,
-            stuck_threshold = 1,
+            hyp_fail_safe = 1,
+            hyp_stuck = 1500,
+            stuck_threshold = None,
             reward_shaping=True,
             max_episode_steps = 300,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
@@ -62,6 +63,13 @@ class Arm_3D:
         self.vel_lim = torch.tensor(params['vel_lim'],dtype=dtype,device=device)
         self.tor_lim = torch.tensor(params['tor_lim'],dtype=dtype,device=device)
         self.lim_flag = torch.tensor(params['lim_flag'],dtype=bool,device=device)
+
+        self._pos_lim = self.pos_lim.clone()
+        self._vel_lim = self.vel_lim.clone()
+        self._tor_lim = self.tor_lim.clone()
+        self._lim_flag = self.lim_flag.clone()
+        self._actual_pos_lim = self._pos_lim[self._lim_flag]
+
         self.pos_sampler = torch.distributions.Uniform(self.pos_lim[:,1],self.pos_lim[:,0])
         self.full_radius = self.scale*0.8
         #self.full_radius = sum([(abs(self.P0[j])).max() for j in range(self.n_links)])        
@@ -83,6 +91,7 @@ class Arm_3D:
         self.obs_buffer_length = torch.tensor([0.001,0.001],dtype=dtype,device=device)
         self.check_collision = check_collision
         self.check_collision_FO = check_collision_FO
+        self.check_joint_limit = check_joint_limit
         self.collision_threshold = collision_threshold
         
         self.goal_threshold = goal_threshold
@@ -92,7 +101,10 @@ class Arm_3D:
         self.hyp_success = hyp_success
         self.hyp_fail_safe = hyp_fail_safe
         self.hyp_stuck = hyp_stuck
-        self.stuck_threshold = stuck_threshold
+        if stuck_threshold is None:
+            self.stuck_threshold = max_episode_steps
+        else:
+            self.stuck_threshold = stuck_threshold
         self.reward_shaping = reward_shaping
         self.discount = 1
 
@@ -248,12 +260,14 @@ class Arm_3D:
         return self.get_observations()
 
     def step(self,ka,flag=0):
-        self.step_flag = flag
-        self.safe = flag <= 0
-        # -torch.pi<qvel+k*T_PLAN < torch.pi
-        # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
+
         ka = ka.detach()
         self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
+        self.joint_limit_check()
+
+        self.step_flag = flag
+        self.safe = (flag <= 0) or self.exceed_joint_limit
+
         self.qpos_prev = torch.clone(self.qpos)
         self.qvel_prev = torch.clone(self.qvel)
         if self.interpolate:
@@ -299,13 +313,19 @@ class Arm_3D:
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
         self.reward_com *= self.discount
         self.reward_com += self.reward
-        self.done = self.success or self.collision or (self.fail_safe_count > self.stuck_threshold)
+        self.stuck = self.fail_safe_count > self.stuck_threshold
+        self.done = self.success or self.collision or self.stuck
         observations = self.get_observations()
         info = self.get_info()
         return observations, self.reward, self.done, info
     
     def get_info(self):
-        info ={'is_success':self.success,'collision':self.collision,'safe_flag':self.safe,'step_flag':self.step_flag}
+        info ={'is_success':self.success,
+                'collision':self.collision,
+                'safe_flag':self.safe,
+                'step_flag':self.step_flag,
+                'stuck':self.stuck,
+                }
         if self.collision:
             collision_info = {
                 'qpos_collision':self.qpos_collision,
@@ -342,26 +362,45 @@ class Arm_3D:
 
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
-            reward += self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
+            reward -= self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
             reward += success - 1 + self.hyp_success * success
             return reward
 
         # otherwise continue to calculate the dense reward
-        until_terminate = (self._max_episode_steps - self._elapsed_steps)/self._max_episode_steps
         # reward for position term
         reward -= self.hyp_dist_to_goal * self.goal_dist
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action)
         # Add collision if needed
-        reward += self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype) * until_terminate
+        reward -= self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
         # Add fail-safe if needed
-        reward += self.hyp_fail_safe * (1-bool(self.safe))
+        reward -= self.hyp_fail_safe * (1-bool(self.safe))
         # Add stuck if needed
-        reward += self.hyp_stuck * torch.tensor(self.fail_safe_count > self.stuck_threshold,dtype=self.dtype) * until_terminate
+        reward -= self.hyp_stuck * torch.tensor(self.fail_safe_count > self.stuck_threshold,dtype=self.dtype)
         # Add success if wanted
         reward += self.hyp_success * success
 
         return float(reward)   
+
+    def joint_limit_check(self):
+        if self.check_joint_limit:
+            t_peak_optimum = -self.qvel/self.ka # time to optimum of first half traj.
+            qpos_peak_optimum = (t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*self.ka*t_peak_optimum**2).nan_to_num()
+            qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * self.ka * T_PLAN**2
+            qvel_peak = self.qvel + self.ka * T_PLAN
+
+            bracking_accel = (0 - qvel_peak)/(T_FULL - T_PLAN)
+            qpos_brake = qpos_peak + qvel_peak*(T_FULL - T_PLAN) + 0.5*bracking_accel*(T_FULL-T_PLAN)**2
+            # can be also, qpos_brake = self.qpos + 0.5*self.qvel*(T_FULL+T_PLAN) + 0.5 * self.ka * T_PLAN * T_FULL
+            qpos_possible_max_min = torch.cat((qpos_peak_optimum.unsqueeze(-2),qpos_peak.unsqueeze(-2),qpos_brake.unsqueeze(-2)),-2)[:,self._lim_flag]
+
+            qpos_ub = (qpos_possible_max_min - self._actual_pos_lim[:,0])
+            qpos_lb = (self._actual_pos_lim[:,1] - qpos_possible_max_min)
+            
+            self.exceed_joint_limit = (abs(qvel_peak)>self._vel_lim).any(-1) + (qpos_ub>0).any(-1) + (qpos_lb>0).any(-1)
+
+        self.exceed_joint_limit = False
+
 
     def collision_check(self,qs):
 
@@ -558,9 +597,11 @@ class Locked_Arm_3D(Arm_3D):
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = -200,
+            hyp_collision = 200,
             hyp_success = 50,
-            hyp_fail_safe = - 1,
+            hyp_fail_safe = 1,
+            hyp_stuck =1500,
+            stuck_threshold = None,
             reward_shaping=True,
             max_episode_steps = 100,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
@@ -588,6 +629,8 @@ class Locked_Arm_3D(Arm_3D):
             hyp_collision = hyp_collision,
             hyp_success = hyp_success,
             hyp_fail_safe = hyp_fail_safe,
+            hyp_stuck = hyp_stuck,
+            stuck_threshold = stuck_threshold,
             reward_shaping = reward_shaping,
             max_episode_steps = max_episode_steps,
             FO_render_level = FO_render_level,
