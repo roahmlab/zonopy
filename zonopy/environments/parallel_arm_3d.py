@@ -732,10 +732,10 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
             goal_threshold = 0.05, # goal threshold
             hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = 200,
+            hyp_collision = 2500,
             hyp_success = 50,
             hyp_fail_safe = 1,
-            hyp_stuck =1500,
+            hyp_stuck =2000,
             stuck_threshold = None,
             reward_shaping=True,
             max_episode_steps = 300,

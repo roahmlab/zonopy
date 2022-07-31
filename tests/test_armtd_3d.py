@@ -10,7 +10,7 @@ import pickle
 
 
 
-test_flag = True 
+test_flag = False 
 n_test = 50
 n_timesteps = 100
 N_OBS = torch.randint(10,25,(n_test,))
@@ -66,9 +66,9 @@ else:
         print(f'time step: {t}')
         ka, flag = planner.plan(env,torch.zeros(env.n_links))
         observations, reward, done, info = env.step(ka.cpu(),flag)
-        #env.render(planner.FO_link)
-        env.render()
+        env.render(planner.FO_link)
+        #env.render()
         
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         if info['collision']:
             import pdb;pdb.set_trace()

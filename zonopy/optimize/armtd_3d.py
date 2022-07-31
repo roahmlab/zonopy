@@ -43,7 +43,6 @@ class ARMTD_3D_planner():
         self.actual_pos_lim = env.pos_lim[env.lim_flag].cpu()
         self.n_pos_lim = int(env.lim_flag.sum().cpu())
         self.lim_flag = env.lim_flag.cpu()
-        self.PI_wrap_continuous = (~self.lim_flag).to(dtype=self.dtype).numpy()*torch.pi
 
     def wrap_cont_joint_to_pi(self,phases):
         phases_new = torch.clone(phases)
@@ -96,7 +95,7 @@ class ARMTD_3D_planner():
             obs_Z.append(obs.Z.unsqueeze(0))
         obs_Z = torch.cat(obs_Z,0).to(dtype=self.dtype, device=self.device).unsqueeze(1).repeat(1,self.n_timesteps,1,1)
 
-        obs_unsafe_flag = torch.zeros(self.n_obs,dtype=bool,device=self.device)
+        obs_in_reach_idx = torch.zeros(self.n_obs,dtype=bool,device=self.device)
         for j in range(self.n_links):
             
             temp = self.FO_link[j]
@@ -107,16 +106,16 @@ class ARMTD_3D_planner():
             _, b_obs = obs_buff.reduce(3).polytope(self.combs)
             
             
-            obs_unsafe_flag += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
+            obs_in_reach_idx += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
             self.FO_link[j] = self.FO_link[j].cpu()
             self.A[j] = A_Grest
             self.b[j] = b_Grest
         
         for j in range(self.n_links):
-            self.A[j] = self.A[j][obs_unsafe_flag].cpu()
-            self.b[j] = self.b[j][obs_unsafe_flag].cpu()
+            self.A[j] = self.A[j][obs_in_reach_idx].cpu()
+            self.b[j] = self.b[j][obs_in_reach_idx].cpu()
 
-        self.n_obs_in_frs = int(sum(obs_unsafe_flag))
+        self.n_obs_in_frs = int(sum(obs_in_reach_idx))
         print(f'Polytope time: {time.time()-t2}')
 
 
