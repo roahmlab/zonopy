@@ -80,7 +80,7 @@ class __Property_ID(object):
 
     def update(self,num,prop='None'):
         if isinstance(prop,str):
-            new_id = torch.arange(num,dtype=torch.long,deivce=self.__device) + self.offset
+            new_id = torch.arange(num,dtype=torch.long) + self.offset
             self.__ids = torch.hstack((self.__ids,new_id))
             if prop in self.__properties:
                 self.__dict[prop] = torch.hstack((self.__dict[prop],new_id))

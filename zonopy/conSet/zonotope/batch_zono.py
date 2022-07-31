@@ -179,14 +179,14 @@ class batchZonotope:
         return <zonotope>
         '''
         if isinstance(slice_dim, list):
-            slice_dim = torch.tensor(slice_dim,dtype=torch.long)
+            slice_dim = torch.tensor(slice_dim,dtype=torch.long,device=self.device)
         elif isinstance(slice_dim, int) or (isinstance(slice_dim, torch.Tensor) and len(slice_dim.shape)==0):
-            slice_dim = torch.tensor([slice_dim],dtype=torch.long)
+            slice_dim = torch.tensor([slice_dim],dtype=torch.long,device=self.device)
 
         if isinstance(slice_pt, list):
-            slice_pt = torch.tensor(slice_pt,dtype=self.dtype)
+            slice_pt = torch.tensor(slice_pt,dtype=self.dtype,device=self.device)
         elif isinstance(slice_pt, int) or isinstance(slice_pt, float) or (isinstance(slice_pt, torch.Tensor) and len(slice_pt.shape)==0):
-            slice_pt = torch.tensor([slice_pt],dtype=self.dtype)
+            slice_pt = torch.tensor([slice_pt],dtype=self.dtype,device=self.device)
 
         assert isinstance(slice_dim, torch.Tensor) and isinstance(slice_pt, torch.Tensor), 'Invalid type of input'
         assert len(slice_dim.shape) ==1, 'slicing dimension should be 1-dim component.'
@@ -209,7 +209,6 @@ class batchZonotope:
         slice_c = c[self.batch_idx_all+(slice_dim,)]
         ind = tuple(slice_idx[:,:-2].T)
         slice_g = G_dim[ind+(slice_idx[:,-1],slice_idx[:,-2])].reshape(self.batch_shape+(N,))
-        
         slice_lambda = (slice_pt-slice_c)/slice_g
         assert not (abs(slice_lambda)>1).any(), 'slice point is ouside bounds of reach set, and therefore is not verified'        
         Z = torch.cat((c.unsqueeze(-2) + slice_lambda.unsqueeze(-2)@G[ind+(slice_idx[:,-1],)].reshape(self.batch_shape+(N,self.dimension)),G[~non_zero_idx.any(-1)].reshape(self.batch_shape+(-1,self.dimension))),-2)
@@ -225,7 +224,7 @@ class batchZonotope:
         Z = self.Z[self.batch_idx_all+(slice(None),dim)]
         return batchZonotope(Z)
 
-    def polygon(self):
+    def polygon(self,nan=True):
         '''
         NOTE: this is unstable for zero generators
         converts a 2-d zonotope into a polygon as vertices
@@ -235,23 +234,29 @@ class batchZonotope:
         '''
         dim = 2
         z = self.deleteZerosGenerators()
-        c = z.center.unsqueeze(-2).repeat((1,)*(self.batch_dim+2))
-        G = torch.clone(z.generators)
+        c = z.center[self.batch_idx_all+(slice(2),)].unsqueeze(-2)#.repeat((1,)*(self.batch_dim+2))
+        G = torch.clone(z.generators[self.batch_idx_all+(slice(None),slice(2))])
         x_idx = self.batch_idx_all+(slice(None),0)
         y_idx = self.batch_idx_all+(slice(None),1)
         G_y = G[y_idx]
         x_max = torch.sum(abs(G[x_idx]),-1)
         y_max = torch.sum(abs(G_y),-1)
+        
         G[G_y<0] = - G[G_y<0]
-        angles = torch.atan2(G[x_idx],G[y_idx])
-        #ang_idx = torch.argsort(angles,dim=-1)
-        ang_idx = torch.argsort(angles,dim=-1).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape)
-        vertices_half = torch.cat((torch.zeros(self.batch_shape+(1,)+self.shape),2*G.gather(-2,ang_idx).cumsum(axis=self.batch_dim)),-2)
-        vertices_half[x_idx] += (x_max - torch.max(vertices_half[x_idx],dim=-1)[0]).unsqueeze(-1)
+        if nan:
+            G[torch.linalg.norm(G,dim=-1)==0] = torch.nan
+        angles = torch.atan2(G[y_idx],G[x_idx])    
+        ang_idx = torch.argsort(angles,dim=-1).unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+(2,))
+        vertices_half = torch.cat((torch.zeros(self.batch_shape+(1,)+(2,),dtype=self.dtype,device=self.device),2*G.gather(-2,ang_idx).cumsum(axis=self.batch_dim)),-2)
+        vertices_half[x_idx] += (x_max - torch.max(vertices_half[x_idx].nan_to_num(-torch.inf),dim=-1)[0]).unsqueeze(-1)
         vertices_half[y_idx] -= y_max.unsqueeze(-1)
-        
-        
-        temp = (vertices_half[self.batch_idx_all+(0,)]+ vertices_half[self.batch_idx_all+(-1,)]).unsqueeze(-2)
+        if nan:
+            last_idx = (z.n_generators-angles.isnan().sum(-1)).reshape(self.batch_shape+(1,1)).repeat((1,)*self.batch_dim+(1,2))
+            temp = (vertices_half[self.batch_idx_all+(0,)].unsqueeze(-2)+ vertices_half.gather(-2,last_idx))
+        else:
+            temp = (vertices_half[self.batch_idx_all+(0,)]+ vertices_half[self.batch_idx_all+(-1,)]).unsqueeze(-2)
+
+
         full_vertices = torch.cat((vertices_half,-vertices_half[self.batch_idx_all+(slice(1,None),)] + temp),dim=self.batch_dim) + c
         return full_vertices        
 
@@ -261,14 +266,80 @@ class batchZonotope:
         P
         comb
         isDeg
+        NOTE: there is a possibility with having nan value on the output, so you might wanna use nan_to_num()
+        OR, just use python built-in max function instead of torch.max or np.max.
         '''
         c = self.center
         G = torch.clone(self.generators)
         h = torch.linalg.vector_norm(G,dim=-1)
         h_sort, indicies = torch.sort(h,dim=-1,descending=True)
-        h_zero = ((h_sort > 1e-6).sum(tuple(range(self.batch_dim))) ==0)
-        if torch.any(h_zero):
-            first_reduce_idx = torch.nonzero(h_zero).squeeze(-1)[0]
+
+
+        h_nonzero = h_sort > 1e-6
+        h_zero_all = ((h_nonzero).sum(tuple(range(self.batch_dim))) ==0)
+        #G[~h_nonzero] = 0 # make sure everything less than 1e-6 to be actual zero, so that non-removable zero padding can be converged into nan value on the output value
+        # NOTE: for some reason the above one didnt work out
+        if torch.any(h_zero_all): 
+            first_reduce_idx = torch.nonzero(h_zero_all).squeeze(-1)[0]
+            G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
+        
+        n_gens, dim = G.shape[-2:] 
+        if dim == 1:
+            C = G/torch.linalg.vector_norm(G,dim=-1).unsqueeze(-1)
+        elif dim == 2:
+            x_idx = self.batch_idx_all+(slice(None),slice(0,1))
+            y_idx = self.batch_idx_all+(slice(None),slice(1,2))
+            C = torch.cat((-G[y_idx],G[x_idx]),-1)
+            C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
+        elif dim == 3:
+            # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
+            if combs is None or n_gens >= len(combs):
+                comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            else:
+                comb = combs[n_gens]
+            Q = torch.cat((G[self.batch_idx_all+(comb[:,0],)],G[self.batch_idx_all+(comb[:,1],)]),dim=-1)
+            temp1 = (Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),4)]).unsqueeze(-1)
+            temp2 = (-Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),5)]+Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
+            temp3 = (Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),4)]-Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
+            C = torch.cat((temp1,temp2,temp3),dim=-1)
+            C = C/torch.norm(C,dim=-1,keepdim=True)
+        elif dim >=4 and dim<=7:
+            assert False
+        else:
+            assert False
+        
+        #index = torch.sum(torch.isnan(C),dim=1) == 0
+        #n_c_batch = index.sum(dim=-1).reshape(-1)
+
+        #deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=-1)
+        deltaD = torch.sum(abs(C@self.generators.transpose(-2,-1)),dim=-1)
+        
+        d = (C@c.unsqueeze(-1)).squeeze(-1)
+        PA = torch.cat((C,-C),dim=-2)
+        Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)
+        # NOTE: torch.nan_to_num()
+        return PA, Pb
+
+    def polytope2(self,combs=None):
+        '''
+        converts a zonotope from a G- to a H- representation
+        P
+        comb
+        isDeg
+        NOTE: there is a possibility with having nan value on the output, so you might wanna use nan_to_num()
+        OR, just use python built-in max function instead of torch.max or np.max.
+        '''
+        c = self.center
+        G = torch.clone(self.generators)
+        h = torch.linalg.vector_norm(G,dim=-1)
+        h_sort, indicies = torch.sort(h,dim=-1,descending=True)
+
+
+        h_nonzero = h_sort > 1e-6
+        h_nonzero_all = ((h_nonzero).sum(tuple(range(self.batch_dim))) ==0)
+        #G[~h_nonzero] = 0 # make sure everything less than 1e-6 to be actual zero, so that non-removable zero padding can be converged into nan value on the output value
+        if torch.any(h_nonzero_all):            
+            first_reduce_idx = torch.nonzero(h_nonzero_all).squeeze(-1)[0]
             G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
 
         n_gens, dim = G.shape[-2:] 
@@ -305,6 +376,7 @@ class batchZonotope:
         Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)
         # NOTE: torch.nan_to_num()
         return PA, Pb
+
 
     def deleteZerosGenerators(self,sorted=False,sort=False):
         '''

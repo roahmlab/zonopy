@@ -230,9 +230,10 @@ class zonotope:
         vertices_half = torch.vstack((torch.zeros(dim,device=self.device),2*G[ang_idx].cumsum(axis=0)))
         vertices_half[:,0] += x_max - torch.max(vertices_half[:,0])
         vertices_half[:,1] -= y_max
+
         full_vertices = torch.vstack((vertices_half,-vertices_half[1:] + vertices_half[0]+ vertices_half[-1])) + c
         return full_vertices
-
+        
     def polyhedron(self):
         dim = 3
         V = self.center[:dim]
@@ -298,7 +299,7 @@ class zonotope:
         Pb = torch.hstack((d+deltaD,-d+deltaD))
         return PA, Pb, C
 
-    def polytope(self):
+    def polytope(self,combs=None):
         '''
         converts a zonotope from a G- to a H- representation
         self: <zonotope>
@@ -336,10 +337,13 @@ class zonotope:
             C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
         elif dim == 3:
             # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
-            comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            if combs is None or n_gens >= len(combs):
+                comb = torch.combinations(torch.arange(n_gens),r=dim-1)
+            else:
+                comb = combs[n_gens]
             
             Q = torch.hstack((G[comb[:,0]],G[comb[:,1]]))
-            C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]-Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
+            C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]+Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
             C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
         elif dim >=4 and dim<=7:
             assert False
@@ -348,7 +352,7 @@ class zonotope:
         
         index = torch.sum(torch.isnan(C),dim=1) == 0
         C = C[index]
-        deltaD = torch.sum(abs(C@G.T),dim=1)
+        deltaD = torch.sum(abs(C@self.generators.T),dim=1)
         d = (C@c)
         PA = torch.vstack((C,-C))
         Pb = torch.hstack((d+deltaD,-d+deltaD))
@@ -423,9 +427,10 @@ class zonotope:
                     V = V[K.vertices]
                 except:
                     V = V
-        K = ConvexHull(V)        
-        return [V[s] for s in K.simplices]
-
+        K = ConvexHull(V)
+        V = V.unsqueeze(0)        
+        return torch.cat([V[:,s] for s in K.simplices])
+ 
     def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
         '''
         plot 2 dimensional projection of a zonotope

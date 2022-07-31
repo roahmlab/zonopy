@@ -48,7 +48,7 @@ class matPolyZonotope():
             nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
             G = G[nonzero_g]
             self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)            
-            self.id = PROPERTY_ID.update(self.expMat.shape[1],prop) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
+            self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat != None:
             #check correctness of user input 
             if isinstance(expMat, list):
@@ -74,7 +74,7 @@ class matPolyZonotope():
                 assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
                 self.id = id
             else:
-                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop)   
+                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device)  
         else:
             assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
         self.Z = torch.vstack((C.unsqueeze(0),G,Grest))
@@ -112,6 +112,12 @@ class matPolyZonotope():
     @property
     def T(self):        
         return matPolyZonotope(self.Z.transpose(1,2),self.n_dep_gens,self.expMat,self.id,compress=0)
+    @property 
+    def input_pairs(self):
+        id_sorted, order = torch.sort(self.id)
+        expMat_sorted = self.expMat[:,order] 
+        return self.Z, self.n_dep_gens, expMat_sorted, id_sorted
+        
     def to(self,dtype=None,itype=None,device=None):
         Z = self.Z.to(dtype=dtype,device=device)
         expMat = self.expMat.to(dtype=itype,device=device)
@@ -134,12 +140,17 @@ class matPolyZonotope():
         return <matPolyZonotope>
         '''
         if isinstance(other, torch.Tensor):
-            assert other.shape[0] == self.n_cols
-            Z = self.Z @ other
+            assert other.shape[0] == self.n_cols or other.shape[-2] == self.n_cols
+            
             if len(other.shape) == 1:
+                Z = self.Z @ other
                 return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
             elif len(other.shape) == 2:
+                Z = self.Z @ other
                 return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
+            else:
+                Z = self.Z @ other.unsqueeze(-3)
+                return zp.batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
 
         # NOTE: this is 'OVERAPPROXIMATED' multiplication for keeping 'fully-k-sliceables'
         # The actual multiplication should take
