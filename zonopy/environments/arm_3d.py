@@ -579,12 +579,6 @@ class Arm_3D:
         pass
 
 
-
-
-
-
-
-
 class Locked_Arm_3D(Arm_3D):
     def __init__(self,
             robot='Kinova3', # number of links

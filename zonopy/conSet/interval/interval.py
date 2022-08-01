@@ -55,7 +55,7 @@ class interval:
         inf = self.__inf.cpu()
         sup = self.__sup.cpu()
         return interval(inf,sup)
-
+    '''
     def __str__(self):
         intv_str = f"interval of shape {self.shape}.\n inf: {self.__inf}.\n sup: {self.__sup}.\n"
         del_dict = {'tensor(':'','    ':' ',')':''}
@@ -63,12 +63,13 @@ class interval:
             intv_str = intv_str.replace(del_el,del_dict[del_el])
 
         return intv_str
+    '''
     def __repr__(self):
-        intv_repr1 = f"interval(\n{self.__inf}," 
-        intv_repr2 = f"\n{self.__sup}" 
+        intv_repr1 = f"interval(\n"+str(self.__inf)+"," 
+        intv_repr2 = "\n"+str(self.__sup) 
         intv_repr = intv_repr1.replace('tensor(','   inf(') + intv_repr2.replace('tensor(','   sup(')
         intv_repr = intv_repr.replace('    ','    ')
-        return intv_repr+")"
+        return intv_repr+"\n   )"
     def __add__(self, other):
         if isinstance(other, interval):
             inf, sup = self.__inf+other.__inf, self.__sup+other.__sup

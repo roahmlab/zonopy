@@ -61,20 +61,23 @@ class VideoRecorder:
 
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
+    from zonopy.environments.arm_3d import Arm_3D
     from zonopy.environments.parallel_arm_2d import Parallel_Arm_2D
-    
+    from zonopy.environments.parallel_arm_3d import Parallel_Arm_3D
+        
     import torch 
     import time 
     parallel = True
     if parallel:
-        env = Parallel_Arm_2D(n_links = 2 ,n_obs = 2,T_len=24,n_envs=9,n_plots=1)
+        env = Parallel_Arm_3D(n_envs = 10, robot='Kinova3', n_obs=10, n_plots = 4,T_len=24)
+        #env = Parallel_Arm_2D(n_links = 2 ,n_obs = 4,T_len=24,n_envs=10,n_plots=4)
         video_folder = 'video_test'
 
         ts = time.time()
         for i in range(1):
             base_path = os.path.join(video_folder,f'video_{i}')
-            video_recorder = VideoRecorder(env,base_path,frame_rate=3,format='mp4',show=True,text='Step 1,000,000')
-            for t in range(10):
+            video_recorder = VideoRecorder(env,base_path,frame_rate=3,format='gif',show=False)
+            for t in range(20):
                 env.step(torch.rand(env.n_envs,env.n_links))
                 video_recorder.capture_frame()
             video_recorder.close(True)
@@ -83,17 +86,19 @@ if __name__ == '__main__':
         print(f'Time elasped: {time.time()-ts}')    
 
     else:
-        env = Arm_2D(n_links = 2 ,n_obs = 2,T_len=24)
+        #env = Arm_2D(n_links = 2 ,n_obs = 1,T_len=24)
+        env = Arm_3D(n_obs = 2, T_len = 24)
         video_folder = 'video_test'
 
         ts = time.time()
+        base_path = os.path.join(video_folder,f'video')
         for i in range(2):
-            base_path = os.path.join(video_folder,f'video_{i}')
+            
             video_recorder = VideoRecorder(env,base_path,frame_rate=3,format='gif')
-            for t in range(10):
+            for t in range(5):
                 env.step(torch.rand(env.n_links))
                 video_recorder.capture_frame()
-            video_recorder.close(True)
+            
             env.reset()
-
+        video_recorder.close(True)
         print(f'Time elasped: {time.time()-ts}')
