@@ -1,11 +1,10 @@
 """
-Define class for zonotope
+Define class for batch zonotope
 Author: Yongseok Kwon
 Reference: CORA
 """
 
 import torch
-import matplotlib.patches as patches
 from zonopy.conSet.polynomial_zonotope.batch_poly_zono import batchPolyZonotope 
 from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedBatchGenerators
@@ -13,22 +12,18 @@ from zonopy.conSet.zonotope.zono import zonotope
 import time
 class batchZonotope:
     '''
-    b-zono: <batchZonotope>, <torch.float64>
+    b-zono: <batchZonotope>
 
-    Z: <torch.Tensor> batch of center vector and generator matrix Z = [C,G]
+    Z: <torch.Tensor> batch of center vector and generator matrix Z = [[C],[G]]
     , shape [B1, B2, .. , Bb, N+1, nx]
-    center: <torch.Tensor> center vector
+    center: <torch.Tensor> batch of center vector
     , shape [B1, B2, .. , Bb, nx] 
-    generators: <torch.Tensor> generator matrix
+    generators: <torch.Tensor> batch of generator matrix
     , shape [B1, B2, .. , Bb, N, nx]
-    dtype: data type of class properties
-    , torch.float or torch.double
-    device: device for torch
-    , 'cpu', 'gpu', 'cuda', ...
     
-    Eq. (coeff. a1,a2,...,aN \in [0,1])
+    Eq.
     G = [[g1],[g2],...,[gN]]
-    zono = c + a1*g1 + a2*g2 + ... + aN*gN
+    b-zono = {c + a1*g1 + a2*g2 + ... + aN*gN | coeff. a1,a2,...,aN \in [-1,1] }
     '''
     def __init__(self,Z):
         ################ may not need these for speed ################ 
@@ -52,53 +47,95 @@ class batchZonotope:
         return self.Z.shape[:self.batch_dim]
     @property
     def dtype(self):
+        '''
+        The data type of a batch zonotope properties
+        return torch.float or torch.double        
+        '''
         return self.Z.dtype
     @property
     def device(self):
+        '''
+        The device of a batch zonotope properties
+        return 'cpu', 'cuda:0', or ...
+        '''
         return self.Z.device
     @property
     def center(self):
+        '''
+        The center of a batch zonotope
+        return <torch.Tensor>
+        , shape [B1, B2, .. , Bb, nx] 
+        '''
         return self.Z[self.batch_idx_all+(0,)]
     @center.setter
     def center(self,value):
+        '''
+        Set value of the center
+        '''
         self.Z[self.batch_idx_all+(0,)] = value
     @property
     def generators(self):
+        '''
+        Generators of a batch zonotope
+        return <torch.Tensor>
+        , shape [B1, B2, .. , Bb, N, nx] 
+        '''
         return self.Z[self.batch_idx_all+(slice(1,None),)]
     @generators.setter
     def generators(self,value):
+        '''
+        Set value of generators
+        '''
         self.Z[self.batch_idx_all+(slice(1,None),)] = value
     @property 
     def shape(self):
-        return self.Z.shape[-1:]
+        '''
+        The shape of vector elements (ex. center) of a layer of a batch zonotope
+        return <tuple>, (nx,)
+        '''
+        return (self.Z.shape[-1],)
     @property
     def dimension(self):
+        '''
+        The dimension of a batch zonotope
+        return <int>, nx
+        '''        
         return self.Z.shape[-1]
     @property
     def n_generators(self):
+        '''
+        The number of generators of a batch zonotope
+        return <int>, N
+        '''
         return self.Z.shape[-2]-1
-    def to(self,dtype=None,device=None):    
+    def to(self,dtype=None,device=None):
+        '''
+        Change the device and data type of a batch zonotope
+        dtype: torch.float or torch.double
+        device: 'cpu', 'gpu', 'cuda:0', ...
+        '''
         Z = self.Z.to(dtype=dtype, device=device)
         return batchZonotope(Z)
     def cpu(self):
+        '''
+        Change the device of a batch zonotope to CPU
+        '''
         Z = self.Z.cpu()
         return batchZonotope(Z)
 
-    def __str__(self):
-        zono_str = f"""center: \n{self.center} \n\nnumber of generators: {self.n_generators} 
-            \ngenerators: \n{self.generators} \n\ndimension: {self.dimension}\ndtype: {self.dtype} \ndevice: {self.device}"""
-        del_dict = {'tensor':' ','    ':' ','(':'',')':''}
-        for del_el in del_dict.keys():
-            zono_str = zono_str.replace(del_el,del_dict[del_el])
-        return zono_str
     def __repr__(self):
+        '''
+        Representation of a batch zonotope as a text
+        return <str>, 
+        ex. batchZonotope([[[0., 0., 0.],[1., 0., 0.]],[[0., 0., 0.],[2., 0., 0.]]])
+        '''
         return str(self.Z).replace('tensor','batchZonotope')
     def  __add__(self,other):
         '''
-        Overloaded '+' operator for Minkowski sum
-        self: <zonotope>
-        other: <torch.tensor> OR <zonotope>
-        return <polyZonotope>
+        Overloaded '+' operator for addition or Minkowski sum
+        self: <batchZonotope>
+        other: <torch.Tensor> OR <zonotope> or <batchZonotope>
+        return <batchZonotope>
         '''   
         if isinstance(other, torch.Tensor):
             #assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
@@ -114,8 +151,15 @@ class batchZonotope:
             assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
         return batchZonotope(Z)
 
-    __radd__ = __add__
+    __radd__ = __add__ # '+' operator is commutative.
+
     def __sub__(self,other):
+        '''
+        Overloaded '-' operator for substraction or Minkowski difference
+        self: <batchZonotope>
+        other: <torch.Tensor> OR <zonotope> or <batchZonotope>
+        return <batchZonotope>
+        '''   
         if isinstance(other, torch.Tensor):
             Z = torch.clone(self.Z)
             #assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
@@ -130,33 +174,54 @@ class batchZonotope:
             assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
         return batchZonotope(Z)
     def __rsub__(self,other):
+        '''
+        Overloaded reverted '-' operator for substraction or Minkowski difference
+        self: <batchZonotope>
+        other: <torch.Tensor> OR <zonotope> or <batchZonotope>
+        return <batchZonotope>
+        '''   
         return -self.__sub__(other)
     def __iadd__(self,other):
+        '''
+        Overloaded '+=' operator for addition or Minkowski sum
+        self: <batchZonotope>
+        other: <torch.Tensor> OR <zonotope> or <batchZonotope>
+        return <batchZonotope>
+        '''   
         return self+other
     def __isub__(self,other):
+        '''
+        Overloaded '-=' operator for substraction or Minkowski difference
+        self: <batchZonotope>
+        other: <torch.Tensor> OR <zonotope> or <batchZonotope>
+        return <batchZonotope>
+        '''   
         return self-other
+
     def __pos__(self):
+        '''
+        Overloaded unary '+' operator for a batch zonotope ifself
+        self: <zonotope>
+        return <zonotope>
+        '''   
         return self    
     
     def __neg__(self):
         '''
-        Overloaded unary '-' operator for negation
-        self: <zonotope>
-        return <zonotope>
-        '''
+        Overloaded unary '-' operator for negation of a batch zonotope
+        self: <batchZonotope>
+        return <batchZonotope>
+        '''   
         Z = -self.Z
         Z[self.batch_idx_all+(slice(1,None),)] = self.Z[self.batch_idx_all+(slice(1,None),)]
         return batchZonotope(Z)    
     
     def __rmatmul__(self,other):
         '''
-        Overloaded '@' operator for matrix multiplication
-        self: <zonotope>
-        other: <torch.tensor>
-        
-        zono = other @ self
-
-        return <zonotope>
+        Overloaded reverted '@' operator for matrix multiplication on vector elements of a batch zonotope
+        self: <batchZonotope>
+        other: <torch.Tensor>
+        return <batchZonotope>
         '''   
         assert isinstance(other, torch.Tensor), f'The other object should be torch tensor, but {type(other)}.'
         Z = self.Z@other.transpose(-2,-1)
@@ -164,9 +229,17 @@ class batchZonotope:
 
 
     def __mul__(self,other):
+        '''
+        Overloaded reverted '*' operator for scaling a batch zonotope
+        self: <batchZonotope>
+        other: <int> or <float>
+        return <batchZonotope>
+        '''   
         if isinstance(other,(float,int)):
             Z = other*self.Z
         return batchZonotope(Z)
+
+    __rmul__ = __mul__ # '*' operator is commutative.
 
     def slice(self,slice_dim,slice_pt):
         '''
@@ -215,11 +288,11 @@ class batchZonotope:
         return batchZonotope(Z)
     def project(self,dim=[0,1]):
         '''
-        the projection of a zonotope onto the specified dimensions
-        self: <zonotope>
+        The projection of a batch zonotope onto the specified dimensions
+        self: <batchZonotope>
         dim: <int> or <list> or <torch.Tensor> dimensions for prjection 
         
-        return <zonotope>
+        return <batchZonotope>
         '''
         Z = self.Z[self.batch_idx_all+(slice(None),dim)]
         return batchZonotope(Z)
@@ -308,10 +381,6 @@ class batchZonotope:
         else:
             assert False
         
-        #index = torch.sum(torch.isnan(C),dim=1) == 0
-        #n_c_batch = index.sum(dim=-1).reshape(-1)
-
-        #deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=-1)
         deltaD = torch.sum(abs(C@self.generators.transpose(-2,-1)),dim=-1)
         
         d = (C@c.unsqueeze(-1)).squeeze(-1)
@@ -319,64 +388,6 @@ class batchZonotope:
         Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)
         # NOTE: torch.nan_to_num()
         return PA, Pb
-
-    def polytope2(self,combs=None):
-        '''
-        converts a zonotope from a G- to a H- representation
-        P
-        comb
-        isDeg
-        NOTE: there is a possibility with having nan value on the output, so you might wanna use nan_to_num()
-        OR, just use python built-in max function instead of torch.max or np.max.
-        '''
-        c = self.center
-        G = torch.clone(self.generators)
-        h = torch.linalg.vector_norm(G,dim=-1)
-        h_sort, indicies = torch.sort(h,dim=-1,descending=True)
-
-
-        h_nonzero = h_sort > 1e-6
-        h_nonzero_all = ((h_nonzero).sum(tuple(range(self.batch_dim))) ==0)
-        #G[~h_nonzero] = 0 # make sure everything less than 1e-6 to be actual zero, so that non-removable zero padding can be converged into nan value on the output value
-        if torch.any(h_nonzero_all):            
-            first_reduce_idx = torch.nonzero(h_nonzero_all).squeeze(-1)[0]
-            G=G.gather(self.batch_dim,indicies.unsqueeze(-1).repeat((1,)*(self.batch_dim+1)+self.shape))[self.batch_idx_all+(slice(None,first_reduce_idx),)]
-
-        n_gens, dim = G.shape[-2:] 
-        if dim == 1:
-            C = G/torch.linalg.vector_norm(G,dim=-1).unsqueeze(-1)
-        elif dim == 2:
-            x_idx = self.batch_idx_all+(slice(None),slice(0,1))
-            y_idx = self.batch_idx_all+(slice(None),slice(1,2))
-            C = torch.cat((-G[y_idx],G[x_idx]),-1)
-            C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
-        elif dim == 3:
-            # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
-            if combs is None or n_gens >= len(combs):
-                comb = torch.combinations(torch.arange(n_gens),r=dim-1)
-            else:
-                comb = combs[n_gens]
-            Q = torch.cat((G[self.batch_idx_all+(comb[:,0],)],G[self.batch_idx_all+(comb[:,1],)]),dim=-1)
-            temp1 = (Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),4)]).unsqueeze(-1)
-            temp2 = (-Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),5)]-Q[self.batch_idx_all+(slice(None),2)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
-            temp3 = (Q[self.batch_idx_all+(slice(None),0)]*Q[self.batch_idx_all+(slice(None),4)]-Q[self.batch_idx_all+(slice(None),1)]*Q[self.batch_idx_all+(slice(None),3)]).unsqueeze(-1)
-            C = torch.cat((temp1,temp2,temp3),dim=-1)
-            C = C/torch.linalg.vector_norm(C,dim=-1).unsqueeze(-1)
-        elif dim >=4 and dim<=7:
-            assert False
-        else:
-            assert False
-        
-        #index = torch.sum(torch.isnan(C),dim=1) == 0
-        #n_c_batch = index.sum(dim=-1).reshape(-1)
-
-        deltaD = torch.sum(abs(C@G.transpose(-2,-1)),dim=-1)
-        d = (C@c.unsqueeze(-1)).squeeze(-1)
-        PA = torch.cat((C,-C),dim=-2)
-        Pb = torch.cat((d+deltaD,-d+deltaD),dim=-1)
-        # NOTE: torch.nan_to_num()
-        return PA, Pb
-
 
     def deleteZerosGenerators(self,sorted=False,sort=False):
         '''
@@ -395,29 +406,6 @@ class batchZonotope:
             g_red = self.generators.gather(-2,ind)[self.batch_idx_all+(slice(None,max_non_zero_len),)]
         Z = torch.cat((self.center.unsqueeze(self.batch_dim),g_red),self.batch_dim)
         return batchZonotope(Z)
-
-
-    def plot(self, ax,facecolor='none',edgecolor='green',linewidth=.2,dim=[0,1]):
-        '''
-        plot 2 dimensional projection of a zonotope
-        self: <zonotope>
-        ax: <Axes> axes oject of a figure to plot
-        facecolor: <string> color of face
-        edgecolor: <string> color of edges
-
-        ex.
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        ax = fig.gca()
-        zono.plot(ax)
-        plt.show()
-        '''
-        
-        Z = self.project(dim)
-        P = Z.polygon().to(device='cpu')
-        P = P.reshape(torch.prod(torch.tensor(self.batch_shape)),-1,2)
-        for i in range(len(P)):
-            ax.add_patch(patches.Polygon(P[i],alpha=.5,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
 
     def reduce(self,order,option='girard'):
         if option == 'girard':

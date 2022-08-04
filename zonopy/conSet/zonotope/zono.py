@@ -14,7 +14,7 @@ from scipy.spatial import ConvexHull
 
 class zonotope:
     '''
-    zono: <zonotope>, <torch.float64>
+    zono: <zonotope>
 
     Z: <torch.Tensor> center vector and generator matrix Z = [c,G]
     , shape [N+1, nx]
@@ -22,14 +22,10 @@ class zonotope:
     , shape [nx] 
     generators: <torch.Tensor> generator matrix
     , shape [N, nx]
-    dtype: data type of class properties
-    , torch.float or torch.double
-    device: device for torch
-    , 'cpu', 'gpu', 'cuda', ...
     
-    Eq. (coeff. a1,a2,...,aN \in [0,1])
+    Eq.
     G = [[g1],[g2],...,[gN]]
-    zono = c + a1*g1 + a2*g2 + ... + aN*gN
+    zono = {c + a1*g1 + a2*g2 + ... + aN*gN | coeff. a1,a2,...,aN \in [-1,1] }
     '''
     def __init__(self,Z):
         ################ may not need these for speed ################ 
@@ -42,53 +38,95 @@ class zonotope:
         self.Z = Z
     @property
     def dtype(self):
+        '''
+        The data type of a zonotope properties
+        return torch.float or torch.double        
+        '''
         return self.Z.dtype
     @property
     def device(self):
+        '''
+        The device of a zonotope properties
+        return 'cpu', 'cuda:0', or ...
+        '''
         return self.Z.device
     @property
     def center(self):
+        '''
+        The center of a zonotope
+        return <torch.Tensor>
+        , shape [nx] 
+        '''
         return self.Z[0]
     @center.setter
     def center(self,value):
+        '''
+        Set value of the center
+        '''
         self.Z[0] = value
     @property
     def generators(self):
+        '''
+        Generators of a zonotope
+        return <torch.Tensor>
+        , shape [N, nx]
+        '''
         return self.Z[1:]
     @generators.setter
     def generators(self,value):
+        '''
+        Set value of generators
+        '''
         self.Z[1:] = value
     @property 
     def shape(self):
+        '''
+        The shape of vector elements (ex. center) of a zonotope
+        return <tuple>, (nx,)
+        '''
         return (self.Z.shape[1],)
     @property
     def dimension(self):
+        '''
+        The dimension of a zonotope
+        return <int>, nx
+        '''        
         return self.Z.shape[1]
     @property
     def n_generators(self):
+        '''
+        The number of generators of a zonotope
+        return <int>, N
+        '''
         return len(self.Z)-1
-    def to(self,dtype=None,device=None):    
+    def to(self,dtype=None,device=None):
+        '''
+        Change the device and data type of a zonotope
+        dtype: torch.float or torch.double
+        device: 'cpu', 'gpu', 'cuda:0', ...
+        '''
         Z = self.Z.to(dtype=dtype, device=device)
         return zonotope(Z)
     def cpu(self):
+        '''
+        Change the device of a zonotope to CPU
+        '''
         Z = self.Z.cpu()
         return zonotope(Z)
 
-    def __str__(self):
-        zono_str = f"""center: \n{self.center} \n\nnumber of generators: {self.n_generators} 
-            \ngenerators: \n{self.generators} \n\ndimension: {self.dimension}\ndtype: {self.dtype} \ndevice: {self.device}"""
-        del_dict = {'tensor':' ','    ':' ','(':'',')':''}
-        for del_el in del_dict.keys():
-            zono_str = zono_str.replace(del_el,del_dict[del_el])
-        return zono_str
     def __repr__(self):
+        '''
+        Representation of a zonotope as a text
+        return <str>, 
+        ex. zonotope([[0., 0., 0.],[1., 0., 0.]])
+        '''
         return str(self.Z).replace('tensor','zonotope')
     def  __add__(self,other):
         '''
-        Overloaded '+' operator for Minkowski sum
+        Overloaded '+' operator for addition or Minkowski sum
         self: <zonotope>
-        other: <torch.tensor> OR <zonotope>
-        return <polyZonotope>
+        other: <torch.Tensor> OR <zonotope>
+        return <zonotope>
         '''   
         if isinstance(other, torch.Tensor):
             Z = torch.clone(self.Z)
@@ -101,8 +139,15 @@ class zonotope:
             assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
         return zonotope(Z)
 
-    __radd__ = __add__
+    __radd__ = __add__ # '+' operator is commutative.
+
     def __sub__(self,other):
+        '''
+        Overloaded '-' operator for substraction or Minkowski difference
+        self: <zonotope>
+        other: <torch.Tensor> OR <zonotope>
+        return <zonotope>        
+        '''
         if isinstance(other, torch.Tensor):
             Z = torch.clone(self.Z)
             assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
@@ -113,18 +158,41 @@ class zonotope:
         else:
             assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
         return zonotope(Z)
-    def __rsub__(self,other):
+    def __rsub__(self,other): 
+        '''
+        Overloaded reverted '-' operator for substraction or Minkowski difference
+        self: <zonotope>
+        other: <torch.Tensor> OR <zonotope>
+        return <zonotope>                
+        '''
         return -self.__sub__(other)
     def __iadd__(self,other):
+        '''
+        Overloaded '+=' operator for addition or Minkowski sum
+        self: <zonotope>
+        other: <torch.Tensor> OR <zonotope>
+        return <zonotope>        
+        '''
         return self+other
     def __isub__(self,other):
+        '''
+        Overloaded '-=' operator for substraction or Minkowski difference
+        self: <zonotope>
+        other: <torch.Tensor> OR <zonotope>
+        return <zonotope>        
+        '''
         return self-other
     def __pos__(self):
+        '''
+        Overloaded unary '+' operator for a zonotope ifself
+        self: <zonotope>
+        return <zonotope>
+        '''   
         return self    
     
     def __neg__(self):
         '''
-        Overloaded unary '-' operator for negation
+        Overloaded unary '-' operator for negation of a zonotope
         self: <zonotope>
         return <zonotope>
         '''   
@@ -134,25 +202,26 @@ class zonotope:
     
     def __rmatmul__(self,other):
         '''
-        Overloaded '@' operator for matrix multiplication
+        Overloaded reverted '@' operator for matrix multiplication on vector elements of a zonotope
         self: <zonotope>
-        other: <torch.tensor>
-        
-        zono = other @ self
-
+        other: <torch.Tensor>
         return <zonotope>
         '''   
         assert isinstance(other, torch.Tensor), f'The other object should be torch tensor, but {type(other)}.'
         Z = self.Z@other.T
         return zonotope(Z)
     def __mul__(self,other):
+        '''
+        Overloaded reverted '*' operator for scaling a zonotope
+        self: <zonotope>
+        other: <int> or <float>
+        return <zonotope>
+        '''   
         if isinstance(other,(float,int)):
             Z = other*self.Z
         return zonotope(Z)
-    def __rmul__(self,other):
-        if isinstance(other,(float,int)):
-            Z = other*self.Z
-        return zonotope(Z)
+
+    __rmul__ = __mul__ # '*' operator is commutative.
 
     def slice(self,slice_dim,slice_pt):
         '''
@@ -199,7 +268,7 @@ class zonotope:
 
     def project(self,dim=[0,1]):
         '''
-        the projection of a zonotope onto the specified dimensions
+        The projection of a zonotope onto the specified dimensions
         self: <zonotope>
         dim: <int> or <list> or <torch.Tensor> dimensions for prjection 
         
@@ -210,20 +279,20 @@ class zonotope:
 
     def polygon(self):
         '''
-        converts a 2-d zonotope into a polygon as vertices
-        self: <zonotope>
+        Vertice representation as a polygon from a 2-dimensional zonotope
 
-        return <torch.Tensor>, <torch.float64>
+        return <torch.Tensor>, <torch.float> or <torch.double>
+        , shape [P,2], where P is the number of vertices
         '''
         dim = 2
         z = self.deleteZerosGenerators()
-        c = z.center
-        G = torch.clone(z.generators)
+        c = z.center[:2]
+        G = torch.clone(z.generators[:,:2])
         n = z.n_generators
         x_max = torch.sum(abs(G[:,0]))
         y_max = torch.sum(abs(G[:,1]))
         
-        G[z.generators[:,1]<0,:] = - z.generators[z.generators[:,1]<0,:] # make all y components as positive
+        G[z.generators[:,1]<0,:2] = - z.generators[z.generators[:,1]<0,:2] # make all y components as positive
         angles = torch.atan2(G[:,1], G[:,0])
         ang_idx = torch.argsort(angles)
                 
@@ -235,85 +304,38 @@ class zonotope:
         return full_vertices
         
     def polyhedron(self):
+        '''
+        Vertice representation as a polygon from a 3-dimensional zonotope
+
+        return <torch.Tensor>, <torch.float> or <torch.double>
+        , shape [P,3], where P is the number of vertices
+        '''
         dim = 3
         V = self.center[:dim]
         for i in range(self.n_generators):
             translation = self.Z[i+1,:dim]
             V = torch.vstack((V+translation,V-translation))
             if i > dim:
-                try:
-                    K = ConvexHull(V)
-                    V = V[K.vertices]
-                except:
-                    V = V
-                #    print(f'Convex hull failed in {i}-th trial')
+                K = ConvexHull(V)
+                V = V[K.vertices]
+
         return V
 
-    def polytope2(self):
-        '''
-        converts a zonotope from a G- to a H- representation
-        P
-        comb
-        isDeg
-        '''
-
-        #z = self.deleteZerosGenerators()
-        c = self.center
-        G = torch.clone(self.generators)
-        '''
-        h = torch.linalg.vector_norm(G,dim=1)
-        h_sort, indicies = torch.sort(h,descending=True)
-        h_zero = h_sort < 1e-6
-        if torch.any(h_zero):
-            first_reduce_idx = torch.nonzero(h_zero)[0,0]
-            Gunred = G[indicies[:first_reduce_idx]]
-            # Gred = G[indicies[first_reduce_idx:]]
-            # d = torch.sum(abs(Gred),0)
-            # G = torch.vstack((Gunred,torch.diag(d)))
-            G = Gunred
-        '''
-        n_gens, dim = G.shape
-                        
-        if dim == 1:
-            C = G/torch.linalg.vector_norm(G,dim=1).reshape(-1,1)
-        elif dim == 2:      
-            C = torch.hstack((-G[:,1],G[:,0]))
-            C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
-        elif dim == 3:
-            # not complete for example when n_gens < dim-1; n_gens =0 or n_gens =1 
-            comb = torch.combinations(torch.arange(n_gens),r=dim-1)
-            
-            Q = torch.hstack((G[comb[:,0]],G[comb[:,1]]))
-            C = torch.hstack((Q[:,1:2]*Q[:,5:6]-Q[:,2:3]*Q[:,4:5],-Q[:,0:1]*Q[:,5:6]-Q[:,2:3]*Q[:,3:4],Q[:,0:1]*Q[:,4:5]-Q[:,1:2]*Q[:,3:4]))
-            C = C/torch.linalg.vector_norm(C,dim=1).reshape(-1,1)
-        elif dim >=4 and dim<=7:
-            assert False
-        else:
-            assert False
-        
-        #index = torch.sum(torch.isnan(C),dim=1) == 0
-        #C = C[index]
-        deltaD = torch.sum(abs(C@G.T),dim=1)
-        d = (C@c)
-        PA = torch.vstack((C,-C))
-        Pb = torch.hstack((d+deltaD,-d+deltaD))
-        return PA, Pb, C
 
     def polytope(self,combs=None):
         '''
-        converts a zonotope from a G- to a H- representation
-        self: <zonotope>
+        Half-plane representation of zonotope
         return,
-        A: <torch.tensor>, shape [*,nx]
-        b: <torch.tensor>, shape [*]
+        A: <torch.tensor>, 
+        shape [*,nx]
+        b: <torch.tensor>, 
+        shape [*]
 
-        Ex. 
-        if max(A@torch.tensor(nx)-b)>=1e-6:
-            NO COLLISION !!!
-        else:
-            COLLISION !!!
+        A point, x (torch.Tensor, shape (nx,)), is at outside of a zonotope
+        <-> max(A@x-b)>=0 (you might wanna use 1e-6 as a threshold instead for numerical stability)
 
-
+        A point, x, is inside of a zonotope
+        <-> max(A@x-b)<0
         '''
         c = self.center
         G = torch.clone(self.generators)
@@ -357,52 +379,10 @@ class zonotope:
         PA = torch.vstack((C,-C))
         Pb = torch.hstack((d+deltaD,-d+deltaD))
         return PA, Pb
-        '''
-        dim, n_gens = G.shape
-        if torch.matrix_rank(G) >= dim:
-            if dim > 1:
-                comb = torch.combinations(torch.arange(n_gens,device=self.__device),r=dim-1)
-                n_comb = len(comb)
-                C = torch.zeros(n_comb,dim, device=self.__device)
-                for i in range(n_comb):
-                    indices = comb[i,:]
-                    Q = G[:,indices]
-                    v = ndimCross(Q)
-                    C[i,:] = v/torch.linalg.norm(v)
-                # remove None rows dues to rank deficiency
-                index = torch.sum(torch.isnan(C),axis=1) == 0
-                C = C[index,:]
-            else: 
-                C =torch.eye(1,device=self.__device)
 
-            # build d vector and determine delta d
-            deltaD = torch.zeros(len(C),device=self.__device)
-            for iGen in range(n_gens):
-                deltaD += abs(C@G[:,iGen])
-            # compute dPos, dNeg
-            dPos, dNeg = C@c + deltaD, - C@c + deltaD
-            # construct the overall inequality constraints
-            C = torch.hstack((C,-C))
-            d = torch.hstack((dPos,dNeg))
-            # catch the case where the zonotope is not full-dimensional
-            temp = torch.min(torch.sum(abs(C-C[0]),1),torch.sum(abs(C+C[0]),1))
-            if dim > 1 and (C.numel() == 0 or torch.all(temp<1e-12) or torch.all(torch.isnan(C)) or torch.any(torch.max(abs(C),0).values<1e-12)):
-                S,V,_ = torch.linalg.svd(G)
-
-                Z_ = S.T@torch.hstack((c,G))
-
-                ind = V <= 1e-12
-
-                # 1:len(V) 
-
-                
-        return P, comb, isDeg
-        '''
     def deleteZerosGenerators(self,eps=0):
         '''
-        delete zero vector generators
-        self: <zonotope>
-
+        Delete zero vector generators
         return <zonotope>
         '''
         non_zero_idxs = torch.any(abs(self.generators)>eps,axis=1)
@@ -471,7 +451,7 @@ class zonotope:
 
     def to_polyZonotope(self,dim=None,prop='None'):
         '''
-        convert zonotope to polynomial zonotope
+        Convert zonotope to polynomial zonotope
         self: <zonotope>
         dim: <int>, dimension to take as sliceable
         return <polyZonotope>
@@ -485,6 +465,10 @@ class zonotope:
         return polyZonotope(Z,1,prop=prop)
 
     def to_interval(self):
+        '''
+        Convert zonotope to interval
+        return <interval>
+        '''
         c = self.center
         delta = torch.sum(abs(self.Z),dim=0) - abs(c)
         leftLimit, rightLimit = c -delta, c + delta

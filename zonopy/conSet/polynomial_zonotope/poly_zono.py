@@ -12,7 +12,9 @@ class polyZonotope:
     '''
     pZ: <polyZonotope>
     
-    c: <torch.Tensor> center of the polyonmial zonotope
+    Z: <torch.Tensor> center vector and generators matrix Z = [[c],[G],[Grest]]
+    , shape [B1, B2, .. , Bb, N+M+1, nx]
+    c: <torch.Tensor> center vector of the polyonmial zonotope
     , shape: [nx] 
     G: <torch.Tensor> generator matrix containing the dependent generators
     , shape: [N, nx]
@@ -22,20 +24,21 @@ class polyZonotope:
     , shape: [N, p]
     id: <torch.Tensor> vector containing the integer identifiers for the dependent factors
     , shape: [p]
-    compress: <int> level for compressing dependent generators with expodent
-    0: no compress, 1: compress zero dependent generators, 2: compress zero dependent generators and remove redundant expodent
+    compress: <int> level for compress operation on dependent generators with exponent matrix
+    , 0: no compress, 1: remove zero dependent generators, 2: remove zero dependent generators and remove redundant expodent
 
-    Eq. (coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1])
-    G = [gd1,gd2,...,gdN]
-    Grest = [gi1,gi2,...,giM]
+    Eq. 
+    G = [[gd1],[gd2],...,[gdN]]
+    Grest = [[gi1],[gi2],...,[giM]]
     expMat = [[i11,i12,...,i1N],[i21,i22,...,i2N],...,[ip1,ip2,...,ipN]]
     id = [0,1,2,...,p-1]
 
-    pZ = c + a1*gi1 + a2*gi2 + ... + aN*giN + b1^i11*b2^i21*...*bp^ip1*gd1 + b1^i12*b2^i22*...*bp^ip2*gd2 + ... 
-    + b1^i1M*b2^i2M*...*bp^ipM*gdM
-     
+    pZ = {
+        c + a1*gi1 + a2*gi2 + ... + aN*giN + b1^i11*b2^i21*...*bp^ip1*gd1 + b1^i12*b2^i22*...*bp^ip2*gd2 + ...
+        + b1^i1M*b2^i2M*...*bp^ipM*gdM
+        | coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1]
+    }
     '''
-    # NOTE: property for mat pz
     def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,prop='None',compress=2):
         if isinstance(Z,list):
             Z = torch.tensor(Z,dtype=torch.float)
@@ -82,21 +85,48 @@ class polyZonotope:
         self.n_dep_gens = G.shape[0]
     @property
     def itype(self):
+        '''
+        The data type of a polynomial zonotope exponent matrix
+        return torch.short, torch.int, torch.long
+        '''
         return self.expMat.dtype
     @property 
     def dtype(self):
+        '''
+        The data type of vector elements (ex. center) of a polynomial zonotope
+        return torch.float or torch.double
+        '''
         return self.Z.dtype 
     @property
     def device(self):
+        '''
+        The device of a polynomial zonotope properties
+        return 'cpu', 'cuda:0', or ...
+        '''
         return self.Z.device
     @property 
     def c(self):
+        '''
+        The center of a polynimal zonotope
+        return <torch.Tensor>
+        , shape [nx]
+        '''
         return self.Z[0]
     @property 
     def G(self):
+        '''
+        Dependent generators of a polynimal zonotope
+        return <torch.Tensor>
+        , shape [N, nx]
+        '''
         return self.Z[1:self.n_dep_gens+1]
-    @property 
+    @property
     def Grest(self):
+        '''
+        Independent generators of a polynimal zonotope
+        return <torch.Tensor>
+        , shape [M, nx]
+        '''
         return self.Z[self.n_dep_gens+1:]
     @property
     def n_generators(self):
@@ -437,6 +467,14 @@ class polyZonotope:
         expMat = self.expMat[:,torch.argsort(self.id)]
         expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
         return (self.G*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-1)).sum(1).T
+
+    def hess_center_slice_all_dep(self,val_slc):
+        n_ids= self.id.shape[0]
+        val_slc = val_slc[:n_ids]
+        expMat = self.expMat[:,torch.argsort(self.id)]
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
+        expMat_twice_red = expMat.reshape((1,1)+expMat.shape).repeat(n_ids,n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) - torch.eye(n_ids).reshape(n_ids,1,1,n_ids)
+        return (self.G*(expMat.T*expMat_red.transpose(-1,-2)*torch.prod(val_slc**expMat_twice_red,dim=-1)).unsqueeze(-1)).sum(-2).squeeze(-1)
 
     def slice_all_dep(self,val_slc):
         '''
