@@ -49,6 +49,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
         lambd_opt = lambd_hat.tolist()
         flag = 1
     info['jac_g'] = nlp_obj.jacobian(k_opt)
+
     return lambd_opt, flag, info
 
 def rot(q,joint_axes):
@@ -59,9 +60,15 @@ def rot(q,joint_axes):
     return torch.eye(3,dtype=dtype,device=device) + torch.sin(q)*rot_skew_sym + (1-torch.cos(q))*rot_skew_sym@rot_skew_sym
 
 def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, locked_idx, locked_qpos, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
+    global T_FO, T_slc, T_Ab, T_safety,T_cpu, T_NLP
+    T_FO, T_slc, T_Ab, T_safety, T_cpu = {}, {}, {}, {}, {}
+    T_NLP = {}
+    global count
+    count = []
+
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 3
-    n_timesteps = 100
+    n_timesteps = jrs_tensor.shape[1]
 
     PI_vel = torch.tensor(torch.pi - 1e-6,dtype=dtype, device=device)
     g_ka = torch.pi / 24
@@ -92,7 +99,10 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
 
     class grad_RTS_Locked_3D_Layer(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, lambd, observation, FO_link):
+        def forward(ctx, lambd, observation, aux_inputs):
+            T0 = time.time()
+            t_slc, t_Ab, t_safety, t_cpu = 0, 0, 0, 0 
+
             zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
@@ -110,27 +120,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
 
-            Rot = []
-            _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, unlocked_joint_axes)
-            lock_count, unlock_count = 0, 0
-            for j in range(n_links):
-                if j in locked_idx:
-                    Rot.append(locked_rot[lock_count].repeat(n_batches,1,1,1))
-                    lock_count += 1
-                else:
-                    Rot.append(R_trig[unlock_count]) 
-                    unlock_count += 1
-            batch_FO_link, _, _ = forward_occupancy(Rot, link_zonos, params)
-
-            As = np.zeros((n_batches,n_links),dtype=object)
-            bs = np.zeros((n_batches,n_links),dtype=object)
-
-            FO_links_nlp = np.zeros((n_batches,n_links),dtype=object)
-            FO_links = np.zeros((n_links,),dtype=object)
-            lambda_to_slc = ctx.lambd.reshape(n_batches, 1, dof).repeat(1, n_timesteps, 1)
-
-            # pos and vel lim
-
+            ### pos and vel lim ###
             # position and velocity constraints
             t_peak_optimum = -qvel/ka # time to optimum of first half traj.
             qpos_peak_optimum = (t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(qpos+qvel*t_peak_optimum+0.5*ka*t_peak_optimum**2).nan_to_num()
@@ -154,36 +144,115 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             qpos_lb = (actual_pos_lim[:,1] - qpos_possible_max_min).reshape(n_batches,-1)
             
             unsafe_flag = (abs(qvel_peak)>vel_lim).any(-1) + (qpos_ub>0).any(-1) + (qpos_lb>0).any(-1)
-            obs_in_reach_idx = torch.zeros(n_batches,n_obs, dtype=bool,device=device)
-            
-            lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
-            
-            for j in range(n_links):
-                FO_link_temp = batch_FO_link[j]
-                c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).reshape(n_batches,1,n_timesteps,dimension,1)  # FOR, safety check
-      
-                obs_buff_Grest = zp.batchZonotope(torch.cat((obs_Z,FO_link_temp.Grest.unsqueeze(1).repeat(1,n_obs,1,1,1)),-2))
-                A_Grest, b_Grest  = obs_buff_Grest.polytope(combs)
-                h_obs = ((A_Grest @ c_k).squeeze(-1) - b_Grest).nan_to_num(-torch.inf)
-                unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1).any(1)  # NOTE: this might not work on gpu FOR, safety check
-                                
-                obs_buff = obs_buff_Grest - zp.batchZonotope(FO_link_temp.Z[FO_link_temp.batch_idx_all+(slice(FO_link_temp.n_dep_gens+1),)].unsqueeze(1).repeat(1,n_obs,1,1,1))
-                _, b_obs = obs_buff.reduce(6).polytope(combs)
-                
-                obs_in_reach_idx += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
 
-                As[-1,j] = A_Grest.cpu().numpy()
-                bs[-1,j] = b_Grest.cpu().numpy()
-                FO_links_nlp[:,j] = [fo for fo in FO_link_temp.cpu()]
-                FO_links[j] = FO_link_temp
+            lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
+
+            if aux_inputs is None:
+                receive_aux = False
+                Rot = []
+                _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, unlocked_joint_axes)
+                lock_count, unlock_count = 0, 0
+                for j in range(n_links):
+                    if j in locked_idx:
+                        Rot.append(locked_rot[lock_count].repeat(n_batches,1,1,1))
+                        lock_count += 1
+                    else:
+                        Rot.append(R_trig[unlock_count]) 
+                        unlock_count += 1
+                batch_FO_link, _, _ = forward_occupancy(Rot, link_zonos, params)
+                
+
+                As = np.zeros((n_batches,n_links),dtype=object)
+                bs = np.zeros((n_batches,n_links),dtype=object)
+
+                FO_links_nlp = np.zeros((n_batches,n_links),dtype=object)
+                FO_links = np.zeros((n_links,),dtype=object)
+                lambda_to_slc = ctx.lambd.reshape(n_batches, 1, dof).repeat(1, n_timesteps, 1)
+                obs_in_reach_idx = torch.zeros(n_batches,n_obs, dtype=bool,device=device)
+
+                FO_links_cpu = np.zeros((n_links,),dtype=object)
+                A_cpu = np.zeros((n_links),dtype=object)
+                b_cpu = np.zeros((n_links),dtype=object)
+
+                T1 = time.time()
+                for j in range(n_links):
+                    t0 = time.time()
+                    FO_link_temp = batch_FO_link[j]
+                    c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).reshape(n_batches,1,n_timesteps,dimension,1)  # FOR, safety check
+                    t1 = time.time()
+
+                    obs_buff_Grest = zp.batchZonotope(torch.cat((obs_Z,FO_link_temp.Grest.unsqueeze(1).repeat(1,n_obs,1,1,1)),-2))
+                    A_Grest, b_Grest  = obs_buff_Grest.polytope(combs)
+                    t2 = time.time()
+
+                    h_obs = ((A_Grest @ c_k).squeeze(-1) - b_Grest).nan_to_num(-torch.inf)
+                    unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1).any(1)  # NOTE: this might not work on gpu FOR, safety check
+                    t3 = time.time()
+
+                    obs_buff = obs_buff_Grest - zp.batchZonotope(FO_link_temp.Z[FO_link_temp.batch_idx_all+(slice(FO_link_temp.n_dep_gens+1),)].unsqueeze(1).repeat(1,n_obs,1,1,1))
+                    _, b_obs = obs_buff.reduce(6).polytope(combs)
+                    t4 = time.time()
+                    obs_in_reach_idx += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
+                    t5 = time.time()
+
+                    A_cpu[j] = A_Grest.cpu().numpy()
+                    b_cpu[j] = b_Grest.cpu().numpy()
+
+                    FO_links_cpu[j] = FO_link_temp.cpu()
+                    FO_links_nlp[:,j] = [fo for fo in FO_links_cpu[j]]
+                    FO_links[j] = FO_link_temp
+
+
+                    t6 = time.time()
+                    t_slc += (t1-t0)
+                    t_Ab += (t2-t1 + t4-t3)
+                    t_safety += (t3-t2 + t5-t4)
+                    t_cpu += (t6-t5)
+
+                obs_in_reach_idx = obs_in_reach_idx.cpu().numpy()
+                t7 = time.time()
+                t_cpu += (t7-t6)
+            else:
+                receive_aux = True
+                zp.reset(n_links)
+                FO_links_cpu, A_cpu, b_cpu, obs_in_reach_idx = aux_inputs
+                
+
+                As = np.zeros((n_batches+1,n_links),dtype=object)
+                bs = np.zeros((n_batches+1,n_links),dtype=object)
+
+                FO_links_nlp = np.zeros((n_batches,n_links),dtype=object)
+                FO_links = np.zeros((n_links,),dtype=object)
+                # NOTE: pass it onto CPU
+                lambda_to_slc = ctx.lambd.reshape(n_batches, 1, dof).cpu().repeat(1, n_timesteps, 1)
+                unsafe_flag = unsafe_flag.cpu()
+                T1 = time.time()
+                for j in range(n_links):
+                    t0 = time.time()
+                    FO_link_temp = FO_links_cpu[j]
+                    c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).reshape(n_batches,1,n_timesteps,dimension,1)  # FOR, safety check
+                    t1 = time.time()
+
+                    h_obs = ((torch.tensor(A_cpu[j],dtype=dtype,device='cpu') @ c_k).squeeze(-1) - torch.tensor(b_cpu[j],dtype=dtype,device='cpu')).nan_to_num(-torch.inf)
+                    unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1).any(1)  # NOTE: this might not work on gpu FOR, safety check
+                    t2 = time.time()
+
+                    As[-1,j] = A_cpu[j]
+                    bs[-1,j] = b_cpu[j]
+                    FO_links_nlp[:,j] = [fo for fo in FO_link_temp]
+                    t3 = time.time()
+                    
+                    t_slc += (t1-t0)
+                    t_safety += (t2-t1)
+                    t_cpu += (t3-t2)
 
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
             n_problems = len(rts_pass_indices)
     
             ctx.flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
-            ctx.infos = [None for _ in range(n_batches)]
-
+            ctx.infos = [{} for _ in range(n_batches)]
+            T2 = time.time()
             if n_problems > 0:
                 qpos_np = qpos.cpu().numpy()
                 qvel_np = qvel.cpu().numpy()
@@ -194,15 +263,16 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                 vel_lim_np =  vel_lim.cpu().numpy()
                 lim_flag_np = lim_flag.cpu().numpy()         
 
+
                 obs_in_reach_idx_list = obs_in_reach_idx.tolist()
-                N_obs_in_frs = obs_in_reach_idx.sum(-1).cpu().numpy()
+                N_obs_in_frs = obs_in_reach_idx.sum(-1)
 
                 if multi_process:
                     for idx in rts_pass_indices:
                         obs_idx = obs_in_reach_idx_list[idx]
                         for j in range(n_links):
-                            As[idx,j] = As[-1,j][idx,obs_idx]
-                            bs[idx,j] = bs[-1,j][idx,obs_idx]
+                            As[idx,j] = A_cpu[j][idx,obs_idx]
+                            bs[idx,j] = b_cpu[j][idx,obs_idx]
                     with Pool(processes=min(num_processes, n_problems)) as pool:
                         results = pool.starmap(
                             rts_pass,
@@ -232,17 +302,17 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     for idx, res in enumerate(results):
                         rts_lambd_opts.append(res[0])
                         rts_flags.append(res[1])
-                        ctx.infos[rts_pass_indices[idx]] = res[2]
+                        ctx.infos[rts_pass_indices[idx]].update(res[2])
                     ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
                     ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
                 else:
-                    rts_lambd_opts, rts_flags = [], []                    
-                    for idx in rts_pass_indices:
+                    rts_lambd_opts, rts_flags = [], [] 
 
+                    for idx in rts_pass_indices:
                         obs_idx = obs_in_reach_idx_list[idx]
                         for j in range(n_links):
-                            As[idx,j] = As[-1,j][idx,obs_idx]
-                            bs[idx,j] = bs[-1,j][idx,obs_idx]
+                            As[idx,j] = A_cpu[j][idx,obs_idx]
+                            bs[idx,j] = b_cpu[j][idx,obs_idx]
 
                         rts_lambd_opt, rts_flag, info = rts_pass(
                                                                 As[idx],
@@ -263,12 +333,61 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                                                                 g_ka,
                                                                 lambd0[idx],
                                                                 lambd_np[idx])
-                        ctx.infos[idx] = info
+                        ctx.infos[idx].update(info)
                         rts_lambd_opts.append(rts_lambd_opt)
                         rts_flags.append(rts_flag)
                     ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
                     ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
+
+            if not receive_aux:
+                ctx.infos[0]['forward_occupancy'] = FO_links_cpu
+                ctx.infos[0]['A'] = A_cpu
+                ctx.infos[0]['b'] = b_cpu
+                ctx.infos[0]['obs_in_reach_idx'] = obs_in_reach_idx
             zp.reset()
+
+
+
+            T3 = time.time()
+
+            if n_batches in T_FO.keys():
+                T_FO[n_batches].append(T1-T0)
+                T_slc[n_batches].append(t_slc)
+                T_Ab[n_batches].append(t_Ab)
+                T_safety[n_batches].append(t_safety)
+                T_cpu[n_batches].append(t_cpu)
+                T_NLP[n_batches].append(T3-T2)
+            else:
+                T_FO[n_batches] = []
+                T_slc[n_batches] = []
+                T_Ab[n_batches] = []
+                T_safety[n_batches] = []
+                T_cpu[n_batches] = []
+                T_NLP[n_batches] = []
+
+            count.append(1)
+            if np.sum(count) % 2000 == 0:
+                print('#'*60)
+                print('gRTS average')
+                for bsize in T_FO.keys():
+                    print(f'T_FO w/ {bsize} batch {np.mean(T_FO[bsize])}')
+                    print(f'T_slc w/ {bsize} batch {np.mean(T_slc[bsize])}')
+                    print(f'T_Ab w/ {bsize} batch {np.mean(T_Ab[bsize])}')
+                    print(f'T_safety w/ {bsize} batch {np.mean(T_safety[bsize])}')
+                    print(f'T_cpu w/ {bsize} batch {np.mean(T_cpu[bsize])}')
+                    print(f'T_NLP w/ {bsize} batch {np.mean(T_NLP[bsize])}')
+                print('#'*60)
+                print('gRTS portion')
+                for bsize in T_FO.keys():
+                    total = np.sum(T_FO[bsize]) + np.sum(T_slc[bsize]) + np.sum(T_Ab[bsize]) + np.sum(T_safety[bsize]) + np.sum(T_cpu[bsize]) + np.sum(T_NLP[bsize])
+                    print(f'T_FO w/ {bsize} batch {np.sum(T_FO[bsize])/total}')
+                    print(f'T_slc w/ {bsize} batch {np.sum(T_slc[bsize])/total}')
+                    print(f'T_Ab w/ {bsize} batch {np.sum(T_Ab[bsize])/total}')
+                    print(f'T_safety w/ {bsize} batch {np.sum(T_safety[bsize])/total}')
+                    print(f'T_cpu w/ {bsize} batch {np.sum(T_cpu[bsize])/total}')
+                    print(f'T_NLP w/ {bsize} batch {np.sum(T_NLP[bsize])/total}')
+                print('#'*60)
+
             return ctx.lambd, FO_links, ctx.flags, ctx.infos
 
         @staticmethod

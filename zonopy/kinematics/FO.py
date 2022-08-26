@@ -18,6 +18,6 @@ def forward_occupancy(rotatos,link_zonos,robot_params,zono_order = 2):
         R_motor_temp = R_motor[-1]@R[i]@rotatos[i]
         R_motor.append(R_motor_temp.reduce_indep(zono_order))
         FO_link_temp = R_motor[-1]@link_zonos[i] + P_motor[-1]
-        FO_link.append(FO_link_temp.reduce_indep(zono_order))
+        FO_link.append(FO_link_temp.reduce_indep(1))
     return FO_link, R_motor[1:], P_motor[1:]
 

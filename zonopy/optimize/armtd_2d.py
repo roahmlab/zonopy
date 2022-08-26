@@ -70,6 +70,7 @@ class ARMTD_2D_planner():
                 if (p.x_prev!=x).any():                
                     cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links)                   
                     grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links)
+                    hess_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links,self.n_links)
                     # velocity min max constraints
                     possible_max_min_q_dot = torch.vstack((self.qvel,self.qvel+x*T_PLAN,torch.zeros_like(self.qvel)))
                     q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
@@ -82,14 +83,19 @@ class ARMTD_2D_planner():
                     for j in range(self.n_links):
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
                         grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
+                        hess_c_k = self.FO_link[j].hess_center_slice_all_dep(ka/self.g_ka)/self.g_ka
                         for o in range(self.n_obs):
                             h_obs = (self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o]
                             cons, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1) # shape: n_timsteps, SAFE if >=1e-6 
-                            grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                            A_max = self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension)) 
+                            grad_cons = (A_max@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                            hess_cons =  (A_max.reshape(100,1,1,2)@hess_c_k.transpose(-3,-2)).squeeze(-2)
                             cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
                             grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
+                            hess_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = hess_cons
                     p.cons_obs = cons_obs.numpy()
                     p.grad_cons_obs = grad_cons_obs.numpy()
+                    p.hess_cons_obs = hess_cons_obs.numpy()
                     p.x_prev = np.copy(x)                
                 return p.cons_obs
 
@@ -98,6 +104,7 @@ class ARMTD_2D_planner():
                 if (p.x_prev!=x).any():                
                     cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links)                   
                     grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links)
+                    hess_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links,self.n_links)
                     # velocity min max constraints
                     possible_max_min_q_dot = torch.vstack((self.qvel,self.qvel+x*T_PLAN,torch.zeros_like(self.qvel)))
                     q_dot_max, q_dot_max_idx = possible_max_min_q_dot.max(0)
@@ -110,17 +117,26 @@ class ARMTD_2D_planner():
                     for j in range(self.n_links):
                         c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
                         grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
+                        hess_c_k = self.FO_link[j].hess_center_slice_all_dep(ka/self.g_ka)/self.g_ka
                         for o in range(self.n_obs):
                             h_obs = (self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o]
                             cons, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1) # shape: n_timsteps, SAFE if >=1e-6 
-                            grad_cons = (self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension))@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                            A_max = self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension)) 
+                            grad_cons = (A_max@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
+                            hess_cons =  (A_max.reshape(100,1,1,2)@hess_c_k.transpose(-3,-2)).squeeze(-2)
                             cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
                             grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
+                            hess_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = hess_cons
                     p.cons_obs = cons_obs.numpy()
                     p.grad_cons_obs = grad_cons_obs.numpy()
-                    p.x_prev = np.copy(x)                   
+                    p.hess_cons_obs = hess_cons_obs.numpy()
+                    p.x_prev = np.copy(x)               
                 return p.grad_cons_obs
-            
+            def hessian(p, x, lagrange, obj_factor):
+                H = np.sum(lagrange.reshape(-1,1,1)*p.hess_cons_obs,0)
+                #row, col = p.hessianstructure()
+                #return H[row,col]
+                return H 
             def intermediate(p, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
                      d_norm, regularization_size, alpha_du, alpha_pr,
                      ls_trials):
@@ -138,6 +154,7 @@ class ARMTD_2D_planner():
         #nlp.add_option('mu_strategy', 'adaptive')
         #nlp.add_option('tol', 1e-7)
 
+        nlp.add_option('hessian_approximation', 'exact')
         nlp.add_option('sb', 'yes')
         nlp.add_option('print_level', 0)
         k_opt, self.info = nlp.solve(ka_0.cpu().numpy())

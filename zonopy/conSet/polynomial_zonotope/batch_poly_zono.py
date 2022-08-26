@@ -381,18 +381,30 @@ class batchPolyZonotope:
     def grad_center_slice_all_dep(self,val_slc):        
         n_ids = self.id.shape[0] 
         n_short = val_slc.shape[-1] - n_ids
-        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2).unsqueeze(-2) # b1, b2,..., 1, 1, n_ids
+        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].reshape(self.batch_shape+(1,1,n_ids)) # b1, b2,..., 1, 1, n_ids
         expMat = self.expMat[:,torch.argsort(self.id)] # n_dep_gens, n_ids
-        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
         #torch.prod(val_slc**expMat_red,dim=-1), b1, b2,..., n_ids,  n_dep_gens
         #(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)), b1, b2,..., n_ids,  n_dep_gens
         #self.G, b1, b2,..., n_dep_gens, dim
         #(self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-3)), 
         #res, b1, b2,..., 1, n_ids,  n_dep_gens
-        grad = ((expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num(0))@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
+        grad = ((expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
         grad = torch.cat((grad,torch.zeros(self.batch_shape+self.shape+(n_short,),dtype=self.dtype,device=self.device)),-1)
         return grad
-    
+
+    def hess_center_slice_all_dep(self,val_slc):
+        n_ids= self.id.shape[0]
+        n_vals = val_slc.shape[-1]
+        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].reshape(self.batch_shape+(1,1,1,n_ids)) # b1, b2,..., 1, 1, 1, n_ids
+        expMat = self.expMat[:,torch.argsort(self.id)] # n_dep_gens, n_ids
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) # a tensor of reduced order expMat for each column
+        expMat_twice_red = expMat.reshape((1,1)+expMat.shape).repeat(n_ids,n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) - torch.eye(n_ids,dtype=int).reshape(n_ids,1,1,n_ids)
+        expMat_first = expMat.T.unsqueeze(1).repeat(1,n_ids,1)
+        hess = torch.zeros(self.batch_shape+(self.dimension,n_vals,n_vals),dtype=self.dtype,device=self.device)
+        hess[self.batch_idx_all+(slice(None),slice(n_ids),slice(n_ids))] = ((expMat_first*expMat_red.transpose(-1,-2)*torch.prod(val_slc**expMat_twice_red,dim=-1).nan_to_num())@self.G.unsqueeze(-3)).transpose(-3,-1)
+        return hess
+
     
     def slice_all_dep(self,val_slc):
         '''

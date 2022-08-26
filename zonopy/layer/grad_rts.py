@@ -63,7 +63,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
 
     class grad_RTS_2D_Layer(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, lambd, observation, FO_link):
+        def forward(ctx, lambd, observation, batch_FO_link):
             zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
@@ -79,11 +79,11 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             obstacle_size = observation[:, -2 * n_obs:]
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
 
-            if FO_link is None:
+            if batch_FO_link is None:
                 _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
-                FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
+                batch_FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
             else:
-                PROPERTY_ID.update(n_links)
+                zp.reset(n_links)
 
             As = np.zeros((n_batches,n_links,n_obs),dtype=object)
             bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
@@ -95,7 +95,7 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             unsafe_flag = (abs(qvel + ctx.lambd * g_ka * T_PLAN) > PI_vel).any(-1)
             lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
             for j in range(n_links):
-                FO_link_temp = FO_link[j].project([0, 1])
+                FO_link_temp = batch_FO_link[j].project([0, 1])
                 c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
                 for o in range(n_obs):
                     obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2), torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)

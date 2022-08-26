@@ -466,15 +466,17 @@ class polyZonotope:
         val_slc = val_slc[:n_ids]
         expMat = self.expMat[:,torch.argsort(self.id)]
         expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
-        return (self.G*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-1)).sum(1).T
+        return (self.G*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num()).unsqueeze(-1)).sum(1).T
+        # return (expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num()@self.G).T
 
     def hess_center_slice_all_dep(self,val_slc):
         n_ids= self.id.shape[0]
         val_slc = val_slc[:n_ids]
         expMat = self.expMat[:,torch.argsort(self.id)]
-        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) # a tensor of reduced order expMat for each column
-        expMat_twice_red = expMat.reshape((1,1)+expMat.shape).repeat(n_ids,n_ids,1,1) - torch.eye(n_ids).unsqueeze(-2) - torch.eye(n_ids).reshape(n_ids,1,1,n_ids)
-        return (self.G*(expMat.T*expMat_red.transpose(-1,-2)*torch.prod(val_slc**expMat_twice_red,dim=-1)).unsqueeze(-1)).sum(-2).squeeze(-1)
+        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) # a tensor of reduced order expMat for each column
+        expMat_twice_red = expMat.reshape((1,1)+expMat.shape).repeat(n_ids,n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) - torch.eye(n_ids,dtype=int).reshape(n_ids,1,1,n_ids)
+        expMat_first = expMat.T.unsqueeze(1).repeat(1,n_ids,1)
+        return (self.G*(expMat_first*expMat_red.transpose(-1,-2)*torch.prod(val_slc**expMat_twice_red,dim=-1).nan_to_num()).unsqueeze(-1)).sum(-2).squeeze(-1).transpose(0,-1)
 
     def slice_all_dep(self,val_slc):
         '''
