@@ -233,7 +233,7 @@ class Arm_3D:
             link_init.append(Ri@self.__link_zonos[j]+Pi)
             link_goal.append(Rg@self.__link_zonos[j]+Pg)
         for pos in obs_pos:
-            obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),torch.eye(3,dtype=self.dtype,device=self.device))))
+            obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),(self.scale*0.1)*torch.eye(3,dtype=self.dtype,device=self.device))))
             for j in range(self.n_links):
                 buff = link_init[j]-obs
                 _,b = buff.polytope(self.combs)
