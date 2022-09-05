@@ -316,9 +316,11 @@ class zonotope:
             translation = self.Z[i+1,:dim]
             V = torch.vstack((V+translation,V-translation))
             if i > dim:
-                K = ConvexHull(V)
-                V = V[K.vertices]
-
+                try:
+                    K = ConvexHull(V)
+                    V = V[K.vertices]
+                except:
+                    V = V
         return V
 
 
