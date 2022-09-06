@@ -48,7 +48,7 @@ class NlpSetup():
     def FO_grad_center_slice_all_dep(self,val_slc,j):
         n_short = val_slc.shape[-1]-self.n_ids[j]
         val_slc = np.expand_dims(val_slc[:self.n_ids[j]],(-2,-3))
-        grad = (self.expMat[j].T*np.nan_to_num(np.prod(val_slc**self.expMat_red[j],axis=-1),0)@self.G[j]).transpose(tuple(range(len(self.batch_idx_all)))+(-1,-2))    
+        grad = (self.expMat[j].T*np.nan_to_num(np.prod(val_slc**self.expMat_red[j],axis=-1),nan=0)@self.G[j]).transpose(tuple(range(len(self.batch_idx_all)))+(-1,-2))    
         return np.concatenate((grad,np.zeros((grad.shape[:-1]+(n_short,)))),axis=-1)
 
     def objective(self,x):
@@ -89,7 +89,7 @@ class NlpSetup2D(NlpSetup):
                 grad_c_k = self.FO_grad_center_slice_all_dep(x,j)
                 for o in range(self.n_obs):
                     h_obs = (self.A[j][o]@c_k).squeeze(-1) - self.b[j][o]
-                    ind = np.argmax(np.nan_to_num(h_obs,-np.inf),-1) 
+                    ind = np.argmax(np.nan_to_num(h_obs,nan=-np.inf),-1) 
                     cons = - np.take_along_axis(h_obs,ind.reshape(self.n_timesteps,1),axis=1).squeeze(-1) # shape: n_timsteps, SAFE if <=-1e-6
                     jac = - (np.take_along_axis(self.A[j][o],ind.reshape(self.n_timesteps,1,1),axis=1)@grad_c_k).squeeze(-2)# shape: n_timsteps, n_links                    
                     
@@ -139,8 +139,8 @@ class NlpSetup3D(NlpSetup):
             
             # position and velocity constraints
             t_peak_optimum = -self.qvel/(self.g_ka*x) # time to optimum of first half traj.
-            qpos_peak_optimum = np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*x)*t_peak_optimum**2), 0)
-            grad_qpos_peak_optimum = np.diag(np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2),0))
+            qpos_peak_optimum = np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*x)*t_peak_optimum**2), nan=0)
+            grad_qpos_peak_optimum = np.diag(np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2),nan=0))
             qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * (self.g_ka * x) * T_PLAN**2
             grad_qpos_peak = 0.5 * self.g_ka * T_PLAN**2 * np.eye(self.n_links)
             qvel_peak = self.qvel + self.g_ka * x * T_PLAN
@@ -168,7 +168,7 @@ class NlpSetup3D(NlpSetup):
                     grad_c_k = self.FO_grad_center_slice_all_dep(x,j)
                     h_obs = (self.A[j]@c_k).squeeze(-1) - self.b[j]
                     
-                    ind = np.argmax(np.nan_to_num(h_obs,-np.inf),-1) 
+                    ind = np.argmax(np.nan_to_num(h_obs,nan=-np.inf),-1) 
                     cons = - np.take_along_axis(h_obs,ind.reshape(self.n_obs,self.n_timesteps,1),axis=-1).squeeze(-1) # shape: n_obs, n_timsteps, SAFE if <=-1e-6 
                     jac = - (np.take_along_axis(self.A[j],ind.reshape(self.n_obs,self.n_timesteps,1,1),axis=-2)@grad_c_k).squeeze(-2)# shape: n_obs, n_timsteps, n_links                    
 
@@ -213,8 +213,8 @@ class NlpSetupLocked3D(NlpSetup3D):
             
             # position and velocity constraints
             t_peak_optimum = -self.qvel/(self.g_ka*x) # time to optimum of first half traj.
-            qpos_peak_optimum = np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*x)*t_peak_optimum**2), 0)
-            grad_qpos_peak_optimum = np.diag(np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2),0))
+            qpos_peak_optimum = np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*x)*t_peak_optimum**2), nan=0)
+            grad_qpos_peak_optimum = np.diag(np.nan_to_num((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2),nan=0))
             qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * (self.g_ka * x) * T_PLAN**2
             grad_qpos_peak = 0.5 * self.g_ka * T_PLAN**2 * np.eye(self.dof)
             qvel_peak = self.qvel + self.g_ka * x * T_PLAN
@@ -241,7 +241,7 @@ class NlpSetupLocked3D(NlpSetup3D):
                     grad_c_k = self.FO_grad_center_slice_all_dep(x,j)
                     h_obs = (self.A[j]@c_k).squeeze(-1) - self.b[j]
                     
-                    ind = np.argmax(np.nan_to_num(h_obs,-np.inf),-1) 
+                    ind = np.argmax(np.nan_to_num(h_obs,nan=-np.inf),-1) 
                     cons = - np.take_along_axis(h_obs,ind.reshape(self.n_obs,self.n_timesteps,1),axis=-1).squeeze(-1) # shape: n_obs, n_timsteps, SAFE if <=-1e-6 
                     jac = - (np.take_along_axis(self.A[j],ind.reshape(self.n_obs,self.n_timesteps,1,1),axis=-2)@grad_c_k).squeeze(-2)# shape: n_obs, n_timsteps, n_links                    
 
