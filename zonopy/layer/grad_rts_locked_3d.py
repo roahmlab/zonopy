@@ -39,6 +39,8 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
     NLP.add_option('max_cpu_time', 0.2)
+    NLP.add_option('tol', 1e-5)
+    NLP.add_option('hessian_approximation','limited-memory')
     k_opt, info = NLP.solve(ka_0)
 
     # NOTE: for training, dont care about fail-safe
@@ -145,10 +147,11 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             
             unsafe_flag = (abs(qvel_peak)>vel_lim).any(-1) + (qpos_ub>0).any(-1) + (qpos_lb>0).any(-1)
 
+            
             lambd0 = ctx.lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
-
             if aux_inputs is None:
                 receive_aux = False
+                
                 Rot = []
                 _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, unlocked_joint_axes)
                 lock_count, unlock_count = 0, 0
@@ -172,6 +175,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
 
                 FO_links_cpu = np.zeros((n_links,),dtype=object)
                 A_cpu = np.zeros((n_links),dtype=object)
+                C_cpu = np.zeros((n_links),dtype=object)
                 b_cpu = np.zeros((n_links),dtype=object)
 
                 T1 = time.time()
@@ -196,6 +200,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     t5 = time.time()
 
                     A_cpu[j] = A_Grest.cpu().numpy()
+                    C_cpu[j] = A_cpu[j].take(range(int(A_cpu[j].shape[-2]/2)),axis=-2)
                     b_cpu[j] = b_Grest.cpu().numpy()
 
                     FO_links_cpu[j] = FO_link_temp.cpu()
@@ -215,8 +220,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             else:
                 receive_aux = True
                 zp.reset(n_links)
-                FO_links_cpu, A_cpu, b_cpu, obs_in_reach_idx = aux_inputs
-                
+                FO_links_cpu, A_cpu, b_cpu, obs_in_reach_idx  = aux_inputs
 
                 As = np.zeros((n_batches+1,n_links),dtype=object)
                 bs = np.zeros((n_batches+1,n_links),dtype=object)
@@ -341,7 +345,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
 
             if not receive_aux:
                 ctx.infos[0]['forward_occupancy'] = FO_links_cpu
-                ctx.infos[0]['A'] = A_cpu
+                ctx.infos[0]['C'] = C_cpu
                 ctx.infos[0]['b'] = b_cpu
                 ctx.infos[0]['obs_in_reach_idx'] = obs_in_reach_idx
             zp.reset()
@@ -380,12 +384,12 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                 print('gRTS portion')
                 for bsize in T_FO.keys():
                     total = np.sum(T_FO[bsize]) + np.sum(T_slc[bsize]) + np.sum(T_Ab[bsize]) + np.sum(T_safety[bsize]) + np.sum(T_cpu[bsize]) + np.sum(T_NLP[bsize])
-                    print(f'T_FO w/ {bsize} batch {np.sum(T_FO[bsize])/total}')
-                    print(f'T_slc w/ {bsize} batch {np.sum(T_slc[bsize])/total}')
-                    print(f'T_Ab w/ {bsize} batch {np.sum(T_Ab[bsize])/total}')
-                    print(f'T_safety w/ {bsize} batch {np.sum(T_safety[bsize])/total}')
-                    print(f'T_cpu w/ {bsize} batch {np.sum(T_cpu[bsize])/total}')
-                    print(f'T_NLP w/ {bsize} batch {np.sum(T_NLP[bsize])/total}')
+                    print(f'T_FO w/ {bsize} batch {np.sum(T_FO[bsize])/total*100}')
+                    print(f'T_slc w/ {bsize} batch {np.sum(T_slc[bsize])/total*100}')
+                    print(f'T_Ab w/ {bsize} batch {np.sum(T_Ab[bsize])/total*100}')
+                    print(f'T_safety w/ {bsize} batch {np.sum(T_safety[bsize])/total*100}')
+                    print(f'T_cpu w/ {bsize} batch {np.sum(T_cpu[bsize])/total*100}')
+                    print(f'T_NLP w/ {bsize} batch {np.sum(T_NLP[bsize])/total*100}')
                 print('#'*60)
 
             return ctx.lambd, FO_links, ctx.flags, ctx.infos
