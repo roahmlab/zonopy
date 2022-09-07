@@ -24,6 +24,13 @@ T_PLAN, T_FULL = 0.5, 1.0
 NUM_PROCESSES = 40
 
 def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
+    if 'count_rts' not in globals():
+        global some_obs_solve, some_obs_unsolve, some_obs_limit, no_obs_solve, no_obs_unsolve, no_obs_limit
+        global count_rts
+        some_obs_solve, some_obs_unsolve, some_obs_limit = 0, 0, 0
+        no_obs_solve, no_obs_unsolve, no_obs_limit = 0, 0, 0
+        count_rts = 0
+
     M_obs = n_links * n_timesteps * int(n_obs_in_frs)
     M = M_obs+2*dof+6*n_pos_lim
     nlp_obj = NlpSetupLocked3D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,dof,int(n_obs_in_frs),n_pos_lim,actual_pos_lim,vel_lim,lim_flag,dimension,g_ka)
@@ -39,9 +46,48 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
     NLP.add_option('max_cpu_time', 0.2)
-    NLP.add_option('tol', 1e-5)
-    NLP.add_option('hessian_approximation','limited-memory')
+    #NLP.add_option('max_iter',15)
+    #NLP.add_option('hessian_approximation','limited-memory')
+    NLP.add_option('tol', 1e-4)
+    NLP.add_option('linear_solver', 'ma27')
+
     k_opt, info = NLP.solve(ka_0)
+    
+
+    ###########################################################
+    if info['status'] ==0:
+        if n_obs_in_frs > 0:
+            some_obs_solve += 1
+        else:
+            no_obs_solve += 1
+    elif info['status'] ==1 or info['status'] ==2:
+        if n_obs_in_frs > 0:
+            some_obs_unsolve += 1
+        else:
+            no_obs_unsolve += 1    
+    elif info['status'] == -4 or info['status'] == -13:
+        if n_obs_in_frs > 0:
+            some_obs_limit += 1
+        else:
+            no_obs_limit += 1
+    count_rts += 1 
+    #if count_rts % 10 == 0:
+    if True:
+        some_obs = some_obs_solve + some_obs_unsolve + some_obs_limit
+        no_obs = no_obs_solve + no_obs_unsolve + no_obs_limit
+        print('~'*60)
+        if some_obs != 0:
+            print(f'N of prob with obstacle nearby: {some_obs}')
+            print(f'Solve Rate with obstacle nearby: {some_obs_solve/some_obs*100}')
+            print(f'Infeasible Rate with obstacle nearby: {some_obs_unsolve/some_obs*100}')
+            print(f'Limited Rate with obstacle nearby: {some_obs_limit/some_obs*100}')
+        if no_obs != 0:
+            print(f'N of prob without obstacle: {no_obs}')
+            print(f'Solve Rate without obstacle: {no_obs_solve/no_obs*100}')
+            print(f'Infeasible Rate without obstacle: {no_obs_unsolve/no_obs*100}')
+            print(f'Limited Rate without obstacle: {no_obs_limit/no_obs*100}')
+        print('~'*60)
+    ###########################################################
 
     # NOTE: for training, dont care about fail-safe
     if info['status'] == 0:
@@ -399,7 +445,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             direction = grad_ouput[0]
             grad_input = torch.zeros_like(direction,dtype=dtype,device=device)
             # COMPUTE GRADIENT
-            tol = 1e-6
+            tol = 1.2e-4
             # direct pass
             direct_pass = (ctx.flags == -1) + (ctx.flags == 1) # NOTE: (ctx.flags == -1)
             grad_input[direct_pass] = direction[direct_pass]
