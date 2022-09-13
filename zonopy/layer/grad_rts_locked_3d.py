@@ -464,11 +464,13 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             direct_pass = (ctx.flags == -1) + (ctx.flags == 1) # NOTE: (ctx.flags == -1)
             grad_input[direct_pass] = direction[direct_pass]
 
-            rts_success_pass = (ctx.flags == 0).nonzero().reshape(-1)
+            rts_success_pass = (ctx.flags == 0).nonzero().reshape(-1).cpu()
             n_batch = rts_success_pass.numel()
             if n_batch > 0:
                 QP_EQ_CONS = []
                 QP_INEQ_CONS = []
+                qp_solve_ind= []
+
                 lambd = ctx.lambd[rts_success_pass].cpu().numpy()
                 for j,i in enumerate(rts_success_pass):
                     k_opt = lambd[j]
@@ -497,15 +499,20 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     active = (smooth_cons >= -EPS - tol)
                     strongly_active = (mult_smooth > tol) * active
                     weakly_active = (mult_smooth <= tol) * active
+                    
+                    strong_qp_cons = qp_cons[strongly_active] 
+                    weak_qp_cons = qp_cons[weakly_active]
+                    if strongly_active.sum() < dof or np.linalg.matrix_rank(strong_qp_cons) < dof:
+                        QP_EQ_CONS.append(strong_qp_cons)
+                        QP_INEQ_CONS.append(weak_qp_cons)
+                        qp_solve_ind.append(i)
 
-                    QP_EQ_CONS.append(qp_cons[strongly_active])
-                    QP_INEQ_CONS.append(qp_cons[weakly_active])
-
+                n_qp = len(qp_solve_ind)
                 # reduced batch QP
                 # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
-                qp_size = n_batch * dof
+                qp_size = n_qp * dof
                 H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
-                f_d = sp.csr_matrix((-direction[rts_success_pass].cpu().flatten(), ([0] * qp_size, range(qp_size))))
+                f_d = sp.csr_matrix((-direction[qp_solve_ind].cpu().flatten(), ([0] * qp_size, range(qp_size))))
                 qp = gp.Model("back_prop")
                 qp.Params.LogToConsole = 0
                 z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
@@ -518,7 +525,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                 qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
                 qp.optimize()
                 try:
-                    grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch, dof),dtype=dtype,device=device)
+                    grad_input[qp_solve_ind] = torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
                 except:
                     import pickle
                     dump = {'flags':ctx.flags, 'lambd':ctx.lambd, 'infos':ctx.infos, 'rts_success_pass':rts_success_pass,'direction':direction}
