@@ -505,34 +505,35 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     if strongly_active.sum() < dof or np.linalg.matrix_rank(strong_qp_cons) < dof:
                         QP_EQ_CONS.append(strong_qp_cons)
                         QP_INEQ_CONS.append(weak_qp_cons)
-                        qp_solve_ind.append(i)
+                        qp_solve_ind.append(int(i))
 
                 n_qp = len(qp_solve_ind)
-                # reduced batch QP
-                # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
-                qp_size = n_qp * dof
-                H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
-                f_d = sp.csr_matrix((-direction[qp_solve_ind].cpu().flatten(), ([0] * qp_size, range(qp_size))))
-                qp = gp.Model("back_prop")
-                qp.Params.LogToConsole = 0
-                z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
-                qp.setObjective(z @ H @ z + f_d @ z, GRB.MINIMIZE)
-                qp_eq_cons = sp.csr_matrix(block_diag(*QP_EQ_CONS))
-                rhs_eq = np.zeros(qp_eq_cons.shape[0])
-                qp_ineq_cons = sp.csr_matrix(block_diag(*QP_INEQ_CONS))
-                rhs_ineq = -0 * np.ones(qp_ineq_cons.shape[0])
-                qp.addConstr(qp_eq_cons @ z == rhs_eq, name="eq")
-                qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
-                qp.optimize()
-                try:
-                    grad_input[qp_solve_ind] = torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
-                except:
-                    import pickle
-                    dump = {'flags':ctx.flags, 'lambd':ctx.lambd, 'infos':ctx.infos, 'rts_success_pass':rts_success_pass,'direction':direction}
-                    with open('gurobi_fail_data.pickle', 'wb') as handle:
-                        pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                    print('Training is quit due to GUROBI.')
-                    exit()
+                if n_qp > 0:
+                    # reduced batch QP
+                    # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
+                    qp_size = n_qp * dof
+                    H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
+                    f_d = sp.csr_matrix((-direction[qp_solve_ind].cpu().flatten(), ([0] * qp_size, range(qp_size))))
+                    qp = gp.Model("back_prop")
+                    qp.Params.LogToConsole = 0
+                    z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
+                    qp.setObjective(z @ H @ z + f_d @ z, GRB.MINIMIZE)
+                    qp_eq_cons = sp.csr_matrix(block_diag(*QP_EQ_CONS))
+                    rhs_eq = np.zeros(qp_eq_cons.shape[0])
+                    qp_ineq_cons = sp.csr_matrix(block_diag(*QP_INEQ_CONS))
+                    rhs_ineq = -0 * np.ones(qp_ineq_cons.shape[0])
+                    qp.addConstr(qp_eq_cons @ z == rhs_eq, name="eq")
+                    qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
+                    qp.optimize()
+                    try:
+                        grad_input[qp_solve_ind] = torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
+                    except:
+                        import pickle
+                        dump = {'flags':ctx.flags, 'lambd':ctx.lambd, 'infos':ctx.infos, 'rts_success_pass':rts_success_pass,'direction':direction}
+                        with open('gurobi_fail_data.pickle', 'wb') as handle:
+                            pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        print('Training is quit due to GUROBI.')
+                        exit()
 
                 # NOTE: for fail-safe, keep into zeros             
             return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device), None)
