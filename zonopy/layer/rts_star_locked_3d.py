@@ -22,13 +22,14 @@ EPS = 1e-6
 TOL = 1e-4
 
 def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
+    '''
     if 'count_rts' not in globals():
         global some_obs_solve, some_obs_unsolve, some_obs_limit, no_obs_solve, no_obs_unsolve, no_obs_limit
         global count_rts
         some_obs_solve, some_obs_unsolve, some_obs_limit = 0, 0, 0
         no_obs_solve, no_obs_unsolve, no_obs_limit = 0, 0, 0
         count_rts = 0
-
+    '''
     M_obs = n_links * n_timesteps * int(n_obs_in_frs)
     M = M_obs+2*dof+6*n_pos_lim
     nlp_obj = NlpSetupLocked3D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,dof,int(n_obs_in_frs),n_pos_lim,actual_pos_lim,vel_lim,lim_flag,dimension,g_ka)
@@ -52,6 +53,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
 
 
     ###########################################################
+    '''
     if info['status'] ==0:
         if n_obs_in_frs > 0:
             some_obs_solve += 1
@@ -89,6 +91,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
         print('~'*60)
         if some_obs == 1000 or no_obs == 1000:
             import pdb;pdb.set_trace()
+    '''
     ###########################################################
 
 
