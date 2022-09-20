@@ -18,6 +18,9 @@ import time
 T_PLAN, T_FULL = 0.5, 1.0
 NUM_PROCESSES = 40
 
+EPS = 1e-6
+TOL = 1e-4
+
 def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
     M_obs = n_links * n_timesteps * int(n_obs_in_frs)
     M = M_obs+2*dof+6*n_pos_lim
@@ -29,11 +32,15 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
         lb = [-1]*dof,
         ub = [1]*dof,
         cl = [-1e20]*M,
-        cu = [-1e-6]*M,
+        cu = [-EPS]*M,
         )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
-    NLP.add_option('max_cpu_time', 0.2)
+    #NLP.add_option('max_cpu_time', 0.2)
+    NLP.add_option('max_iter',15)
+    #NLP.add_option('hessian_approximation','limited-memory')
+    NLP.add_option('tol', TOL)
+    NLP.add_option('linear_solver', 'ma27')
     k_opt, info = NLP.solve(ka_0)
 
     # NOTE: for training, dont care about fail-safe
@@ -57,7 +64,7 @@ def gen_RTS_star_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
     dimension = 3
     n_timesteps = 100
 
-    PI_vel = torch.tensor(torch.pi - 1e-6,dtype=dtype, device=device)
+    PI_vel = torch.tensor(torch.pi - EPS,dtype=dtype, device=device)
     g_ka = torch.pi / 24
 
     actual_pos_lim = pos_lim[lim_flag]
