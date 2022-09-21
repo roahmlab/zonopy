@@ -29,6 +29,7 @@ class Arm_3D:
             hyp_stuck = 1500,
             stuck_threshold = None,
             reward_shaping=True,
+            gamma = 0.99, # discount factor on reward
             max_episode_steps = 300,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
             FO_render_freq = 10,
@@ -106,7 +107,7 @@ class Arm_3D:
         else:
             self.stuck_threshold = stuck_threshold
         self.reward_shaping = reward_shaping
-        self.discount = 1
+        self.gamma = gamma
 
         self.fig = None
         self.render_flag = True
@@ -311,7 +312,7 @@ class Arm_3D:
 
         self._elapsed_steps += 1
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
-        self.reward_com *= self.discount
+        self.reward_com *= self.gamma
         self.reward_com += self.reward
         self.stuck = self.fail_safe_count > self.stuck_threshold
         self.done = self.success or self.collision or self.stuck
@@ -597,6 +598,7 @@ class Locked_Arm_3D(Arm_3D):
             hyp_stuck =1500,
             stuck_threshold = None,
             reward_shaping=True,
+            gamma = 0.99, # discount factor on reward
             max_episode_steps = 100,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
             FO_render_freq = 10,
@@ -626,6 +628,7 @@ class Locked_Arm_3D(Arm_3D):
             hyp_stuck = hyp_stuck,
             stuck_threshold = stuck_threshold,
             reward_shaping = reward_shaping,
+            gamma = gamma, # discount factor on reward
             max_episode_steps = max_episode_steps,
             FO_render_level = FO_render_level,
             FO_render_freq = FO_render_freq,

@@ -33,6 +33,7 @@ class Parallel_Arm_2D:
             hyp_stuck = 250,
             stuck_threshold = None,
             reward_shaping=True,
+            gamma = 0.99, # discount factor on reward
             max_episode_steps = 100,
             n_plots = None,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
@@ -91,7 +92,7 @@ class Parallel_Arm_2D:
         else:
             self.stuck_threshold = stuck_threshold
         self.reward_shaping = reward_shaping
-        self.discount = 1
+        self.gamma = gamma
 
         self.fig = None
         self.render_flag = True
@@ -353,7 +354,7 @@ class Parallel_Arm_2D:
         self._elapsed_steps += 1
         
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
-        self.reward_com *= self.discount
+        self.reward_com *= self.gamma
         self.reward_com += self.reward
         self.done = self.success + self.collision
 
