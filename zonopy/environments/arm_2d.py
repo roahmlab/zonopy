@@ -304,15 +304,16 @@ class Arm_2D:
             observation['obstacle_size'] = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
         return observation
 
-    def get_reward(self, action, qpos=None, qgoal=None):
+    def get_reward(self, action, qpos=None, qgoal=None, collision=None):
         # Get the position and goal then calculate distance to goal
-        if qpos is None or qgoal is None:
-            qpos = self.qpos
-            qgoal = self.qgoal
-
-        self.goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
-        self.success = self.goal_dist < self.goal_threshold 
-        success = self.success.to(dtype=self.dtype)
+        if qpos is None:
+            collision = self.collision 
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal))
+            self.success = goal_dist < self.goal_threshold 
+            success = self.success.to(dtype=self.dtype)
+        else: 
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal))
+            success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         reward = 0.0
 
@@ -324,11 +325,11 @@ class Arm_2D:
 
         # otherwise continue to calculate the dense reward
         # reward for position term
-        reward -= self.hyp_dist_to_goal * self.goal_dist
+        reward -= self.hyp_dist_to_goal * goal_dist
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action)
         # Add collision if needed
-        reward -= self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
+        reward -= self.hyp_collision * torch.tensor(collision,dtype=self.dtype)
         # Add fail-safe if needed
         reward -= self.hyp_fail_safe * (1-bool(self.safe))
         # Add stuck if needed

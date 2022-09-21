@@ -399,15 +399,15 @@ class Parallel_Arm_2D:
 
 
 
-    def get_reward(self, action, qpos=None, qgoal=None):
-        # Get the position and goal then calculate distance to goal
-        if qpos is None or qgoal is None:
-            qpos = self.qpos
-            qgoal = self.qgoal
-        
-        self.goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal),dim=-1)
-        self.success = self.goal_dist < self.goal_threshold 
-        success = self.success.to(dtype=self.dtype)
+    def get_reward(self, action, qpos=None, qgoal=None, collision=None):
+        if qpos is None:
+            collision = self.collision 
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal))
+            self.success = goal_dist < self.goal_threshold 
+            success = self.success.to(dtype=self.dtype)
+        else: 
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal))
+            success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         reward = 0.0
 
@@ -419,7 +419,7 @@ class Parallel_Arm_2D:
 
         # otherwise continue to calculate the dense reward
         # reward for position term
-        reward -= self.hyp_dist_to_goal * self.goal_dist
+        reward -= self.hyp_dist_to_goal * goal_dist
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action,dim=-1)
         # Add collision if needed
