@@ -14,14 +14,12 @@ from gym.core import Env
 
 
 class GymWrapper(Wrapper, Env):
-    def __init__(self, env, keys=None):
+    def __init__(self, env, keys=[]):
         # Run super method
         super().__init__(env=env)
         # Get reward range
         self.reward_range = (0.0, 1.0)
 
-        if keys is None:
-            keys = []
         self.keys = keys
 
         # Gym specific attributes
@@ -59,7 +57,7 @@ class GymWrapper(Wrapper, Env):
         return self._flatten_obs(ob_dict)
 
     def step(self, action, *args, **kwargs):
-        ob_dict, reward, done, info = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), *args, **kwargs)
+        ob_dict, reward, done, info = self.env.step(torch.as_tensor(action,dtype=self.env.dtype), *args, **kwargs)
         info['action_taken'] = action
         return self._flatten_obs(ob_dict), reward, done, dict_torch2np(info)
 
@@ -76,12 +74,12 @@ class GymWrapper(Wrapper, Env):
         return Env.seed(seed)
 
     def compute_reward(self, achieved_goal, desired_goal, info):
-        return self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype()))
+        return self.env.get_reward(action = torch.as_tensor(info['action_taken'],dtype=self.env.dtype))
     def close(self):
         self.env.close()
 
 class ParallelGymWrapper(GymWrapper):
-    def __init__(self, env, keys=None):
+    def __init__(self, env, keys=[]):
         self.num_envs = env.n_envs
         super().__init__(env=env,keys=keys)
 
@@ -113,7 +111,7 @@ class ParallelGymWrapper(GymWrapper):
             flag = torch.tensor(args[0], dtype=int,device=self.env.device)
         else:
             flag = None
-        ob_dicts, rewards, dones, infos = self.env.step(torch.tensor(action,dtype=torch.get_default_dtype()), flag)
+        ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,dtype=self.env.dtype), flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
             for key in infos[b].keys():
@@ -123,8 +121,12 @@ class ParallelGymWrapper(GymWrapper):
                     infos[b][key] = [el.numpy().astype(float) for el in infos[b][key]]
         return self._flatten_obs(ob_dicts), rewards.numpy(), dones.numpy(), infos
 
-    def compute_reward(self, achieved_goal, desired_goal, info):
-        return self.env.reward(action = torch.tensor(info['action_taken'],dtype=torch.get_default_dtype())).numpy()
+    def compute_reward(self, achieved_goal, desired_goal, infos):
+        action_taken = []
+        for info in infos:
+            action_taken.append(info['action_taken'])
+        action_taken = torch.as_tensor(np.vstack(action_taken),dtype=self.env.dtype)
+        return self.env.get_reward(action = torch.as_tensor(info['action_taken'],dtype=self.env.dtype)).numpy()
 
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
