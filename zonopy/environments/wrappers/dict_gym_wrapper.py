@@ -21,7 +21,9 @@ class DictGymWrapper(GymWrapper):
                 achieved_goal=spaces.Box(
                 -np.inf, np.inf, shape=obs[acheived_state_key].shape, dtype="float32"
                 ),
-                observation=self.observation_space,
+                observation=spaces.Box(
+                -np.inf, np.inf, shape=obs[keys].shape, dtype="float32"
+                ),,
             )
         )
 
@@ -69,9 +71,21 @@ class ParallelDictGymWrapper(DictGymWrapper):
         self.modality_dims = {key: tuple(obs[key].shape[1:]) for key in self.keys}
         flat_ob = self._flatten_obs(obs)
         self.obs_dim = flat_ob.shape[1]
-        high = np.inf * np.ones(self.obs_dim)
-        low = -high
-        self.observation_space = spaces.Box(low=low, high=high)
+        obs = self.observation_spec()
+        self.observation_space = spaces.Dict(
+            dict(
+                desired_goal=spaces.Box(
+                -np.inf, np.inf, shape=obs[goal_state_key].shape[1], dtype="float32"
+                ),
+                achieved_goal=spaces.Box(
+                -np.inf, np.inf, shape=obs[acheived_state_key].shape[1], dtype="float32"
+                ),
+                observation=spaces.Box(
+                -np.inf, np.inf, shape=obs[keys].shape[1], dtype="float32"
+                ),,
+            )
+        )
+
 
     def _flatten_obs(self, obs_dict):
         ob_lst = []
