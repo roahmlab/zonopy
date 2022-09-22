@@ -390,7 +390,7 @@ class Parallel_Arm_3D:
             #self.collision = self.collision_check(torch.cat((self.qpos.unsqueeze(0),self.qpos_brake.unsqueeze(0)),0))
                     
         self._elapsed_steps += 1
-
+        
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
         self.reward_com *= self.gamma
         self.reward_com += self.reward
@@ -440,11 +440,11 @@ class Parallel_Arm_3D:
         # Get the position and goal then calculate distance to goal
         if qpos is None:
             collision = self.collision 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal))
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal),dim=-1)
             self.success = goal_dist < self.goal_threshold 
             success = self.success.to(dtype=self.dtype)
         else: 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal))
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal),dim=-1)
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         reward = 0.0

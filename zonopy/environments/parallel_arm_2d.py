@@ -402,11 +402,11 @@ class Parallel_Arm_2D:
     def get_reward(self, action, qpos=None, qgoal=None, collision=None):
         if qpos is None:
             collision = self.collision 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal))
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal),dim=-1)
             self.success = goal_dist < self.goal_threshold 
             success = self.success.to(dtype=self.dtype)
         else: 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal))
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal),dim=-1)
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         reward = 0.0

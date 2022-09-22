@@ -5,34 +5,42 @@ import numpy as np
 import torch
 # Custom Robosuite wrapper which creates a DictGym env instead of a regular one. For use with HER
 class DictGymWrapper(GymWrapper):
-    def __init__(self, env, keys = [], goal_state_key=[], acheived_state_key=[], *args, **kwargs):
+    def __init__(self, env, keys, goal_state_key, acheived_state_key):
         # Run super method
         temp_keys = keys+goal_state_key+acheived_state_key
         super().__init__(env=env, keys=temp_keys)
         self.goal_state_key = goal_state_key
         self.acheived_state_key = acheived_state_key
         self.keys = keys
-        obs = self.observation_spec()
+        obs = self.env.get_observations()
         self.observation_space = spaces.Dict(
             dict(
                 desired_goal=spaces.Box(
-                -np.inf, np.inf, shape=obs[goal_state_key].shape, dtype="float32"
+                -np.inf, np.inf, shape=self._flatten_obs(obs,goal_state_key).shape, dtype="float32"
                 ),
                 achieved_goal=spaces.Box(
-                -np.inf, np.inf, shape=obs[acheived_state_key].shape, dtype="float32"
+                -np.inf, np.inf, shape=self._flatten_obs(obs,acheived_state_key).shape, dtype="float32"
                 ),
                 observation=spaces.Box(
-                -np.inf, np.inf, shape=obs[keys].shape, dtype="float32"
-                ),,
+                -np.inf, np.inf, shape=self._flatten_obs(obs).shape, dtype="float32"
+                ),
             )
         )
+    
+    def _flatten_obs(self, obs_dict, keys=None):
+        if keys is None:
+            keys = self.keys
+        ob_lst = []
+        for key in keys:
+            if key in obs_dict:
+                ob_lst.append(obs_dict[key].numpy().astype(float).flatten())
+        return np.concatenate(ob_lst)
 
     def _create_obs_dict(self, obs):
-        vec_obs = self._flatten_obs(obs)
         obs_dict = {
-            "observation": vec_obs,
-            "achieved_goal": obs[self.acheived_state_key].numpy().astype(float).flatten(),
-            "desired_goal": obs[self.goal_state_key].numpy().astype(float).flatten(),
+            "observation": self._flatten_obs(obs),
+            "achieved_goal": self._flatten_obs(obs,self.acheived_state_key),
+            "desired_goal": self._flatten_obs(obs,self.goal_state_key),
         }
         return obs_dict
 
@@ -61,10 +69,24 @@ class DictGymWrapper(GymWrapper):
         return np.array(reward)
 
 class ParallelDictGymWrapper(DictGymWrapper):
-    def __init__(self,env,keys = None,goal_state_key=None, acheived_state_key=None):
+    def __init__(self, env, keys, goal_state_key, acheived_state_key):
         self.num_envs = env.n_envs 
         super().__init__(env=env,keys=keys,goal_state_key=goal_state_key,acheived_state_key=acheived_state_key)
-
+        obs = self.env.get_observations()
+        self.observation_space = spaces.Dict(
+            dict(
+                desired_goal=spaces.Box(
+                -np.inf, np.inf, shape=self._flatten_obs(obs,goal_state_key).shape[1:], dtype="float32"
+                ),
+                achieved_goal=spaces.Box(
+                -np.inf, np.inf, shape=self._flatten_obs(obs,acheived_state_key).shape[1:], dtype="float32"
+                ),
+                observation=spaces.Box(
+                -np.inf, np.inf, shape=self._flatten_obs(obs).shape[1:], dtype="float32"
+                ),
+            )
+        )
+        
 
     def _setup_observation_space(self):
         obs = self.env.get_observations()
@@ -72,36 +94,15 @@ class ParallelDictGymWrapper(DictGymWrapper):
         flat_ob = self._flatten_obs(obs)
         self.obs_dim = flat_ob.shape[1]
         obs = self.observation_spec()
-        self.observation_space = spaces.Dict(
-            dict(
-                desired_goal=spaces.Box(
-                -np.inf, np.inf, shape=obs[goal_state_key].shape[1], dtype="float32"
-                ),
-                achieved_goal=spaces.Box(
-                -np.inf, np.inf, shape=obs[acheived_state_key].shape[1], dtype="float32"
-                ),
-                observation=spaces.Box(
-                -np.inf, np.inf, shape=obs[keys].shape[1], dtype="float32"
-                ),,
-            )
-        )
 
-
-    def _flatten_obs(self, obs_dict):
+    def _flatten_obs(self, obs_dict, keys=None):
+        if keys is None:
+            keys = self.keys
         ob_lst = []
-        for key in self.keys:
+        for key in keys:
             if key in obs_dict:
                 ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
         return np.hstack(ob_lst)
-
-    def _create_obs_dict(self, obs):
-        vec_obs = self._flatten_obs(obs)
-        obs_dict = {
-            "observation": vec_obs,
-            "achieved_goal": obs[self.acheived_state_key].numpy().astype(float).reshape(self.n_envs,-1),
-            "desired_goal": obs[self.goal_state_key].numpy().astype(float).reshape(self.n_envs,-1),
-        }
-        return obs_dict
 
     def step(self, action, *args, **kwargs):
         if len(args) > 0:
