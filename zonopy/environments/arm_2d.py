@@ -308,11 +308,11 @@ class Arm_2D:
         # Get the position and goal then calculate distance to goal
         if qpos is None:
             collision = self.collision 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal))
+            goal_dist = torch.linalg.norm(wrap_to_pi(self.qpos-self.qgoal))
             self.success = goal_dist < self.goal_threshold 
             success = self.success.to(dtype=self.dtype)
         else: 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal))
+            goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         reward = 0.0
@@ -320,7 +320,7 @@ class Arm_2D:
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
             reward -= self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
-            reward += success - 1 + self.hyp_success * success
+            reward += self.hyp_success * success
             return reward
 
         # otherwise continue to calculate the dense reward

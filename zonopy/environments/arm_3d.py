@@ -353,11 +353,11 @@ class Arm_3D:
         # Get the position and goal then calculate distance to goal
         if qpos is None:
             collision = self.collision 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal))
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal, internal=True))
             self.success = goal_dist < self.goal_threshold 
             success = self.success.to(dtype=self.dtype)
         else: 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal))
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal, internal=False))
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         
@@ -365,7 +365,7 @@ class Arm_3D:
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
             reward -= self.hyp_collision * torch.tensor(collision,dtype=self.dtype)
-            reward += success - 1 + self.hyp_success * success
+            reward += self.hyp_success * success #QC: success - 1 + 
             return reward
 
         # otherwise continue to calculate the dense reward
@@ -658,10 +658,17 @@ class Locked_Arm_3D(Arm_3D):
         self.joint_id = self.joint_id[self.unlocked_idx]
         self.reset()
 
-    def wrap_cont_joint_to_pi(self,phases):
-        phases_new = torch.clone(phases)
-        idx = self.unlocked_idx[~self.lim_flag]
-        phases_new[idx] = (phases[idx] + torch.pi) % (2 * torch.pi) - torch.pi
+    def wrap_cont_joint_to_pi(self,phases,internal=True):
+        if internal:
+            phases_new = torch.clone(phases)
+            idx = self.unlocked_idx[~self.lim_flag]
+            phases_new[idx] = (phases[idx] + torch.pi) % (2 * torch.pi) - torch.pi
+        else:
+            phases_new = torch.zeros(self.n_links).to(phases.device, phases.dtype)
+            phases_new[self.unlocked_idx] = phases
+            idx = self.unlocked_idx[~self.lim_flag]
+            phases_new[idx] = (phases_new[idx] + torch.pi) % (2 * torch.pi) - torch.pi
+            phases_new = phases_new[self.unlocked_idx]
         return phases_new
 
     def set_initial(self,qpos,qvel,qgoal,obs_pos):
@@ -728,6 +735,7 @@ class Locked_Arm_3D(Arm_3D):
         ka_all[self.unlocked_idx] = ka
 
         return super().step(ka_all,flag)
+        
     
     def get_observations(self):
         observation = {'qpos':self.qpos[self.unlocked_idx],'qvel':self.qvel[self.unlocked_idx],'qgoal':self.qgoal[self.unlocked_idx]}

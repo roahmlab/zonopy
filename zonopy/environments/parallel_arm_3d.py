@@ -137,7 +137,7 @@ class Parallel_Arm_3D:
         self.get_plot_grid_size(n_plots)
         self.reset()
 
-    def wrap_cont_joint_to_pi(self,phases):
+    def wrap_cont_joint_to_pi(self,phases,internal=True):
         phases_new = torch.clone(phases)
         phases_new[:,~self.lim_flag] = (phases[:,~self.lim_flag] + torch.pi) % (2 * torch.pi) - torch.pi
         return phases_new
@@ -440,11 +440,11 @@ class Parallel_Arm_3D:
         # Get the position and goal then calculate distance to goal
         if qpos is None:
             collision = self.collision 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal),dim=-1)
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal,internal=True),dim=-1)
             self.success = goal_dist < self.goal_threshold 
             success = self.success.to(dtype=self.dtype)
         else: 
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal),dim=-1)
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal,internal=False),dim=-1)
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         reward = 0.0
@@ -452,7 +452,7 @@ class Parallel_Arm_3D:
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
             reward -= self.hyp_collision * self.collision
-            reward += success - 1 + self.hyp_success * success
+            reward += self.hyp_success * success
             return reward
 
         # otherwise continue to calculate the dense reward
@@ -802,10 +802,17 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
         self.joint_id = self.joint_id[self.unlocked_idx]
         self.reset()
     
-    def wrap_cont_joint_to_pi(self,phases):
-        phases_new = torch.clone(phases)
-        idx = self.unlocked_idx[~self.lim_flag]
-        phases_new[:,idx] = (phases[:,idx] + torch.pi) % (2 * torch.pi) - torch.pi
+    def wrap_cont_joint_to_pi(self,phases,internal=True):
+        if internal:
+            phases_new = torch.clone(phases)
+            idx = self.unlocked_idx[~self.lim_flag]
+            phases_new[:,idx] = (phases[:,idx] + torch.pi) % (2 * torch.pi) - torch.pi
+        else:
+            phases_new = torch.zeros(phases.shape[0], self.n_links).to(phases.device, phases.dtype)
+            phases_new[:,self.unlocked_idx] = phases
+            idx = self.unlocked_idx[~self.lim_flag]
+            phases_new[:,idx] = (phases_new[:,idx] + torch.pi) % (2 * torch.pi) - torch.pi
+            phases_new = phases_new[:,self.unlocked_idx]
         return phases_new
 
     def set_initial(self,qpos,qvel,qgoal,obs_pos):
