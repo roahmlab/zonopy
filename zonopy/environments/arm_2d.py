@@ -14,6 +14,8 @@ class Arm_2D:
     def __init__(self,
             n_links=2, # number of links
             n_obs=1, # number of obstacles
+            obs_size_max = [0.1,0.1], # maximum size of randomized obstacles in xy
+            obs_size_min = [0.1,0.1], # minimum size of randomized obstacle in xy
             T_len=50, # number of discritization of time interval
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
@@ -40,6 +42,7 @@ class Arm_2D:
         self.dof = self.n_links = n_links
         self.joint_id = torch.arange(self.n_links,dtype=int,device=device)
         self.n_obs = n_obs
+        self.obs_size_sampler = torch.distributions.uniform.Uniform(torch.tensor(obs_size_min,dtype=dtype,device=device),torch.tensor(obs_size_max,dtype=dtype,device=device),validate_args=False)
         link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device)
         self.link_zonos = [zp.polyZonotope(link_Z,0)]*n_links
         self.__link_zonos = [zp.zonotope(link_Z)]*n_links 
@@ -126,13 +129,15 @@ class Arm_2D:
             Rg = Rg@self.R0[j]@R_qg[j]
             link_init.append(Ri@self.__link_zonos[j]+Pi)
             link_goal.append(Rg@self.__link_zonos[j]+Pg)
-
-        for _ in range(self.n_obs):
+        
+        obs_size = self.obs_size_sampler.sample([self.n_obs])
+        
+        for o in range(self.n_obs):
             while True:
                 r,th = torch.rand(2,dtype=self.dtype,device=self.device)
                 #obs_pos = torch.rand(2)*2*self.n_links-self.n_links
                 obs_pos = 3/4*self.n_links*r*torch.tensor([torch.cos(2*torch.pi*th),torch.sin(2*torch.pi*th)])
-                obs = torch.hstack((torch.vstack((obs_pos,0.1*torch.eye(2))),torch.zeros(3,1)))
+                obs = torch.hstack((torch.vstack((obs_pos,torch.diag(obs_size[o]))),torch.zeros(3,1)))
                 obs = zp.zonotope(obs)
                 safe_flag = True
                 for j in range(self.n_links):
@@ -166,7 +171,10 @@ class Arm_2D:
         return self.get_observations()
 
 
-    def set_initial(self,qpos,qvel,qgoal,obs_pos):
+    def set_initial(self,qpos,qvel,qgoal,obs_pos,obs_size=None):
+        if obs_size is None:
+            obs_size = [torch.tensor([.1,.1],dtype=self.dtype,device=self.device) for _ in range(self.n_obs)]
+            
         self.qpos = qpos.to(dtype=self.dtype,device=self.device)
         self.qpos_int = torch.clone(self.qpos)
         self.qvel = qvel.to(dtype=self.dtype,device=self.device)
@@ -194,9 +202,9 @@ class Arm_2D:
             Rg = Rg@self.R0[j]@R_qg[j]
             link_init.append(Ri@self.__link_zonos[j]+Pi)
             link_goal.append(Rg@self.__link_zonos[j]+Pg)
-
-        for pos in obs_pos:
-            obs = torch.hstack((torch.vstack((pos.to(dtype=self.dtype,device=self.device),0.1*torch.eye(2,dtype=self.dtype,device=self.device))),torch.zeros(3,1,dtype=self.dtype,device=self.device)))
+        
+        for pos,size in zip(obs_pos,obs_size):
+            obs = torch.hstack((torch.vstack((pos.to(dtype=self.dtype,device=self.device),torch.diag(size).to(dtype=self.dtype,device=self.device))),torch.zeros(3,1,dtype=self.dtype,device=self.device)))
             obs = zp.zonotope(obs)
             for j in range(self.n_links):
                 buff = link_init[j]-obs

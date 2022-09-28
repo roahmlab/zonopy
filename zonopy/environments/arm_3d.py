@@ -14,6 +14,8 @@ class Arm_3D:
     def __init__(self,
             robot='Kinova3', # robot model
             n_obs=1, # number of obstacles
+            obs_size_max = [0.1,0.1,0.1], # maximum size of randomized obstacles in xyz
+            obs_size_min = [0.1,0.1,0.1], # minimum size of randomized obstacle in xyz
             T_len=50, # number of discritization of time interval
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
@@ -45,6 +47,7 @@ class Arm_3D:
         self.generate_combinations_upto()
         self.dimension = 3
         self.n_obs = n_obs
+        self.obs_size_sampler = torch.distributions.Uniform(torch.tensor(obs_size_min,dtype=dtype,device=device),torch.tensor(obs_size_max,dtype=dtype,device=device),validate_args=False)
         self.scale = scale
 
         #### load
@@ -164,13 +167,15 @@ class Arm_3D:
             link_init.append(Ri@self.__link_zonos[j]+Pi)
             link_goal.append(Rg@self.__link_zonos[j]+Pg)
 
-        for _ in range(self.n_obs):
+        obs_size = self.scale*self.obs_size_sampler.sample([self.n_obs])
+
+        for o in range(self.n_obs):
             while True:
                 obs_pos = self.scale*(torch.rand(3,dtype=self.dtype,device=self.device)*2*0.8-0.8)
-
+                
                 # NOTE
                 #rho, th, psi 
-                obs = zp.zonotope(torch.vstack((obs_pos,(self.scale*0.1)*torch.eye(3,dtype=self.dtype,device=self.device))))
+                obs = zp.zonotope(torch.vstack((obs_pos,torch.diag(obs_size[o]))))
                 
                 
                 safe_flag = True
@@ -205,7 +210,9 @@ class Arm_3D:
 
         return self.get_observations()
 
-    def set_initial(self,qpos,qvel,qgoal,obs_pos):
+    def set_initial(self,qpos,qvel,qgoal,obs_pos,obs_size=None):
+        if obs_size is None:
+            obs_size = [self.scale*torch.tensor([.1,.1,.1],dtype=self.dtype,device=self.device) for _ in range(self.n_obs)]
         self.qpos = qpos.to(dtype=self.dtype,device=self.device)
         self.qpos_int = torch.clone(self.qpos)
         self.qvel = qvel.to(dtype=self.dtype,device=self.device)
@@ -233,8 +240,9 @@ class Arm_3D:
             Rg = Rg@self.R0[j]@R_qg[j]
             link_init.append(Ri@self.__link_zonos[j]+Pi)
             link_goal.append(Rg@self.__link_zonos[j]+Pg)
-        for pos in obs_pos:
-            obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),(self.scale*0.1)*torch.eye(3,dtype=self.dtype,device=self.device))))
+
+        for pos,size in zip(obs_pos,obs_size):
+            obs = zp.zonotope(torch.vstack((pos.to(dtype=self.dtype,device=self.device),torch.diag(size).to(dtype=self.dtype,device=self.device))))
             for j in range(self.n_links):
                 buff = link_init[j]-obs
                 _,b = buff.polytope(self.combs)
