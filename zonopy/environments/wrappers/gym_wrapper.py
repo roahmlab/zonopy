@@ -75,8 +75,12 @@ class GymWrapper(Wrapper, Env):
 
     def compute_reward(self, achieved_goal, desired_goal, info):
         return self.env.get_reward(action = torch.as_tensor(info['action_taken'],dtype=self.env.dtype))
+    
     def close(self):
         self.env.close()
+    
+    
+
 
 class ParallelGymWrapper(GymWrapper):
     def __init__(self, env, keys=[]):
@@ -127,6 +131,41 @@ class ParallelGymWrapper(GymWrapper):
             action_taken.append(info['action_taken'])
         action_taken = torch.as_tensor(np.vstack(action_taken),dtype=self.env.dtype)
         return self.env.get_reward(action = torch.as_tensor(info['action_taken'],dtype=self.env.dtype)).numpy()
+
+    
+    def get_attr(self,attr_name,indices=None):
+        indices = self._get_indices(indices) 
+        attr = getattr(self.envs,attr_name)
+        if isinstance(attr,torch.Tensor) and attr.shape[0] == self.num_envs:
+            return [attr[i] for i in indices]
+        else:
+            return [attr for _ in indices] 
+    
+    def set_attr(self,attr_name,value,indices=None):
+        indices = self._get_indices(indices) 
+        attr = getattr(self.envs,attr_name)
+        if isinstance(attr,torch.Tensor) and attr.shape[0] == self.num_envs:
+            for i in indices:
+                attr[i] = value[i]
+        else:
+            attr = value 
+        setattr(self.envs,attr_name,attr)
+
+    def env_method(self,method_name,*method_args,incides=None,**method_kwargs):
+        indices = self.get_indices(indices) 
+        output = getattr(self.envs,method_name)(*method_args, **method_kwargs)
+
+        if isinstance(output,torch.Tensor) and output.shape[0] == self.num_envs:
+            return [output[i] for i in indices]
+        else:
+            return [output for _ in indices]
+
+    def _get_indices(self,indices):
+        if indices is None:
+            indices - range(self.num_envs)
+        elif isinstance(indices, int):
+            indices = [indices] 
+        return indices
 
 if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
