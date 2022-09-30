@@ -123,22 +123,27 @@ class ParallelDictGymWrapper(DictGymWrapper):
     def compute_reward(self, achieved_goal, desired_goal, infos):
         action_taken = []
         collision = []
+        safe_flag = []
         for info in infos:
             action_taken.append(info['action_taken'])
             collision.append(info['collision'])
+            safe_flag.append(info['safe_flag'])
+
         action_taken = torch.as_tensor(np.vstack(action_taken),dtype=self.env.dtype)
         collision = torch.as_tensor(np.hstack(collision),dtype=self.env.dtype)
+        safe_flag = torch.as_tensor(np.hstack(safe_flag),dtype=self.env.dtype)
 
         rewards = self.env.get_reward(action = action_taken,
                             qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype),
                             qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
                             collision = collision,
+                            safe = safe_flag,
                             )
         return rewards.numpy()
         
     def get_attr(self,attr_name,indices=None):
         indices = self._get_indices(indices) 
-        attr = getattr(self.envs,attr_name)
+        attr = getattr(self.env,attr_name)
         if isinstance(attr,torch.Tensor) and attr.shape[0] == self.num_envs:
             return [attr[i] for i in indices]
         else:
@@ -146,19 +151,22 @@ class ParallelDictGymWrapper(DictGymWrapper):
     
     def set_attr(self,attr_name,value,indices=None):
         indices = self._get_indices(indices) 
-        attr = getattr(self.envs,attr_name)
+        attr = getattr(self.env,attr_name)
         if isinstance(attr,torch.Tensor) and attr.shape[0] == self.num_envs:
             for i in indices:
                 attr[i] = value[i]
         else:
             attr = value 
-        setattr(self.envs,attr_name,attr)
+        setattr(self.env,attr_name,attr)
 
-    def env_method(self,method_name,*method_args,incides=None,**method_kwargs):
-        indices = self.get_indices(indices) 
-        output = getattr(self.envs,method_name)(*method_args, **method_kwargs)
-
-        if isinstance(output,torch.Tensor) and output.shape[0] == self.num_envs:
+    def env_method(self,method_name,*method_args,indices=None,**method_kwargs):
+        indices = self._get_indices(indices) 
+        if method_name == 'compute_reward':
+            output = self.compute_reward(*method_args, **method_kwargs)
+        else:
+            output = getattr(self.env,method_name)(*method_args, **method_kwargs)
+            
+        if (isinstance(output,torch.Tensor) and output.shape[0] == self.num_envs):
             return [output[i] for i in indices]
         else:
             return [output for _ in indices]

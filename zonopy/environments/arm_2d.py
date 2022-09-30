@@ -327,7 +327,7 @@ class Arm_2D:
 
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
-            reward -= self.hyp_collision * torch.tensor(self.collision,dtype=self.dtype)
+            reward -= self.hyp_collision * torch.tensor(collision,dtype=self.dtype)
             reward += self.hyp_success * success
             return reward
 

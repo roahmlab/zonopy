@@ -436,14 +436,17 @@ class Parallel_Arm_3D:
             observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[:,[0,1,2],[0,1,2]].unsqueeze(1) for o in range(self.n_obs)],1)
         return observation
     
-    def get_reward(self, action, qpos=None, qgoal=None, collision=None):
+    def get_reward(self, action, qpos=None, qgoal=None, collision=None, safe=None):
         # Get the position and goal then calculate distance to goal
         if qpos is None:
+            internal = True
             collision = self.collision 
+            safe = self.safe.to(dtype=self.dtype)
             goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal,internal=True),dim=-1)
             self.success = goal_dist < self.goal_threshold 
             success = self.success.to(dtype=self.dtype)
         else: 
+            internal = False
             goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal,internal=False),dim=-1)
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
@@ -451,7 +454,7 @@ class Parallel_Arm_3D:
 
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
-            reward -= self.hyp_collision * self.collision
+            reward -= self.hyp_collision * collision
             reward += self.hyp_success * success
             return reward
 
@@ -461,11 +464,12 @@ class Parallel_Arm_3D:
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action,dim=-1)
         # Add collision if needed
-        reward -= self.hyp_collision * self.collision
+        reward -= self.hyp_collision * collision
         # Add fail-safe if needed
-        reward -= self.hyp_fail_safe * (1 - self.safe.to(dtype=self.dtype))
-        # Add stuck if needed
-        reward -= self.hyp_stuck * torch.tensor(self.fail_safe_count > self.stuck_threshold,dtype=self.dtype)
+        reward -= self.hyp_fail_safe * (1 - safe)
+        if internal:
+            # Add stuck if needed
+            reward -= self.hyp_stuck * torch.tensor(self.fail_safe_count > self.stuck_threshold,dtype=self.dtype)
         # Add success if wanted
         reward += self.hyp_success * success
 

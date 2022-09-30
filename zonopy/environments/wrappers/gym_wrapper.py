@@ -135,7 +135,7 @@ class ParallelGymWrapper(GymWrapper):
     
     def get_attr(self,attr_name,indices=None):
         indices = self._get_indices(indices) 
-        attr = getattr(self.envs,attr_name)
+        attr = getattr(self.env,attr_name)
         if isinstance(attr,torch.Tensor) and attr.shape[0] == self.num_envs:
             return [attr[i] for i in indices]
         else:
@@ -143,17 +143,17 @@ class ParallelGymWrapper(GymWrapper):
     
     def set_attr(self,attr_name,value,indices=None):
         indices = self._get_indices(indices) 
-        attr = getattr(self.envs,attr_name)
+        attr = getattr(self.env,attr_name)
         if isinstance(attr,torch.Tensor) and attr.shape[0] == self.num_envs:
             for i in indices:
                 attr[i] = value[i]
         else:
             attr = value 
-        setattr(self.envs,attr_name,attr)
+        setattr(self.env,attr_name,attr)
 
-    def env_method(self,method_name,*method_args,incides=None,**method_kwargs):
-        indices = self.get_indices(indices) 
-        output = getattr(self.envs,method_name)(*method_args, **method_kwargs)
+    def env_method(self,method_name,*method_args,indices=None,**method_kwargs):
+        indices = self._get_indices(indices) 
+        output = getattr(self.env,method_name)(*method_args, **method_kwargs)
 
         if isinstance(output,torch.Tensor) and output.shape[0] == self.num_envs:
             return [output[i] for i in indices]

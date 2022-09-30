@@ -413,7 +413,7 @@ class Parallel_Arm_2D:
 
         # Return the sparse reward if using sparse_rewards
         if not self.reward_shaping:
-            reward -= self.hyp_collision * self.collision
+            reward -= self.hyp_collision * collision
             reward += self.hyp_success * success
             return reward
 
@@ -423,7 +423,7 @@ class Parallel_Arm_2D:
         # reward for effort
         reward -= self.hyp_effort * torch.linalg.norm(action,dim=-1)
         # Add collision if needed
-        reward -= self.hyp_collision * self.collision
+        reward -= self.hyp_collision * collision
         # Add fail-safe if needed
         reward -= self.hyp_fail_safe * (1 - self.safe.to(dtype=self.dtype))
         # Add stuck if needed
