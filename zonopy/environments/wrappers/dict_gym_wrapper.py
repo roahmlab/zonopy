@@ -141,6 +141,14 @@ class ParallelDictGymWrapper(DictGymWrapper):
                             )
         return rewards.numpy()
         
+    def compute_success(self,achieved_goal, desired_goal):
+        success = self.env.success_check(
+            qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype), 
+            qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
+        )
+        return success
+
+
     def get_attr(self,attr_name,indices=None):
         indices = self._get_indices(indices) 
         attr = getattr(self.env,attr_name)
@@ -161,8 +169,8 @@ class ParallelDictGymWrapper(DictGymWrapper):
 
     def env_method(self,method_name,*method_args,indices=None,**method_kwargs):
         indices = self._get_indices(indices) 
-        if method_name == 'compute_reward':
-            output = self.compute_reward(*method_args, **method_kwargs)
+        if method_name == 'compute_reward' or method_name == 'compute_success':
+            output = getattr(self,method_name)(*method_args, **method_kwargs)
         else:
             output = getattr(self.env,method_name)(*method_args, **method_kwargs)
             
@@ -173,7 +181,7 @@ class ParallelDictGymWrapper(DictGymWrapper):
 
     def _get_indices(self,indices):
         if indices is None:
-            indices - range(self.num_envs)
+            indices = range(self.num_envs)
         elif isinstance(indices, int):
             indices = [indices] 
         return indices
