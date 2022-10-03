@@ -48,7 +48,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
     NLP.add_option('max_iter',15)
     #NLP.add_option('hessian_approximation','limited-memory')
     NLP.add_option('tol', TOL)
-    NLP.add_option('linear_solver', 'ma27')
+    #NLP.add_option('linear_solver', 'ma27')
     k_opt, info = NLP.solve(ka_0)
 
 
@@ -123,9 +123,7 @@ def gen_RTS_star_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
     n_pos_lim = int(lim_flag.sum().cpu())
 
     max_combs = 200 
-    combs = [torch.tensor([],device=device)]
-    for i in range(max_combs):
-        combs.append(torch.combinations(torch.arange(i+1,device=device),2))
+    combs = [torch.combinations(torch.arange(i,device=device),2) for i in range(max_combs+1)]
 
     dof = n_links - len(locked_idx)
     unlocked_idx = torch.ones(n_links,dtype=bool,device=device)
@@ -148,17 +146,38 @@ def gen_RTS_star_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
         def forward(ctx, lambd, observation):
             zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
+
+            ctx.lambd_shape = lambd.shape
             lambd = lambd.clone().reshape(-1, dof).to(dtype=dtype,device=device)
-            # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
-            observation = observation.to(dtype=dtype,device=device)
             ka = g_ka * lambd
 
-            n_batches = observation.shape[0]
-            qpos = observation[:, :dof]
-            qvel = observation[:, dof:2 * dof]
-            obstacle_center = observation[:, -6 * n_obs:-3 * n_obs].reshape(n_batches,n_obs,1,dimension)
-            obstacle_generators = torch.diag_embed(observation[:, -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+            if isinstance(observation,dict):
+                ctx.obs_type = 'dict'
+                ctx.obs_shape = observation["observation"].shape 
+                n_batches, obs_dim = ctx.obs_shape
+                qpos = observation["achieved_goal"].to(dtype=dtype,device=device)
+                #qgoal = observation["desired_goal"].to(dtype=dtype,device=device)
+                observation_observation = observation["observation"].to(dtype=dtype,device=device)
+                qvel = observation_observation[:,:dof]
+                obstacle_center = observation_observation[:, obs_dim -6 * n_obs: obs_dim -3 * n_obs].reshape(n_batches,n_obs,1,dimension)
+                obstacle_generators = torch.diag_embed(observation_observation[:, obs_dim -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+
+
+            else:
+                ctx.obs_type = 'tensor'
+
+                ctx.obs_shape = observation.shape
+                
+                # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
+                observation = observation.to(dtype=dtype,device=device)
+                
+
+                n_batches, obs_dim = observation.shape
+                qpos = observation[:, :dof]
+                qvel = observation[:, dof:2 * dof]
+                obstacle_center = observation[:, obs_dim -6 * n_obs: obs_dim -3 * n_obs].reshape(n_batches,n_obs,1,dimension)
+                obstacle_generators = torch.diag_embed(observation[:, obs_dim -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+            
             obs_Z = torch.cat((obstacle_center,obstacle_generators),-2).unsqueeze(-3).repeat(1,1,n_timesteps,1,1)
             
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
@@ -326,7 +345,10 @@ def gen_RTS_star_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
 
         @staticmethod
         def backward(ctx, *grad_ouput):
-            return (torch.zeros(ctx.lambd_shape,dtype=dtype,device=device), torch.zeros(ctx.obs_shape,dtype=dtype,device=device))
+            if ctx.obs_type == 'dict':
+                return (torch.zeros(ctx.lambd_shape,dtype=dtype,device=device), {'observation':torch.zeros(ctx.obs_shape,dtype=dtype,device=device),'achieved_goal':torch.zeros((ctx.obs_shape[0],dof),dtype=dtype,device=device),'desired_goal':torch.zeros((ctx.obs_shape[0],dof),dtype=dtype,device=device)})
+            else:
+                return (torch.zeros(ctx.lambd_shape,dtype=dtype,device=device), torch.zeros(ctx.obs_shape,dtype=dtype,device=device))
 
     return RTS_star_Locked_3D_Layer.apply
 

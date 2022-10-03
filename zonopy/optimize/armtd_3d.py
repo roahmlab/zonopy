@@ -50,9 +50,7 @@ class ARMTD_3D_planner():
         return phases_new
 
     def generate_combinations_upto(self):
-        self.combs = [torch.tensor([0],device=self.device)]
-        for i in range(self.max_combs):
-            self.combs.append(torch.combinations(torch.arange(i+1,device=self.device),2))
+        self.combs = [torch.combinations(torch.arange(i,device=self.device),2) for i in range(self.max_combs+1)]
 
     def prepare_constraints(self,qpos,qvel,obstacles):
         t1 = time.time()

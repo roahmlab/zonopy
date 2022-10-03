@@ -132,10 +132,8 @@ class Arm_3D:
         return phases_new
 
     def generate_combinations_upto(self):
-        self.combs = [torch.tensor([0],device=self.device)]
-        for i in range(self.max_combs):
-            self.combs.append(torch.combinations(torch.arange(i+1,device=self.device),2))
-
+        self.combs = [torch.combinations(torch.arange(i,device=self.device),2) for i in range(self.max_combs+1)]
+ 
     def reset(self):
         self.qpos = self.pos_sampler.sample()
         self.qpos_int = torch.clone(self.qpos)

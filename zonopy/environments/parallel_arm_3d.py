@@ -143,9 +143,8 @@ class Parallel_Arm_3D:
         return phases_new
 
     def generate_combinations_upto(self):
-        self.combs = [torch.tensor([0],device=self.device)]
-        for i in range(self.max_combs):
-            self.combs.append(torch.combinations(torch.arange(i+1,device=self.device),2))
+        self.combs = [torch.combinations(torch.arange(i,device=self.device),2) for i in range(self.max_combs+1)]
+
     
     def __reset(self,idx):
         n_envs = idx.sum()        
@@ -435,19 +434,19 @@ class Parallel_Arm_3D:
             observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center.unsqueeze(1) for o in range(self.n_obs)],1)
             observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[:,[0,1,2],[0,1,2]].unsqueeze(1) for o in range(self.n_obs)],1)
         return observation
-    
+
     def get_reward(self, action, qpos=None, qgoal=None, collision=None, safe=None):
         # Get the position and goal then calculate distance to goal
         if qpos is None:
             internal = True
             collision = self.collision 
             safe = self.safe.to(dtype=self.dtype)
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal,internal=True),dim=-1)
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal,internal=internal),dim=-1)
             self.success = goal_dist < self.goal_threshold 
             success = self.success.to(dtype=self.dtype)
         else: 
             internal = False
-            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal,internal=False),dim=-1)
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal,internal=internal),dim=-1)
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
         reward = 0.0
@@ -475,6 +474,13 @@ class Parallel_Arm_3D:
 
         return reward    
 
+    def success_check(self, qpos=None, qgoal=None):
+        if qpos is None:
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal,internal=True),dim=-1) 
+        else:
+            goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal,internal=False),dim=-1)
+        return goal_dist < self.goal_threshold
+    
     def joint_limit_check(self):
         if self.check_joint_limit:
             t_peak_optimum = -self.qvel/self.ka # time to optimum of first half traj.

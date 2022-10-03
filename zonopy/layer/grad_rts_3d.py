@@ -66,9 +66,7 @@ def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
     n_pos_lim = int(lim_flag.sum().cpu())
 
     max_combs = 200 
-    combs = [torch.tensor([],device=device)]
-    for i in range(max_combs):
-        combs.append(torch.combinations(torch.arange(i+1,device=device),2))
+    combs = [torch.combinations(torch.arange(i,device=device),2) for i in range(max_combs+1)]
 
     class RTS_grad_3D_Layer(torch.autograd.Function):
         @staticmethod
