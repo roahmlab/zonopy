@@ -346,7 +346,7 @@ def gen_RTS_star_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
         @staticmethod
         def backward(ctx, *grad_ouput):
             if ctx.obs_type == 'dict':
-                return (torch.zeros(ctx.lambd_shape,dtype=dtype,device=device), {'observation':torch.zeros(ctx.obs_shape,dtype=dtype,device=device),'achieved_goal':torch.zeros((ctx.obs_shape[0],dof),dtype=dtype,device=device),'desired_goal':torch.zeros((ctx.obs_shape[0],dof),dtype=dtype,device=device)})
+                return (torch.zeros(ctx.lambd_shape,dtype=dtype,device=device), None)
             else:
                 return (torch.zeros(ctx.lambd_shape,dtype=dtype,device=device), torch.zeros(ctx.obs_shape,dtype=dtype,device=device))
 

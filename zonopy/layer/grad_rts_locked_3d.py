@@ -164,17 +164,38 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
 
             zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
+
+            ctx.lambd_shape = lambd.shape
             ctx.lambd = lambd.clone().reshape(-1, dof).to(dtype=dtype,device=device)
-            # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
-            observation = observation.to(dtype=dtype,device=device)
             ka = g_ka * ctx.lambd
 
-            n_batches = observation.shape[0]
-            qpos = observation[:, :dof]
-            qvel = observation[:, dof:2 * dof]
-            obstacle_center = observation[:, -6 * n_obs:-3 * n_obs].reshape(n_batches,n_obs,1,dimension)
-            obstacle_generators = torch.diag_embed(observation[:, -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+            if isinstance(observation,dict):
+                ctx.obs_type = 'dict'
+                ctx.obs_shape = observation["observation"].shape 
+                n_batches, obs_dim = ctx.obs_shape
+                qpos = observation["achieved_goal"].to(dtype=dtype,device=device)
+                #qgoal = observation["desired_goal"].to(dtype=dtype,device=device)
+                observation_observation = observation["observation"].to(dtype=dtype,device=device)
+                qvel = observation_observation[:,:dof]
+                obstacle_center = observation_observation[:, obs_dim -6 * n_obs: obs_dim -3 * n_obs].reshape(n_batches,n_obs,1,dimension)
+                obstacle_generators = torch.diag_embed(observation_observation[:, obs_dim -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+
+
+            else:
+                ctx.obs_type = 'tensor'
+
+                ctx.obs_shape = observation.shape
+                
+                # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
+                observation = observation.to(dtype=dtype,device=device)
+                
+
+                n_batches, obs_dim = observation.shape
+                qpos = observation[:, :dof]
+                qvel = observation[:, dof:2 * dof]
+                obstacle_center = observation[:, obs_dim -6 * n_obs: obs_dim -3 * n_obs].reshape(n_batches,n_obs,1,dimension)
+                obstacle_generators = torch.diag_embed(observation[:, obs_dim -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+
             obs_Z = torch.cat((obstacle_center,obstacle_generators),-2).unsqueeze(-3).repeat(1,1,n_timesteps,1,1)
             
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
@@ -534,7 +555,11 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                         exit()
 
                 # NOTE: for fail-safe, keep into zeros             
-            return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device), None)
+            
+            if ctx.obs_type == 'dict':
+                return (grad_input.reshape(ctx.lambd_shape), None, None)
+            else:
+                return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device),None)
 
     return grad_RTS_Locked_3D_Layer.apply
 
