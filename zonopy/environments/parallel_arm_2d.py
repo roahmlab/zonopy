@@ -384,17 +384,20 @@ class Parallel_Arm_2D:
                     'qgoal':self.qgoal[idx]
                 }
                 info['collision_info'] = collision_info
+            '''
+            if self.done[idx]:
+                info["terminal_observation"] = self.get_observations(idx)
+            '''
             info["TimeLimit.truncated"] = self.timeout[idx]
             info['episode'] = {"r":float(self.reward_com[idx]),"l":int(self._elapsed_steps[idx])}
             infos.append(info)
         return tuple(infos)
 
-    def get_observations(self):
-        observation = {'qpos':torch.clone(self.qpos),'qvel':torch.clone(self.qvel),'qgoal':torch.clone(self.qgoal)}
-        
+    def get_observations(self,idx=slice(None)):
+        observation = {'qpos':torch.clone(self.qpos[idx]),'qvel':torch.clone(self.qvel[idx]),'qgoal':torch.clone(self.qgoal[idx])}        
         if self.n_obs > 0:
-            observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center[:,:2].unsqueeze(1) for o in range(self.n_obs)],1)
-            observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[:,[0,1],[0,1]].unsqueeze(1) for o in range(self.n_obs)],1)
+            observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center[idx,:2].unsqueeze(-2) for o in range(self.n_obs)],-2)
+            observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[idx,[0,1],[0,1]].unsqueeze(-2) for o in range(self.n_obs)],-2)
         return observation
 
 

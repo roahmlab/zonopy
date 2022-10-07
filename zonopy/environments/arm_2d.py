@@ -302,6 +302,10 @@ class Arm_2D:
                 'qgoal':self.qgoal
             }
             info['collision_info'] = collision_info
+        
+        if self.done:
+            info["terminal_observation"] = self.get_observations()
+
         info["TimeLimit.truncated"] = self.timeout
         info['episode'] = {"r":self.reward_com,"l":self._elapsed_steps}
         return info

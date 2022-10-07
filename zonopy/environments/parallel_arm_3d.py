@@ -421,17 +421,21 @@ class Parallel_Arm_3D:
                     'qgoal':self.qgoal[idx]
                 }
                 info['collision_info'] = collision_info
+            '''
+            if self.done[idx]:
+                info["terminal_observation"] = self.get_observations(idx)
+            '''
             info["TimeLimit.truncated"] = self.timeout[idx]
             info['episode'] = {"r":float(self.reward_com[idx]),"l":int(self._elapsed_steps[idx])}
             infos.append(info)
         return tuple(infos)
 
-    def get_observations(self):
-        observation = {'qpos':torch.clone(self.qpos),'qvel':torch.clone(self.qvel),'qgoal':torch.clone(self.qgoal)}
+    def get_observations(self,idx=slice(None)):
+        observation = {'qpos':torch.clone(self.qpos[idx]),'qvel':torch.clone(self.qvel[idx]),'qgoal':torch.clone(self.qgoal[idx])}
         
         if self.n_obs > 0:
-            observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center.unsqueeze(1) for o in range(self.n_obs)],1)
-            observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[:,[0,1,2],[0,1,2]].unsqueeze(1) for o in range(self.n_obs)],1)
+            observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center[idx].unsqueeze(-2) for o in range(self.n_obs)],-2)
+            observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[idx,[0,1,2],[0,1,2]].unsqueeze(-2) for o in range(self.n_obs)],-2)
         return observation
 
     def get_reward(self, action, qpos=None, qgoal=None, collision=None, safe=None, stuck=None, timeout=None):
@@ -902,13 +906,13 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
 
         return super().step(ka_all,flag)
     
-    def get_observations(self):
-        observation = {'qpos':torch.clone(self.qpos[:,self.unlocked_idx]),'qvel':torch.clone(self.qvel[:,self.unlocked_idx]),'qgoal':torch.clone(self.qgoal[:,self.unlocked_idx])}
-        
+    def get_observations(self,idx=slice(None)):
+        observation = {'qpos':torch.clone(self.qpos[idx,self.unlocked_idx]),'qvel':torch.clone(self.qvel[idx,self.unlocked_idx]),'qgoal':torch.clone(self.qgoal[idx,self.unlocked_idx])}
         if self.n_obs > 0:
-            observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center.unsqueeze(1) for o in range(self.n_obs)],1)
-            observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[:,[0,1,2],[0,1,2]].unsqueeze(1) for o in range(self.n_obs)],1)
-        return observation
+            observation['obstacle_pos']= torch.cat([self.obs_zonos[o].center[idx].unsqueeze(-2) for o in range(self.n_obs)],-2)
+            observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[idx,[0,1,2],[0,1,2]].unsqueeze(-2) for o in range(self.n_obs)],-2)
+        return observation 
+
 
 if __name__ == '__main__':
     n_envs = 9
