@@ -22,12 +22,14 @@ class Arm_2D:
             check_collision_FO = False, # flag for whether check collision for FO rendering
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.05, # goal threshold
-            hyp_effort = 1.0, # hyperpara
             hyp_dist_to_goal = 1.0,
-            hyp_collision = 300,
+            hyp_effort = 1.0, # hyperpara
             hyp_success = 50,
+            hyp_collision = 300,
+            hyp_action_adjust = 1,
             hyp_fail_safe = 1,
             hyp_stuck = 250,
+            hyp_timeout = 0,
             stuck_threshold = None,
             reward_shaping=True,
             gamma = 0.99, # discount factor on reward
@@ -74,12 +76,14 @@ class Arm_2D:
         self.collision_threshold = collision_threshold
         
         self.goal_threshold = goal_threshold
-        self.hyp_effort = hyp_effort
         self.hyp_dist_to_goal = hyp_dist_to_goal
-        self.hyp_collision = hyp_collision
+        self.hyp_effort = hyp_effort
         self.hyp_success = hyp_success
+        self.hyp_collision = hyp_collision
+        self.hyp_action_adjust = hyp_action_adjust
         self.hyp_fail_safe = hyp_fail_safe
         self.hyp_stuck = hyp_stuck
+        self.hyp_timeout = hyp_timeout
         if stuck_threshold is None:
             self.stuck_threshold = max_episode_steps
         else:
@@ -232,7 +236,7 @@ class Arm_2D:
         return self.get_observations()
 
     def step(self,ka,flag=0):
-        self.step_flag = flag
+        self.step_flag = int(flag)
         self.safe = flag <= 0
         # -torch.pi<qvel+k*T_PLAN < torch.pi
         # (-torch.pi-qvel)/T_PLAN < k < (torch.pi-qvel)/T_PLAN
@@ -283,7 +287,6 @@ class Arm_2D:
         self.reward = self.get_reward(ka) # NOTE: should it be ka or self.ka ??
         self.reward_com *= self.gamma
         self.reward_com += self.reward
-        self.done = self.success or self.collision
         observations = self.get_observations()
         info = self.get_info()
         return observations, self.reward, self.done, info
@@ -299,9 +302,7 @@ class Arm_2D:
                 'qgoal':self.qgoal
             }
             info['collision_info'] = collision_info
-        if self._elapsed_steps >= self._max_episode_steps:
-            info["TimeLimit.truncated"] = not self.done
-            self.done = True            
+        info["TimeLimit.truncated"] = self.timeout
         info['episode'] = {"r":self.reward_com,"l":self._elapsed_steps}
         return info
 
@@ -312,41 +313,52 @@ class Arm_2D:
             observation['obstacle_size'] = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
         return observation
 
-    def get_reward(self, action, qpos=None, qgoal=None, collision=None):
+    def get_reward(self, action, qpos=None, qgoal=None, collision=None, safe=None, stuck=None, timeout=None):
         # Get the position and goal then calculate distance to goal
         if qpos is None:
+            # deliver termination variable
             collision = self.collision 
+            safe = self.safe
+            stuck = self.stuck = self.fail_safe_count >= self.stuck_threshold
             goal_dist = torch.linalg.norm(wrap_to_pi(self.qpos-self.qgoal))
-            self.success = goal_dist < self.goal_threshold 
-            success = self.success.to(dtype=self.dtype)
+            success = self.success = bool(goal_dist < self.goal_threshold) 
+            # compute done and timeout
+            done = self.success or self.collision or self.stuck
+            timeout = self.timeout = (self._elapsed_steps >= self._max_episode_steps) and (~done)
+            self.done = done or self.timeout
+            
         else: 
             goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
-            success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
+            success = bool(goal_dist < self.goal_threshold) and (~collision) 
         
         reward = 0.0
-
-        # Return the sparse reward if using sparse_rewards
-        if not self.reward_shaping:
-            reward -= self.hyp_collision * torch.tensor(collision,dtype=self.dtype)
-            reward += self.hyp_success * success
-            return reward
-
-        # otherwise continue to calculate the dense reward
-        # reward for position term
-        reward -= self.hyp_dist_to_goal * goal_dist
-        # reward for effort
-        reward -= self.hyp_effort * torch.linalg.norm(action)
-        # Add collision if needed
-        reward -= self.hyp_collision * torch.tensor(collision,dtype=self.dtype)
-        # Add fail-safe if needed
-        reward -= self.hyp_fail_safe * (1-bool(self.safe))
-        # Add stuck if needed
-        reward -= self.hyp_stuck * (self.fail_safe_count > self.stuck_threshold)
-        # Add success if wanted
+        # Reward shaing with dense reward
+        if self.reward_shaping:
+            # Goal-distance penalty
+            reward -= self.hyp_dist_to_goal * goal_dist
+            # Effort penalty
+            reward -= self.hyp_effort * torch.linalg.norm(action)
+        # Success reward 
         reward += self.hyp_success * success
+        # Collision penalty
+        reward -= self.hyp_collision * collision
+        # Action adjustment peanlty 
+
+        # Fail-safe penalty
+        reward -= self.hyp_fail_safe * (1 - safe)
+        # Stuck penalty
+        reward -= self.hyp_stuck * stuck
+        # Timeout penalty 
+        reward -= self.hyp_timeout * timeout
 
         return float(reward)       
 
+    def success_check(self, qpos=None, qgoal=None):
+        if qpos is None:
+            goal_dist = torch.linalg.norm(wrap_to_pi(self.qpos-self.qgoal)) 
+        else:
+            goal_dist = torch.linalg.norm(wrap_to_pi(qpos-qgoal))
+        return bool(goal_dist < self.goal_threshold)
 
     def collision_check(self,qs):
 

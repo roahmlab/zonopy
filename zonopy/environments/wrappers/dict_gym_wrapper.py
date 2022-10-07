@@ -124,30 +124,50 @@ class ParallelDictGymWrapper(DictGymWrapper):
         action_taken = []
         collision = []
         safe_flag = []
+        stuck = []
+        timeout = []
         for info in infos:
             action_taken.append(info['action_taken'])
             collision.append(info['collision'])
             safe_flag.append(info['safe_flag'])
+            stuck.append(info['stuck'])
+            timeout.append(info['TimeLimit.truncated'])
 
         action_taken = torch.as_tensor(np.vstack(action_taken),dtype=self.env.dtype)
         collision = torch.as_tensor(np.hstack(collision),dtype=self.env.dtype)
         safe_flag = torch.as_tensor(np.hstack(safe_flag),dtype=self.env.dtype)
+        stuck = torch.as_tensor(np.hstack(stuck),dtype=self.env.dtype)
+        timeout = torch.as_tensor(np.hstack(timeout),dtype=self.env.dtype)
 
-        rewards = self.env.get_reward(action = action_taken,
-                            qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype),
-                            qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
-                            collision = collision,
-                            safe = safe_flag,
-                            )
-        return rewards.numpy()
+        rewards = self.env.get_reward(
+            action = action_taken,
+            qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype),
+            qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
+            collision = collision,
+            safe = safe_flag,
+            stuck = stuck,
+            timeout = timeout,
+        )
+        return rewards.cpu().numpy()
         
-    def compute_success(self,achieved_goal, desired_goal):
+    def compute_success(self, achieved_goal, desired_goal):
         success = self.env.success_check(
             qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype), 
             qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
         )
-        return success
-
+        return success.cpu().numpy()
+    
+    def compute_done(self, achieved_goal, desired_goal, infos):
+        success = self.env.success_check(
+            qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype), 
+            qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
+        )
+        done = success.cpu().numpy()
+        for b, info in enumerate(infos):
+            done[b] += info['collision']
+            done[b] += info['TimeLimit.truncated']
+            done[b] += info['stuck']
+        return done 
 
     def get_attr(self,attr_name,indices=None):
         indices = self._get_indices(indices) 
