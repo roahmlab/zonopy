@@ -27,7 +27,7 @@ class DictGymWrapper(GymWrapper):
             )
         )
     
-    def _flatten_obs(self, obs_dict, keys=None):
+    def _flatten_obs(self, obs_dict, keys=None,single_env=True):
         if keys is None:
             keys = self.keys
         ob_lst = []
@@ -36,11 +36,11 @@ class DictGymWrapper(GymWrapper):
                 ob_lst.append(obs_dict[key].numpy().astype(float).flatten())
         return np.concatenate(ob_lst)
 
-    def _create_obs_dict(self, obs):
+    def _create_obs_dict(self, obs, single_env=True):
         obs_dict = {
-            "observation": self._flatten_obs(obs),
-            "achieved_goal": self._flatten_obs(obs,self.acheived_state_key),
-            "desired_goal": self._flatten_obs(obs,self.goal_state_key),
+            "observation": self._flatten_obs(obs,single_env=single_env),
+            "achieved_goal": self._flatten_obs(obs,self.acheived_state_key,single_env=single_env),
+            "desired_goal": self._flatten_obs(obs,self.goal_state_key,single_env=single_env),
         }
         return obs_dict
 
@@ -50,7 +50,9 @@ class DictGymWrapper(GymWrapper):
 
     def step(self, action, *args, **kwargs):
         obs, reward, done, info = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), *args, **kwargs)
-        info['action_taken'] = action
+        info['action_taken'] = action 
+        if done:
+            info['terminal_observation'] = self._create_obs_dict(info['terminal_observation'])
         return self._create_obs_dict(obs), reward, done, dict_torch2np(info)
 
     def compute_reward(self, achieved_goal, desired_goal, info):
@@ -99,14 +101,17 @@ class ParallelDictGymWrapper(DictGymWrapper):
         self.obs_dim = flat_ob.shape[1]
         obs = self.observation_spec()
 
-    def _flatten_obs(self, obs_dict, keys=None):
-        if keys is None:
-            keys = self.keys
-        ob_lst = []
-        for key in keys:
-            if key in obs_dict:
-                ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
-        return np.hstack(ob_lst)
+    def _flatten_obs(self, obs_dict, keys=None, single_env=False):
+        if single_env:
+            super()._flatten_obs(obs_dict, keys=keys)
+        else:
+            if keys is None:
+                keys = self.keys
+            ob_lst = []
+            for key in keys:
+                if key in obs_dict:
+                    ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
+            return np.hstack(ob_lst)
 
     def step(self, action, *args, **kwargs):
         if len(args) > 0:
@@ -116,12 +121,14 @@ class ParallelDictGymWrapper(DictGymWrapper):
         ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
+            if dones[b]:
+                infos[b]['terminal_observation'] = self._create_obs_dict(infos[b]['terminal_observation'],single_env=True)
             for key in infos[b].keys():
                 if isinstance(infos[b][key],torch.Tensor):
                     infos[b][key] = infos[b][key].numpy().astype(float)
                 elif isinstance(infos[b][key],torch.Tensor) and isinstance(infos[b][key][0],torch.Tensor):
                     infos[b][key] = [el.numpy().astype(float) for el in infos[b][key]]
-        return self._create_obs_dict(ob_dicts), rewards.numpy(), dones.numpy(), infos
+        return self._create_obs_dict(ob_dicts,single_env=False), rewards.numpy(), dones.numpy(), infos
 
 
     def compute_reward(self, achieved_goal, desired_goal, infos):
