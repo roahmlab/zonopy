@@ -23,6 +23,9 @@ import time
 T_PLAN, T_FULL = 0.5, 1.0
 NUM_PROCESSES = 40
 
+EPS = 1e-6
+TOL = 1e-4
+
 def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
     M_obs = n_links * n_timesteps * int(n_obs_in_frs)
     M = M_obs+2*n_links+6*n_pos_lim
@@ -34,11 +37,15 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_fr
         lb = [-1]*n_links,
         ub = [1]*n_links,
         cl = [-1e20]*M,
-        cu = [-1e-6]*M,
+        cu = [-EPS]*M,
         )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
-    NLP.add_option('max_cpu_time', 0.2)
+    #NLP.add_option('max_cpu_time', 0.2)
+    NLP.add_option('max_iter',15)
+    #NLP.add_option('hessian_approximation','limited-memory')
+    NLP.add_option('tol', TOL)
+    NLP.add_option('linear_solver', 'ma27')
     k_opt, info = NLP.solve(ka_0)
 
     # NOTE: for training, dont care about fail-safe
@@ -54,7 +61,8 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_fr
 
 # batch
 
-def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
+def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False, gradient_step_sign = '-'):
+    assert gradient_step_sign == '-' or gradient_step_sign == '+'
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 3
     n_timesteps = 100
@@ -245,7 +253,7 @@ def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
             direction = grad_ouput[0]
             grad_input = torch.zeros_like(direction,dtype=dtype,device=device)
             # COMPUTE GRADIENT
-            tol = 1e-6
+            tol = 0.9*TOL
             # direct pass
             direct_pass = (ctx.flags == -1) + (ctx.flags == 1) # NOTE: (ctx.flags == -1)
             grad_input[direct_pass] = direction[direct_pass]
@@ -255,6 +263,8 @@ def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
             if n_batch > 0:
                 QP_EQ_CONS = []
                 QP_INEQ_CONS = []
+                qp_solve_ind= []
+
                 lambd = ctx.lambd[rts_success_pass].cpu().numpy()
                 for j,i in enumerate(rts_success_pass):
                     k_opt = lambd[j]
@@ -275,35 +285,56 @@ def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
                     mult_smooth = np.hstack((mult_smooth_cons1, mult_smooth_cons4, mult_smooth_cons5))
 
                     # compute smooth constraints
-                    smooth_cons1 = cons * (cons < -1e-6 - tol)
-                    smooth_cons4 = (- 1 - k_opt) * (- 1 - k_opt < -1e-6 - tol)
-                    smooth_cons5 = (k_opt - 1) * (k_opt - 1 < -1e-6 - tol)
+                    smooth_cons1 = cons * (cons < -EPS - tol)
+                    smooth_cons4 = (- 1 - k_opt) * (- 1 - k_opt <- tol)
+                    smooth_cons5 = (k_opt - 1) * (k_opt - 1 < - tol)
                     smooth_cons = np.hstack((smooth_cons1, smooth_cons4, smooth_cons5))
 
-                    active = (smooth_cons >= -1e-6 - tol)
+                    active = (smooth_cons >= -EPS - tol)
                     strongly_active = (mult_smooth > tol) * active
                     weakly_active = (mult_smooth <= tol) * active
 
-                    QP_EQ_CONS.append(qp_cons[strongly_active])
-                    QP_INEQ_CONS.append(qp_cons[weakly_active])
-
-                # reduced batch QP
-                # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
-                qp_size = n_batch * n_links
-                H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
-                f_d = sp.csr_matrix((-direction[rts_success_pass].cpu().flatten(), ([0] * qp_size, range(qp_size))))
-                qp = gp.Model("back_prop")
-                qp.Params.LogToConsole = 0
-                z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
-                qp.setObjective(z @ H @ z + f_d @ z, GRB.MINIMIZE)
-                qp_eq_cons = sp.csr_matrix(block_diag(*QP_EQ_CONS))
-                rhs_eq = np.zeros(qp_eq_cons.shape[0])
-                qp_ineq_cons = sp.csr_matrix(block_diag(*QP_INEQ_CONS))
-                rhs_ineq = -0 * np.ones(qp_ineq_cons.shape[0])
-                qp.addConstr(qp_eq_cons @ z == rhs_eq, name="eq")
-                qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
-                qp.optimize()
-                grad_input[rts_success_pass] = torch.tensor(z.X.reshape(n_batch, n_links),dtype=dtype,device=device)
+                    strong_qp_cons = qp_cons[strongly_active] 
+                    weak_qp_cons = qp_cons[weakly_active]
+                    if strongly_active.sum() < n_links or np.linalg.matrix_rank(strong_qp_cons) < n_links:
+                        QP_EQ_CONS.append(strong_qp_cons)
+                        QP_INEQ_CONS.append(weak_qp_cons)
+                        qp_solve_ind.append(int(i))
+                
+                n_qp = len(qp_solve_ind)
+                if n_qp > 0:
+                    # reduced batch QP
+                    # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
+                    qp_size = n_qp * n_links
+                    H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
+                    if gradient_step_sign == '-':
+                        d_qp = direction[rts_success_pass].cpu().flatten()
+                    else:
+                        d_qp = - direction[rts_success_pass].cpu().flatten()
+                    f_d = sp.csr_matrix((d_qp, ([0] * qp_size, range(qp_size))))
+                    qp = gp.Model("back_prop")
+                    qp.Params.LogToConsole = 0
+                    z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
+                    qp.setObjective(z @ H @ z + f_d @ z, GRB.MINIMIZE)
+                    qp_eq_cons = sp.csr_matrix(block_diag(*QP_EQ_CONS))
+                    rhs_eq = np.zeros(qp_eq_cons.shape[0])
+                    qp_ineq_cons = sp.csr_matrix(block_diag(*QP_INEQ_CONS))
+                    rhs_ineq = -0 * np.ones(qp_ineq_cons.shape[0])
+                    qp.addConstr(qp_eq_cons @ z == rhs_eq, name="eq")
+                    qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
+                    qp.optimize()
+                    try:
+                        if gradient_step_sign == '-':
+                            grad_input[qp_solve_ind] = - torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
+                        else:
+                            grad_input[qp_solve_ind] = torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
+                    except:
+                        import pickle
+                        dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rts_success_pass':rts_success_pass.cpu(),'direction':direction.cpu()}
+                        with open('gurobi_fail_data.pickle', 'wb') as handle:
+                            pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        print('Training is quit due to GUROBI.')
+                        exit()
 
                 # NOTE: for fail-safe, keep into zeros             
             return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device), None)

@@ -18,6 +18,8 @@ import time
 T_PLAN, T_FULL = 0.5, 1.0
 NUM_PROCESSES = 40
 
+EPS = 1e-6
+TOL = 1e-4
 
 def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat):
     M_obs = n_timesteps * n_links * n_obs
@@ -30,10 +32,15 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dime
         lb=[-1] * n_links,
         ub=[1] * n_links,
         cl=[-1e20] * M_obs + [-1e20] * 2 * n_links,
-        cu=[-1e-6] * M_obs + [-1e-6] * 2 * n_links,
+        cu=[-EPS] * M_obs + [-EPS] * 2 * n_links,
     )
     NLP.add_option('sb', 'yes')
     NLP.add_option('print_level', 0)
+    #NLP.add_option('max_cpu_time', 0.2)
+    NLP.add_option('max_iter',15)
+    #NLP.add_option('hessian_approximation','limited-memory')
+    NLP.add_option('tol', TOL)
+    NLP.add_option('linear_solver', 'ma27')
     k_opt, info = NLP.solve(ka_0)
 
     # NOTE: for training, dont care about fail-safe

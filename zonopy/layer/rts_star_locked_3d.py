@@ -48,7 +48,7 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
     NLP.add_option('max_iter',15)
     #NLP.add_option('hessian_approximation','limited-memory')
     NLP.add_option('tol', TOL)
-    #NLP.add_option('linear_solver', 'ma27')
+    NLP.add_option('linear_solver', 'ma27')
     k_opt, info = NLP.solve(ka_0)
 
 

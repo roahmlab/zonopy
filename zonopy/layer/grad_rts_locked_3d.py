@@ -118,7 +118,7 @@ def rot(q,joint_axes):
     rot_skew_sym = (w@joint_axes.to(dtype=dtype,device=device).T).transpose(0,-1)
     return torch.eye(3,dtype=dtype,device=device) + torch.sin(q)*rot_skew_sym + (1-torch.cos(q))*rot_skew_sym@rot_skew_sym
 
-def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, locked_idx, locked_qpos, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False):
+def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, locked_idx, locked_qpos, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False, gradient_step_sign = '-'):
     '''
     global T_FO, T_slc, T_Ab, T_safety,T_cpu, T_NLP
     T_FO, T_slc, T_Ab, T_safety, T_cpu = {}, {}, {}, {}, {}
@@ -126,7 +126,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
     global count
     count = []
     '''
-
+    assert gradient_step_sign == '-' or gradient_step_sign == '+'
     jrs_tensor = preload_batch_JRS_trig(dtype=dtype, device=device)
     dimension = 3
     n_timesteps = jrs_tensor.shape[1]
@@ -180,7 +180,6 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                 obstacle_center = observation_observation[:, obs_dim -6 * n_obs: obs_dim -3 * n_obs].reshape(n_batches,n_obs,1,dimension)
                 obstacle_generators = torch.diag_embed(observation_observation[:, obs_dim -3 * n_obs:].reshape(n_batches,n_obs,dimension))
 
-
             else:
                 ctx.obs_type = 'tensor'
 
@@ -188,7 +187,6 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                 
                 # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
                 observation = observation.to(dtype=dtype,device=device)
-                
 
                 n_batches, obs_dim = observation.shape
                 qpos = observation[:, :dof]
@@ -532,7 +530,11 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
                     qp_size = n_qp * dof
                     H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
-                    f_d = sp.csr_matrix((-direction[qp_solve_ind].cpu().flatten(), ([0] * qp_size, range(qp_size))))
+                    if gradient_step_sign == '-':
+                        d_qp = direction[rts_success_pass].cpu().flatten()
+                    else:
+                        d_qp = - direction[rts_success_pass].cpu().flatten()
+                    f_d = sp.csr_matrix((d_qp, ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
                     qp.Params.LogToConsole = 0
                     z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
@@ -545,10 +547,13 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
                     qp.optimize()
                     try:
-                        grad_input[qp_solve_ind] = torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
+                        if gradient_step_sign == '-':
+                            grad_input[qp_solve_ind] = - torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
+                        else:
+                            grad_input[qp_solve_ind] = torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
                     except:
                         import pickle
-                        dump = {'flags':ctx.flags, 'lambd':ctx.lambd, 'infos':ctx.infos, 'rts_success_pass':rts_success_pass,'direction':direction}
+                        dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rts_success_pass':rts_success_pass.cpu(),'direction':direction.cpu()}
                         with open('gurobi_fail_data.pickle', 'wb') as handle:
                             pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
                         print('Training is quit due to GUROBI.')
