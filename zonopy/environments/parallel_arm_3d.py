@@ -30,7 +30,7 @@ class Parallel_Arm_3D:
             hyp_effort = 1.0, # hyperpara
             hyp_success = 150,
             hyp_collision = 2500,
-            hyp_action_adjust = 1,
+            hyp_action_adjust = 0.3,
             hyp_fail_safe = 1,
             hyp_stuck =2000,
             hyp_timeout = 0,
@@ -344,12 +344,13 @@ class Parallel_Arm_3D:
 
 
     def step(self,ka,flag=None):
+        # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
         ka = ka.detach()
         self.ka = ka.clamp((-self.PI-self.qvel)/T_PLAN,(self.PI-self.qvel)/T_PLAN) # velocity clamp
         self.joint_limit_check()
 
         if flag is None:
-            self.step_flag = torch.zeros(self.n_envs,dtype=int,device=self.device)
+            self.step_flag = - torch.ones(self.n_envs,dtype=int,device=self.device)
         else:
             self.step_flag = flag.to(dtype=int,device=self.device).detach()
         self.safe = (self.step_flag <= 0) + self.exceed_joint_limit
@@ -409,8 +410,8 @@ class Parallel_Arm_3D:
             info = {
                 'is_success':bool(self.success[idx]),
                 'collision':bool(self.collision[idx]),
-                'safe_flag':bool(self.safe[idx]),
                 'step_flag':int(self.step_flag[idx]),
+                'safe_flag':bool(self.safe[idx]),
                 'stuck': bool(self.stuck[idx])
                 }
             if self.collision[idx]:
@@ -438,12 +439,13 @@ class Parallel_Arm_3D:
             observation['obstacle_size'] = torch.cat([self.obs_zonos[o].generators[idx,[0,1,2],[0,1,2]].unsqueeze(-2) for o in range(self.n_obs)],-2)
         return observation
 
-    def get_reward(self, action, qpos=None, qgoal=None, collision=None, safe=None, stuck=None, timeout=None):
+    def get_reward(self, action, qpos=None, qgoal=None, collision=None, step_flag = None, safe=None,  stuck=None, timeout=None):
         # Get the position and goal then calculate distance to goal
         if qpos is None:
             internal = True
             # deliver termination variable
             collision = self.collision 
+            action_adjusted = (self.step_flag == 0).to(dtype=self.dtype)
             safe = self.safe.to(dtype=self.dtype)
             self.stuck = self.fail_safe_count >= self.stuck_threshold
             stuck = self.stuck.to(dtype=self.dtype)
@@ -458,6 +460,7 @@ class Parallel_Arm_3D:
             
         else: 
             internal = False
+            action_adjusted = (step_flag == 0).to(dtype=self.dtype)
             goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal,internal=internal),dim=-1)
             success = (goal_dist < self.goal_threshold).to(dtype=self.dtype)*(1 - collision) 
         
@@ -473,7 +476,7 @@ class Parallel_Arm_3D:
         # Collision penalty
         reward -= self.hyp_collision * collision
         # Action adjustment peanlty 
-
+        reward -= self.hyp_action_adjust * action_adjusted
         # Fail-safe penalty
         reward -= self.hyp_fail_safe * (1 - safe)
         # Stuck penalty

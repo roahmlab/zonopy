@@ -27,7 +27,7 @@ class Arm_3D:
             hyp_effort = 1.0, # hyperpara
             hyp_success = 150,
             hyp_collision = 2500,
-            hyp_action_adjust = 1,
+            hyp_action_adjust = 0.3,
             hyp_fail_safe = 1,
             hyp_stuck =2000,
             hyp_timeout = 0,
@@ -270,8 +270,8 @@ class Arm_3D:
 
         return self.get_observations()
 
-    def step(self,ka,flag=0):
-
+    def step(self,ka,flag=-1):
+        # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
         ka = ka.detach()
         self.ka = ka.clamp((-torch.pi-self.qvel)/T_PLAN,(torch.pi-self.qvel)/T_PLAN) # velocity clamp
         self.joint_limit_check()
@@ -347,7 +347,7 @@ class Arm_3D:
 
         if self.done:
             info["terminal_observation"] = self.get_observations()
-            
+
         info["TimeLimit.truncated"] = self.timeout
         info['episode'] = {"r":self.reward_com,"l":self._elapsed_steps}
         return info
@@ -359,12 +359,13 @@ class Arm_3D:
             observation['obstacle_size'] = torch.vstack([torch.diag(self.obs_zonos[o].generators) for o in range(self.n_obs)])
         return observation
     #ext_kwargs
-    def get_reward(self, action, qpos=None, qgoal=None, collision=None, safe=None, stuck=None, timeout=None):
+    def get_reward(self, action, qpos=None, qgoal=None, collision=None, step_flag = None, safe=None, stuck=None, timeout=None):
         # Get the position and goal then calculate distance to goal
         if qpos is None:
             internal = True
             # deliver termination variable
             collision = self.collision 
+            action_adjusted = self.step_flag == 0
             safe = self.safe
             stuck = self.stuck = self.fail_safe_count >= self.stuck_threshold
             goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(self.qpos-self.qgoal,internal=internal),dim=-1)
@@ -376,6 +377,7 @@ class Arm_3D:
             
         else: 
             internal = False
+            action_adjusted = step_flag == 0
             goal_dist = torch.linalg.norm(self.wrap_cont_joint_to_pi(qpos-qgoal,internal=internal),dim=-1)
             success = bool(goal_dist < self.goal_threshold) and (~collision) 
                 
@@ -391,7 +393,7 @@ class Arm_3D:
         # Collision penalty
         reward -= self.hyp_collision * collision
         # Action adjustment peanlty 
-
+        reward -= self.hyp_action_adjust * action_adjusted
         # Fail-safe penalty
         reward -= self.hyp_fail_safe * (1 - safe)
         # Stuck penalty

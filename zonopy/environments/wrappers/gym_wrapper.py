@@ -57,7 +57,7 @@ class GymWrapper(Wrapper, Env):
         return self._flatten_obs(ob_dict)
 
     def step(self, action, *args, **kwargs):
-        ob_dict, reward, done, info = self.env.step(torch.as_tensor(action,dtype=self.env.dtype), *args, **kwargs)
+        ob_dict, reward, done, info = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), *args, **kwargs)
         info['action_taken'] = action
         return self._flatten_obs(ob_dict), reward, done, dict_torch2np(info)
 
@@ -115,7 +115,7 @@ class ParallelGymWrapper(GymWrapper):
             flag = torch.tensor(args[0], dtype=int,device=self.env.device)
         else:
             flag = None
-        ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,dtype=self.env.dtype), flag)
+        ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
             for key in infos[b].keys():
@@ -125,13 +125,14 @@ class ParallelGymWrapper(GymWrapper):
                     infos[b][key] = [el.numpy().astype(float) for el in infos[b][key]]
         return self._flatten_obs(ob_dicts), rewards.numpy(), dones.numpy(), infos
 
+    '''
     def compute_reward(self, achieved_goal, desired_goal, infos):
         action_taken = []
         for info in infos:
             action_taken.append(info['action_taken'])
-        action_taken = torch.as_tensor(np.vstack(action_taken),dtype=self.env.dtype)
-        return self.env.get_reward(action = torch.as_tensor(info['action_taken'],dtype=self.env.dtype)).numpy()
-
+        action_taken = torch.as_tensor(np.vstack(action_taken),device=self.env.device,dtype=self.env.dtype)
+        return self.env.get_reward(action = torch.as_tensor(info['action_taken'],device=self.env.device,dtype=self.env.dtype)).numpy()
+    '''
     
     def get_attr(self,attr_name,indices=None):
         indices = self._get_indices(indices) 
@@ -162,7 +163,7 @@ class ParallelGymWrapper(GymWrapper):
 
     def _get_indices(self,indices):
         if indices is None:
-            indices - range(self.num_envs)
+            indices = range(self.num_envs)
         elif isinstance(indices, int):
             indices = [indices] 
         return indices

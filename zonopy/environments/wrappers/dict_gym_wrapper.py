@@ -49,7 +49,7 @@ class DictGymWrapper(GymWrapper):
         return self._create_obs_dict(obs)
 
     def step(self, action, *args, **kwargs):
-        obs, reward, done, info = self.env.step(torch.as_tensor(action,dtype=self.env.dtype), *args, **kwargs)
+        obs, reward, done, info = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), *args, **kwargs)
         info['action_taken'] = action
         return self._create_obs_dict(obs), reward, done, dict_torch2np(info)
 
@@ -59,9 +59,13 @@ class DictGymWrapper(GymWrapper):
         for i,info_dict in enumerate(info):
             reward.append(
                 float(self.env.get_reward(action = torch.as_tensor(info_dict['action_taken'],dtype=self.env.dtype),
-                                        qpos = torch.as_tensor(achieved_goal[i],dtype=self.env.dtype),
-                                        qgoal = torch.as_tensor(desired_goal[i],dtype=self.env.dtype),
+                                        qpos = torch.as_tensor(achieved_goal[i],device=self.env.device,dtype=self.env.dtype),
+                                        qgoal = torch.as_tensor(desired_goal[i],device=self.env.device,dtype=self.env.dtype),
                                         collision = info_dict['collision'],
+                                        step_flag = info_dict['step_flag'],
+                                        safe_flag = info_dict['safe_flag'],
+                                        stuck = info_dict['stuck'],
+                                        timeout = info_dict['TimeLimit.truncated'],
                                         )
                                 )
             )
@@ -109,7 +113,7 @@ class ParallelDictGymWrapper(DictGymWrapper):
             flag = torch.tensor(args[0], dtype=int,device=self.env.device)
         else:
             flag = torch.zeros(self.num_envs,dtype=int,device=self.env.device)
-        ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,dtype=self.env.dtype), flag)
+        ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
             for key in infos[b].keys():
@@ -123,27 +127,31 @@ class ParallelDictGymWrapper(DictGymWrapper):
     def compute_reward(self, achieved_goal, desired_goal, infos):
         action_taken = []
         collision = []
+        step_flag = []
         safe_flag = []
         stuck = []
         timeout = []
         for info in infos:
             action_taken.append(info['action_taken'])
             collision.append(info['collision'])
+            step_flag.append(info['step_flag'])
             safe_flag.append(info['safe_flag'])
             stuck.append(info['stuck'])
             timeout.append(info['TimeLimit.truncated'])
 
-        action_taken = torch.as_tensor(np.vstack(action_taken),dtype=self.env.dtype)
-        collision = torch.as_tensor(np.hstack(collision),dtype=self.env.dtype)
-        safe_flag = torch.as_tensor(np.hstack(safe_flag),dtype=self.env.dtype)
-        stuck = torch.as_tensor(np.hstack(stuck),dtype=self.env.dtype)
-        timeout = torch.as_tensor(np.hstack(timeout),dtype=self.env.dtype)
+        action_taken = torch.as_tensor(np.vstack(action_taken),device=self.env.device,dtype=self.env.dtype)
+        collision = torch.as_tensor(np.hstack(collision),device=self.env.device,dtype=self.env.dtype)
+        step_flag = torch.as_tensor(np.hstack(step_flag),device=self.env.device,dtype=self.env.dtype)
+        safe_flag = torch.as_tensor(np.hstack(safe_flag),device=self.env.device,dtype=self.env.dtype)
+        stuck = torch.as_tensor(np.hstack(stuck),device=self.env.device,dtype=self.env.dtype)
+        timeout = torch.as_tensor(np.hstack(timeout),device=self.env.device,dtype=self.env.dtype)
 
         rewards = self.env.get_reward(
             action = action_taken,
-            qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype),
-            qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
+            qpos = torch.as_tensor(achieved_goal,device=self.env.device,dtype=self.env.dtype),
+            qgoal = torch.as_tensor(desired_goal,device=self.env.device,dtype=self.env.dtype),
             collision = collision,
+            step_flag = step_flag,
             safe = safe_flag,
             stuck = stuck,
             timeout = timeout,
@@ -152,15 +160,15 @@ class ParallelDictGymWrapper(DictGymWrapper):
         
     def compute_success(self, achieved_goal, desired_goal):
         success = self.env.success_check(
-            qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype), 
-            qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
+            qpos = torch.as_tensor(achieved_goal,device=self.env.device,dtype=self.env.dtype), 
+            qgoal = torch.as_tensor(desired_goal,device=self.env.device,dtype=self.env.dtype),
         )
         return success.cpu().numpy()
     
     def compute_done(self, achieved_goal, desired_goal, infos):
         success = self.env.success_check(
-            qpos = torch.as_tensor(achieved_goal,dtype=self.env.dtype), 
-            qgoal = torch.as_tensor(desired_goal,dtype=self.env.dtype),
+            qpos = torch.as_tensor(achieved_goal,device=self.env.device,dtype=self.env.dtype), 
+            qgoal = torch.as_tensor(desired_goal,device=self.env.device,dtype=self.env.dtype),
         )
         done = success.cpu().numpy()
         for b, info in enumerate(infos):
