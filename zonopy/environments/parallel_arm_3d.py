@@ -422,10 +422,8 @@ class Parallel_Arm_3D:
                     'qgoal':self.qgoal[idx]
                 }
                 info['collision_info'] = collision_info
-            '''
             if self.done[idx]:
                 info["terminal_observation"] = self.get_observations(idx)
-            '''
             info["TimeLimit.truncated"] = self.timeout[idx]
             info['episode'] = {"r":float(self.reward_com[idx]),"l":int(self._elapsed_steps[idx])}
             infos.append(info)
