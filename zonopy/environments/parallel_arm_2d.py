@@ -470,7 +470,7 @@ class Parallel_Arm_2D:
                         buff = torch.cat(((link.center - self.obs_zonos[o].center).unsqueeze(-2),link.generators,self.obs_zonos[o].generators.unsqueeze(0).repeat(time_steps,1,1,1)),-2)
                         _,b = zp.batchZonotope(buff).project([0,1]).polytope()
                         unsafe += (b.min(dim=-1)[0]>1e-6).any(dim=0)
-                
+       
                         
             else:
                 time_steps = 1

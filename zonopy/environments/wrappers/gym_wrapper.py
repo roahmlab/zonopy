@@ -59,6 +59,8 @@ class GymWrapper(Wrapper, Env):
     def step(self, action, *args, **kwargs):
         ob_dict, reward, done, info = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), *args, **kwargs)
         info['action_taken'] = action
+        if done:
+            info['terminal_observation'] = self._flatten_obs(info['terminal_observation'])
         return self._flatten_obs(ob_dict), reward, done, dict_torch2np(info)
 
     def seed(self, seed=None):
@@ -96,12 +98,15 @@ class ParallelGymWrapper(GymWrapper):
         low = -high
         self.observation_space = spaces.Box(low=low, high=high)
 
-    def _flatten_obs(self, obs_dict):
-        ob_lst = []
-        for key in self.keys:
-            if key in obs_dict:
-                ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
-        return np.hstack(ob_lst)
+    def _flatten_obs(self, obs_dict,single_env=False):
+        if single_env:
+            super()._flatten_obs(obs_dict)
+        else:
+            ob_lst = []
+            for key in self.keys:
+                if key in obs_dict:
+                    ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
+            return np.hstack(ob_lst)
     '''
     def step(self, action, flag=None):
         if isinstance(flag,np.ndarray):
@@ -118,6 +123,8 @@ class ParallelGymWrapper(GymWrapper):
         ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
+            if dones[b]:
+                infos[b]['terminal_observation'] = self._flatten_obs(infos[b]['terminal_observation'],single_env=True)
             for key in infos[b].keys():
                 if isinstance(infos[b][key],torch.Tensor):
                     infos[b][key] = infos[b][key].numpy().astype(float)
