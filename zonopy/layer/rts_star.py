@@ -21,10 +21,10 @@ NUM_PROCESSES = 40
 EPS = 1e-6
 TOL = 1e-4
 
-def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs, dimension, g_ka, ka_0, lambd_hat):
-    M_obs = n_timesteps * n_links * n_obs
+def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_frs, dimension, g_ka, ka_0, lambd_hat):
+    M_obs = n_timesteps * n_links * int(n_obs_in_frs)
     M = M_obs + 2 * n_links
-    nlp_obj = NlpSetup2D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,n_obs,dimension,g_ka)
+    nlp_obj = NlpSetup2D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,int(n_obs_in_frs),dimension,g_ka)
     NLP = cyipopt.Problem(
         n=n_links,
         m=M,
@@ -77,34 +77,47 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
             n_batches = observation.shape[0]
             qpos = observation[:, :n_links]
             qvel = observation[:, n_links:2 * n_links]
-            obstacle_pos = observation[:, -4 * n_obs:-2 * n_obs]
-            obstacle_size = observation[:, -2 * n_obs:]
+            
+            # MODIFICATION start
+            obstacle_center = observation[:, -4 * n_obs:-2 * n_obs].reshape(n_batches,n_obs,1,dimension)
+            obstacle_generators = torch.diag_embed(observation[:, -2 * n_obs:].reshape(n_batches,n_obs,dimension))
+            obs_Z = torch.cat((obstacle_center,obstacle_generators),-2).unsqueeze(-3).repeat(1,1,n_timesteps,1,1)
+            # MODIFICATION end
+
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
 
             _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
             batch_FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
 
-            As = np.zeros((n_batches,n_links,n_obs),dtype=object)
-            bs = np.zeros((n_batches,n_links,n_obs),dtype=object)
+            As = np.zeros((n_batches,n_links),dtype=object)
+            bs = np.zeros((n_batches,n_links),dtype=object)
             FO_links_nlp = np.zeros((n_batches,n_links),dtype=object)
             FO_links = np.zeros((n_links,),dtype=object)
             lambda_to_slc = lambd.reshape(n_batches, 1, n_links).repeat(1, n_timesteps, 1)
 
             # unsafe_flag = torch.zeros(n_batches)
             unsafe_flag = (abs(qvel + lambd * g_ka * T_PLAN) > PI_vel).any(-1)
+            obs_in_reach_idx = torch.zeros(n_batches,n_obs, dtype=bool,device=device)
             lambd0 = lambd.clamp((-PI_vel-qvel)/(g_ka *T_PLAN),(PI_vel-qvel)/(g_ka *T_PLAN)).cpu().numpy()
+            
             for j in range(n_links):
                 FO_link_temp = batch_FO_link[j].project([0, 1])
-                c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).unsqueeze(-1)  # FOR, safety check
-                for o in range(n_obs):
-                    obs_Z = torch.cat((obstacle_pos[:, 2 * o:2 * (o + 1)].unsqueeze(-2),torch.diag_embed(obstacle_size[:, 2 * o:2 * (o + 1)])), -2).unsqueeze(-3).repeat(1, n_timesteps, 1, 1)
-                    A_temp, b_temp = batchZonotope(torch.cat((obs_Z, FO_link_temp.Grest),-2)).polytope()  # A: n_timesteps,*,dimension
-                    h_obs = ((A_temp @ c_k).squeeze(-1) - b_temp).nan_to_num(-torch.inf)
-                    unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1)  # NOTE: this might not work on gpu FOR, safety check
-                    As[:,j,o] = list(A_temp.cpu().numpy())
-                    bs[:,j,o] = list(b_temp.cpu().numpy())
+                c_k = FO_link_temp.center_slice_all_dep(lambda_to_slc).reshape(n_batches,1,n_timesteps,dimension,1)  # FOR, safety check
+                obs_buff_Grest = zp.batchZonotope(torch.cat((obs_Z,FO_link_temp.Grest.unsqueeze(1).repeat(1,n_obs,1,1,1)),-2))
+                A_Grest, b_Grest  = obs_buff_Grest.polytope()
+                h_obs = ((A_Grest @ c_k).squeeze(-1) - b_Grest).nan_to_num(-torch.inf)
+                unsafe_flag += (torch.max(h_obs, -1)[0] < 1e-6).any(-1).any(1)  # NOTE: this might not work on gpu FOR, safety check
+                                
+                obs_buff = obs_buff_Grest - zp.batchZonotope(FO_link_temp.Z[FO_link_temp.batch_idx_all+(slice(FO_link_temp.n_dep_gens+1),)].unsqueeze(1).repeat(1,n_obs,1,1,1))
+                _, b_obs = obs_buff.reduce(6).polytope()
+
+                obs_in_reach_idx += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
+
+                As[-1,j] = A_Grest.cpu().numpy()
+                bs[-1,j] = b_Grest.cpu().numpy()
                 FO_links_nlp[:,j] = [fo for fo in FO_link_temp.cpu()]
                 FO_links[j] = FO_link_temp
+
             #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
             rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
             n_problems = len(rts_pass_indices)
@@ -118,7 +131,16 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 qgoal_np = qgoal.cpu().numpy()
                 lambd_np = lambd.cpu().numpy()
 
+                obs_in_reach_idx_list = obs_in_reach_idx.tolist()
+                N_obs_in_frs = obs_in_reach_idx.sum(-1).cpu().numpy()
+
                 if multi_process:
+                    for idx in rts_pass_indices:
+                        obs_idx = obs_in_reach_idx_list[idx]
+                        for j in range(n_links):
+                            As[idx,j] = As[-1,j][idx,obs_idx]
+                            bs[idx,j] = bs[-1,j][idx,obs_idx]
+
                     with Pool(processes=min(num_processes, n_problems)) as pool:
                         results = pool.starmap(
                             rts_pass,
@@ -131,7 +153,7 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                                 qgoal_np[rts_pass_indices],
                                 [n_timesteps] * n_problems,
                                 [n_links] * n_problems,
-                                [n_obs] * n_problems,
+                                N_obs_in_frs,
                                 [dimension] * n_problems,
                                 [g_ka] * n_problems,
                                 [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
@@ -149,7 +171,24 @@ def gen_RTS_star_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                 else:
                     rts_lambd_opts, rts_flags = [], []                    
                     for idx in rts_pass_indices:
-                        rts_lambd_opt, rts_flag, info = rts_pass(As[idx],bs[idx],FO_links_nlp[idx],qpos_np[idx],qvel_np[idx],qgoal_np[idx],n_timesteps,n_links,n_obs,dimension,g_ka,lambd0[idx],lambd_np[idx])
+                        obs_idx = obs_in_reach_idx_list[idx]
+                        for j in range(n_links):
+                            As[idx,j] = As[-1,j][idx,obs_idx]
+                            bs[idx,j] = bs[-1,j][idx,obs_idx]
+
+                        rts_lambd_opt, rts_flag, info = rts_pass(
+                                                                As[idx],
+                                                                bs[idx],
+                                                                FO_links_nlp[idx],
+                                                                qpos_np[idx],
+                                                                qvel_np[idx],
+                                                                qgoal_np[idx],
+                                                                n_timesteps,
+                                                                n_links,
+                                                                N_obs_in_frs[idx],
+                                                                dimension,
+                                                                g_ka,lambd0[idx],
+                                                                lambd_np[idx])
                         infos[idx] = info
                         rts_lambd_opts.append(rts_lambd_opt)
                         rts_flags.append(rts_flag)
