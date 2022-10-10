@@ -296,6 +296,11 @@ def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
 
                     strong_qp_cons = qp_cons[strongly_active] 
                     weak_qp_cons = qp_cons[weakly_active]
+
+                    # normalize constraint for numerical stability
+                    strong_qp_cons = np.nan_to_num(strong_qp_cons/np.linalg.norm(strong_qp_cons,axis=-1,keepdims=True))
+                    weak_qp_cons = np.nan_to_num(weak_qp_cons/np.linalg.norm(weak_qp_cons,axis=-1,keepdims=True))
+                    
                     if strongly_active.sum() < n_links or np.linalg.matrix_rank(strong_qp_cons) < n_links:
                         QP_EQ_CONS.append(strong_qp_cons)
                         QP_INEQ_CONS.append(weak_qp_cons)
