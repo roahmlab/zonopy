@@ -100,7 +100,7 @@ class ParallelGymWrapper(GymWrapper):
 
     def _flatten_obs(self, obs_dict,single_env=False):
         if single_env:
-            super()._flatten_obs(obs_dict)
+            return super(ParallelGymWrapper,self)._flatten_obs(obs_dict)
         else:
             ob_lst = []
             for key in self.keys:

@@ -103,7 +103,7 @@ class ParallelDictGymWrapper(DictGymWrapper):
 
     def _flatten_obs(self, obs_dict, keys=None, single_env=False):
         if single_env:
-            super()._flatten_obs(obs_dict, keys=keys)
+            return super(ParallelDictGymWrapper,self)._flatten_obs(obs_dict, keys=keys)
         else:
             if keys is None:
                 keys = self.keys
@@ -112,6 +112,10 @@ class ParallelDictGymWrapper(DictGymWrapper):
                 if key in obs_dict:
                     ob_lst.append(obs_dict[key].numpy().astype(float).reshape(self.n_envs,-1))
             return np.hstack(ob_lst)
+    
+    def reset(self):
+        obs = self.env.reset()
+        return self._create_obs_dict(obs,single_env=False)
 
     def step(self, action, *args, **kwargs):
         if len(args) > 0:
