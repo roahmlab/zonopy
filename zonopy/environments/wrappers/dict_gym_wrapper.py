@@ -208,7 +208,7 @@ class ParallelDictGymWrapper(DictGymWrapper):
 
     def env_method(self,method_name,*method_args,indices=None,**method_kwargs):
         indices = self._get_indices(indices) 
-        if method_name == 'compute_reward' or method_name == 'compute_done':
+        if method_name == 'compute_reward' or method_name == 'compute_done' or method_name == 'compute_success':
             output = getattr(self,method_name)(*method_args, **method_kwargs)
         else:
             output = getattr(self.env,method_name)(*method_args, **method_kwargs)

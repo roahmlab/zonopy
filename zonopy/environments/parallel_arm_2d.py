@@ -25,7 +25,7 @@ class Parallel_Arm_2D:
             check_collision_FO = False, # flag for whether check collision for FO rendering
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.05, # goal threshold
-            hyp_step = 0.3
+            hyp_step = 0.3,
             hyp_dist_to_goal = 0.3,
             hyp_effort = 0.1, # hyperpara
             hyp_success = 50,
