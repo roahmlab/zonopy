@@ -26,13 +26,14 @@ class Parallel_Arm_3D:
             check_joint_limit = True,
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.1, # goal threshold
-            hyp_dist_to_goal = 1.0,
-            hyp_effort = 1.0, # hyperpara
-            hyp_success = 150,
-            hyp_collision = 2500,
+            hyp_step = 0.3,
+            hyp_dist_to_goal = 0.3,
+            hyp_effort = 0.1, # hyperpara
+            hyp_success = 50,
+            hyp_collision = 50,
             hyp_action_adjust = 0.3,
             hyp_fail_safe = 1,
-            hyp_stuck =2000,
+            hyp_stuck =50,
             hyp_timeout = 0,
             stuck_threshold = None,
             reward_shaping=True,
@@ -110,6 +111,7 @@ class Parallel_Arm_3D:
         self.collision_threshold = collision_threshold
         
         self.goal_threshold = goal_threshold
+        self.hyp_step = hyp_step
         self.hyp_dist_to_goal = hyp_dist_to_goal
         self.hyp_effort = hyp_effort
         self.hyp_success = hyp_success
@@ -465,6 +467,8 @@ class Parallel_Arm_3D:
         reward = 0.0
         # Reward shaping with dense reward
         if self.reward_shaping:
+            # Step penalty 
+            reward -= self.hyp_step
             # reward for position term
             reward -= self.hyp_dist_to_goal * goal_dist
             # Reward for effort
@@ -751,21 +755,25 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
             check_collision_FO = False, # flag for whether check collision for FO rendering
+            check_joint_limit = True,
             collision_threshold = 1e-6, # collision threshold
-            goal_threshold = 0.05, # goal threshold
-            hyp_effort = 1.0, # hyperpara
-            hyp_dist_to_goal = 1.0,
-            hyp_collision = 2500,
+            goal_threshold = 0.1, # goal threshold
+            hyp_step = 0.3,
+            hyp_dist_to_goal = 0.3,
+            hyp_effort = 0.1, # hyperpara
             hyp_success = 50,
+            hyp_collision = 50,
+            hyp_action_adjust = 0.3,
             hyp_fail_safe = 1,
-            hyp_stuck =2000,
+            hyp_stuck =50,
+            hyp_timeout = 0,
             stuck_threshold = None,
             reward_shaping=True,
             gamma = 0.99, # discount factor on reward
             max_episode_steps = 300,
             n_plots = None,
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
-            FO_render_freq = 0,
+            FO_render_freq = 10,
             ticks = False,
             scale = 1,
             max_combs = 200,
@@ -783,14 +791,18 @@ class Parallel_Locked_Arm_3D(Parallel_Arm_3D):
             interpolate = interpolate, # flag for interpolation
             check_collision = check_collision, # flag for whehter check collision
             check_collision_FO = check_collision_FO, # flag for whether check collision for FO rendering
+            check_joint_limit = check_joint_limit,
             collision_threshold = collision_threshold, # collision threshold
             goal_threshold = goal_threshold, # goal threshold
-            hyp_effort = hyp_effort, # hyperpara
+            hyp_step = hyp_step,
             hyp_dist_to_goal = hyp_dist_to_goal,
-            hyp_collision = hyp_collision,
+            hyp_effort = hyp_effort,
             hyp_success = hyp_success,
+            hyp_collision = hyp_collision,
+            hyp_action_adjust = hyp_action_adjust,
             hyp_fail_safe = hyp_fail_safe,
             hyp_stuck = hyp_stuck,
+            hyp_timeout = hyp_timeout,
             stuck_threshold = stuck_threshold,
             reward_shaping=reward_shaping,
             gamma = gamma, # discount factor on reward

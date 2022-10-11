@@ -22,13 +22,14 @@ class Arm_2D:
             check_collision_FO = False, # flag for whether check collision for FO rendering
             collision_threshold = 1e-6, # collision threshold
             goal_threshold = 0.05, # goal threshold
-            hyp_dist_to_goal = 1.0,
-            hyp_effort = 1.0, # hyperpara
+            hyp_step = 0.3,
+            hyp_dist_to_goal = 0.3,
+            hyp_effort = 0.1, # hyperpara
             hyp_success = 50,
-            hyp_collision = 300,
+            hyp_collision = 50,
             hyp_action_adjust = 0.3,
             hyp_fail_safe = 1,
-            hyp_stuck = 250,
+            hyp_stuck = 50,
             hyp_timeout = 0,
             stuck_threshold = None,
             reward_shaping=True,
@@ -76,6 +77,7 @@ class Arm_2D:
         self.collision_threshold = collision_threshold
         
         self.goal_threshold = goal_threshold
+        self.hyp_step = hyp_step
         self.hyp_dist_to_goal = hyp_dist_to_goal
         self.hyp_effort = hyp_effort
         self.hyp_success = hyp_success
@@ -346,6 +348,8 @@ class Arm_2D:
         reward = 0.0
         # Reward shaing with dense reward
         if self.reward_shaping:
+            # Step penalty 
+            reward -= self.hyp_step
             # Goal-distance penalty
             reward -= self.hyp_dist_to_goal * goal_dist
             # Effort penalty
