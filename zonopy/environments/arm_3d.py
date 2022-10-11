@@ -754,7 +754,7 @@ class Locked_Arm_3D(Arm_3D):
 
         return self.get_observations()
 
-    def step(self,ka,flag=0):
+    def step(self,ka,flag=-1):
 
         ka_all = torch.zeros(self.n_links,dtype=self.dtype,device=self.device)
         ka_all[self.unlocked_idx] = ka

@@ -121,7 +121,7 @@ class ParallelDictGymWrapper(DictGymWrapper):
         if len(args) > 0:
             flag = torch.tensor(args[0], dtype=int,device=self.env.device)
         else:
-            flag = torch.zeros(self.num_envs,dtype=int,device=self.env.device)
+            flag = - torch.ones(self.num_envs,dtype=int,device=self.env.device)
         ob_dicts, rewards, dones, infos = self.env.step(torch.as_tensor(action,device=self.env.device,dtype=self.env.dtype), flag)
         for b in range(self.n_envs):
             infos[b]['action_taken'] = action[b]
