@@ -283,9 +283,9 @@ def gen_grad_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_pr
                     qp_size = n_qp * n_links
                     H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
                     if gradient_step_sign == '-':
-                        d_qp = direction[rts_success_pass].cpu().flatten()
+                        d_qp = direction[qp_solve_ind].cpu().flatten()
                     else:
-                        d_qp = - direction[rts_success_pass].cpu().flatten()
+                        d_qp = - direction[qp_solve_ind].cpu().flatten()
                     f_d = sp.csr_matrix((d_qp, ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
                     qp.Params.LogToConsole = 0
