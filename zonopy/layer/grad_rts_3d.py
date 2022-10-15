@@ -313,10 +313,11 @@ def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
                     qp_size = n_qp * n_links
                     H = 0.5 * sp.csr_matrix(([1.] * qp_size, (range(qp_size), range(qp_size))))
                     if gradient_step_sign == '-':
-                        d_qp = direction[qp_solve_ind].cpu().flatten()
+                        f_d_unscale = direction[qp_solve_ind].cpu().numpy().flatten()
                     else:
-                        d_qp = - direction[qp_solve_ind].cpu().flatten()
-                    f_d = sp.csr_matrix((d_qp, ([0] * qp_size, range(qp_size))))
+                        f_d_unscale = - direction[qp_solve_ind].cpu().numpy().flatten()
+                    scale_factor_f_d = abs(f_d_unscale).min() # scale f_d for numerical stability of Gurobi
+                    f_d = sp.csr_matrix((f_d_unscale/scale_factor_f_d, ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
                     qp.Params.LogToConsole = 0
                     z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
@@ -330,9 +331,9 @@ def gen_grad_RTS_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
                     qp.optimize()
                     try:
                         if gradient_step_sign == '-':
-                            grad_input[qp_solve_ind] = - torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
+                            grad_input[qp_solve_ind] = - scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
                         else:
-                            grad_input[qp_solve_ind] = torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
+                            grad_input[qp_solve_ind] = scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
                     except:
                         import pickle
                         dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rts_success_pass':rts_success_pass.cpu(),'direction':direction.cpu()}
