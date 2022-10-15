@@ -57,19 +57,19 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                 FO_links[j] = FO_link_temp
                 #FO_links[j] = [fo for fo in FO_link_temp.cpu()]
 
-            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
-            rts_pass_indices_tensor = unsafe_flag.nonzero().reshape(-1)
-            rts_pass_indices = rts_pass_indices_tensor.tolist()
-            n_problems = len(rts_pass_indices)
+            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rtd always
+            rtd_pass_indices_tensor = unsafe_flag.nonzero().reshape(-1)
+            rtd_pass_indices = rtd_pass_indices_tensor.tolist()
+            n_problems = len(rtd_pass_indices)
             
             flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             
             if n_problems > 0:
                 # Uncorrected actions
-                lambd_unsafe = lambd[rts_pass_indices]
+                lambd_unsafe = lambd[rtd_pass_indices]
                 # Lower and upper bound for [-1,1] and velocity limit
-                lb = torch.maximum((-PI_vel-qvel[rts_pass_indices])/T_PLAN,-ONE)
-                ub = torch.minimum((PI_vel-qvel[rts_pass_indices])/T_PLAN,ONE)
+                lb = torch.maximum((-PI_vel-qvel[rtd_pass_indices])/T_PLAN,-ONE)
+                ub = torch.minimum((PI_vel-qvel[rtd_pass_indices])/T_PLAN,ONE)
                 # Gaussian sample with clamp and Uniform sample
                 Nsampler = torch.distributions.normal.Normal(lambd_unsafe,scale=std)
                 Usampler = torch.distributions.uniform.Uniform(lb,ub)
@@ -79,29 +79,29 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                 lambda_candidates = torch.cat((Nsampler.sample((Nbudget,)).clamp(lb,ub),Usampler.sample((Ubudget,))),0)          
                 lambda_candidates_to_slc = lambda_candidates.unsqueeze(-2).repeat(1,1,n_timesteps,1) # budget, n_batches, n_timesteps, dimension
                 # Check safety of sampled actions
-                rts_flags = torch.zeros(budget,n_problems,dtype=bool,device=device) # (false) success, (true) fail
+                rtd_flags = torch.zeros(budget,n_problems,dtype=bool,device=device) # (false) success, (true) fail
                 for j in range(n_links):
                     FO_link_temp = FO_links[j]
-                    FO_link_budgets = zp.batchPolyZonotope(FO_link_temp.Z[rts_pass_indices].unsqueeze(0).repeat(budget,1,1,1,1), # Z: budget, n_problems, n_timesteps, * ,dimension
+                    FO_link_budgets = zp.batchPolyZonotope(FO_link_temp.Z[rtd_pass_indices].unsqueeze(0).repeat(budget,1,1,1,1), # Z: budget, n_problems, n_timesteps, * ,dimension
                                                         FO_link_temp.n_dep_gens,
                                                         FO_link_temp.expMat,
                                                         FO_link_temp.id,
                                                         compress=0)
                     c_k = FO_link_budgets.center_slice_all_dep(lambda_candidates_to_slc).unsqueeze(-1) 
                     for o in range(n_obs): 
-                        h_obs = ((As[j,o][:,rts_pass_indices] @ c_k).squeeze(-1) - bs[j,o][:,rts_pass_indices]).nan_to_num(-torch.inf) 
-                        rts_flags += (torch.max(h_obs, -1)[0] < 1e-6).any(-1) 
+                        h_obs = ((As[j,o][:,rtd_pass_indices] @ c_k).squeeze(-1) - bs[j,o][:,rtd_pass_indices]).nan_to_num(-torch.inf) 
+                        rtd_flags += (torch.max(h_obs, -1)[0] < 1e-6).any(-1) 
                 # Pick the closest safe action from the original action
-                lambda_candidates[rts_flags.to(dtype=bool)] = torch.inf # set infinity for unsafe action
+                lambda_candidates[rtd_flags.to(dtype=bool)] = torch.inf # set infinity for unsafe action
                 best_idx = torch.min(torch.linalg.norm(lambda_candidates-lambd_unsafe,dim=-1),0).indices
                 lambda_best = lambda_candidates[best_idx,torch.arange(n_problems,device=device)] 
-                # Identify indices for rts success
-                rts_success = (~rts_flags).any(0) # (true) success, (false) fail
-                rts_success_indices = rts_pass_indices_tensor[rts_success]
-                # Parse rts output
+                # Identify indices for rtd success
+                rtd_success = (~rtd_flags).any(0) # (true) success, (false) fail
+                rtd_success_indices = rtd_pass_indices_tensor[rtd_success]
+                # Parse rtd output
 
-                lambd[rts_success_indices] = lambda_best
-                flags[rts_pass_indices] = (~rts_success).to(dtype=flags.dtype)
+                lambd[rtd_success_indices] = lambda_best
+                flags[rtd_pass_indices] = (~rtd_success).to(dtype=flags.dtype)
 
             zp.reset()
             return lambd, FO_links, flags
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         link_zonos.append(l.to(device=device,dtype=dtype))
     params = {'n_joints': env.n_links, 'P': P, 'R': R}
     joint_axes = [j for j in env.joint_axes.to(device=device,dtype=dtype)]
-    RTS = gen_RTS_2D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, params,device=device,dtype=dtype)
+    rts = gen_RTS_2D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, params,device=device,dtype=dtype)
 
     ##### 3. RUN RTS #####
     t_forward = 0
@@ -156,7 +156,7 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].reshape(n_batch,-1) for key in observation.keys()])
 
         lam_hat = torch.tensor([0.8, 0.8],device=device,dtype=dtype)
-        lam, FO_link, flag = RTS(torch.vstack(([lam_hat] * n_batch)), observ_temp)
+        lam, FO_link, flag = rts(torch.vstack(([lam_hat] * n_batch)), observ_temp)
               
         print(f'action: {lam[0]}')
         print(f'flag: {flag[0]}')

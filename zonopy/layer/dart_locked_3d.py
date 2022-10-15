@@ -26,14 +26,14 @@ NUM_PROCESSES = 40
 EPS = 1e-6
 TOL = 1e-4
 
-def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
+def rtd_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
     '''
-    if 'count_rts' not in globals():
+    if 'count_rtd' not in globals():
         global some_obs_solve, some_obs_unsolve, some_obs_limit, no_obs_solve, no_obs_unsolve, no_obs_limit
-        global count_rts
+        global count_rtd
         some_obs_solve, some_obs_unsolve, some_obs_limit = 0, 0, 0
         no_obs_solve, no_obs_unsolve, no_obs_limit = 0, 0, 0
-        count_rts = 0
+        count_rtd = 0
     '''
     M_obs = n_links * n_timesteps * int(n_obs_in_frs)
     M = M_obs+2*dof+6*n_pos_lim
@@ -77,8 +77,8 @@ def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_
             no_obs_limit += 1
     else:
         import pdb;pdb.set_trace()
-    count_rts += 1 
-    #if count_rts % 10 == 0:
+    count_rtd += 1 
+    #if count_rtd % 10 == 0:
     if True:
         some_obs = some_obs_solve + some_obs_unsolve + some_obs_limit
         no_obs = no_obs_solve + no_obs_unsolve + no_obs_limit
@@ -118,7 +118,7 @@ def rot(q,joint_axes):
     rot_skew_sym = (w@joint_axes.to(dtype=dtype,device=device).T).transpose(0,-1)
     return torch.eye(3,dtype=dtype,device=device) + torch.sin(q)*rot_skew_sym + (1-torch.cos(q))*rot_skew_sym@rot_skew_sym
 
-def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, locked_idx, locked_qpos, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False, gradient_step_sign = '-'):
+def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, lim_flag, locked_idx, locked_qpos, params, num_processes=NUM_PROCESSES, dtype = torch.float, device=torch.device('cpu'), multi_process=False, gradient_step_sign = '-'):
     '''
     global T_FO, T_slc, T_Ab, T_safety,T_cpu, T_NLP
     T_FO, T_slc, T_Ab, T_safety, T_cpu = {}, {}, {}, {}, {}
@@ -156,7 +156,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
         locked_rot = list(rot(locked_qpos,torch.vstack(locked_joint_axes)).to(dtype=dtype,device=device).reshape(-1,1,1,3,3).repeat(1,1,n_timesteps,1,1))
 
 
-    class grad_RTS_Locked_3D_Layer(torch.autograd.Function):
+    class DART_Locked_3D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx, lambd, observation, aux_inputs):
             #T0 = time.time()
@@ -326,9 +326,9 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     #t_safety += (t2-t1)
                     #t_cpu += (t3-t2)
 
-            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
-            rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
-            n_problems = len(rts_pass_indices)
+            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rtd always
+            rtd_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
+            n_problems = len(rtd_pass_indices)
     
             ctx.flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             ctx.infos = [{} for _ in range(n_batches)]
@@ -348,53 +348,53 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                 N_obs_in_frs = obs_in_reach_idx.sum(-1)
 
                 if multi_process:
-                    for idx in rts_pass_indices:
+                    for idx in rtd_pass_indices:
                         obs_idx = obs_in_reach_idx_list[idx]
                         for j in range(n_links):
                             As[idx,j] = A_cpu[j][idx,obs_idx]
                             bs[idx,j] = b_cpu[j][idx,obs_idx]
                     with Pool(processes=min(num_processes, n_problems)) as pool:
                         results = pool.starmap(
-                            rts_pass,
+                            rtd_pass,
                             [x for x in
-                            zip(As[rts_pass_indices],
-                                bs[rts_pass_indices],
-                                FO_links_nlp[rts_pass_indices],
-                                qpos_np[rts_pass_indices],
-                                qvel_np[rts_pass_indices],
-                                qgoal_np[rts_pass_indices],
+                            zip(As[rtd_pass_indices],
+                                bs[rtd_pass_indices],
+                                FO_links_nlp[rtd_pass_indices],
+                                qpos_np[rtd_pass_indices],
+                                qvel_np[rtd_pass_indices],
+                                qgoal_np[rtd_pass_indices],
                                 [n_timesteps] * n_problems,
                                 [n_links] * n_problems,
                                 [dof] * n_problems,
-                                N_obs_in_frs[rts_pass_indices], 
+                                N_obs_in_frs[rtd_pass_indices], 
                                 [n_pos_lim] * n_problems,
                                 [actual_pos_lim_np] * n_problems,
                                 [vel_lim_np] * n_problems,
                                 [lim_flag_np] * n_problems, 
                                 [dimension] * n_problems,
                                 [g_ka] * n_problems,
-                                [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
-                                lambd_np[rts_pass_indices]
+                                [lambd0[idx] for idx in rtd_pass_indices],  #[ka_0] * n_problems,
+                                lambd_np[rtd_pass_indices]
                             )
                             ]
                         )
-                    rts_lambd_opts, rts_flags = [], []
+                    rtd_lambd_opts, rtd_flags = [], []
                     for idx, res in enumerate(results):
-                        rts_lambd_opts.append(res[0])
-                        rts_flags.append(res[1])
-                        ctx.infos[rts_pass_indices[idx]].update(res[2])
-                    ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
-                    ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
+                        rtd_lambd_opts.append(res[0])
+                        rtd_flags.append(res[1])
+                        ctx.infos[rtd_pass_indices[idx]].update(res[2])
+                    ctx.lambd[rtd_pass_indices] = torch.tensor(rtd_lambd_opts,dtype=dtype,device=device)
+                    ctx.flags[rtd_pass_indices] = torch.tensor(rtd_flags, dtype=ctx.flags.dtype, device=device)
                 else:
-                    rts_lambd_opts, rts_flags = [], [] 
+                    rtd_lambd_opts, rtd_flags = [], [] 
 
-                    for idx in rts_pass_indices:
+                    for idx in rtd_pass_indices:
                         obs_idx = obs_in_reach_idx_list[idx]
                         for j in range(n_links):
                             As[idx,j] = A_cpu[j][idx,obs_idx]
                             bs[idx,j] = b_cpu[j][idx,obs_idx]
 
-                        rts_lambd_opt, rts_flag, info = rts_pass(
+                        rtd_lambd_opt, rtd_flag, info = rtd_pass(
                                                                 As[idx],
                                                                 bs[idx],
                                                                 FO_links_nlp[idx],
@@ -414,10 +414,10 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                                                                 lambd0[idx],
                                                                 lambd_np[idx])
                         ctx.infos[idx].update(info)
-                        rts_lambd_opts.append(rts_lambd_opt)
-                        rts_flags.append(rts_flag)
-                    ctx.lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
-                    ctx.flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=ctx.flags.dtype, device=device)
+                        rtd_lambd_opts.append(rtd_lambd_opt)
+                        rtd_flags.append(rtd_flag)
+                    ctx.lambd[rtd_pass_indices] = torch.tensor(rtd_lambd_opts,dtype=dtype,device=device)
+                    ctx.flags[rtd_pass_indices] = torch.tensor(rtd_flags, dtype=ctx.flags.dtype, device=device)
 
             if not receive_aux:
                 ctx.infos[0]['forward_occupancy'] = FO_links_cpu
@@ -448,7 +448,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             count.append(1)
             if np.sum(count) % 2000 == 0:
                 print('#'*60)
-                print('gRTS average')
+                print('DART average')
                 for bsize in T_FO.keys():
                     print(f'T_FO w/ {bsize} batch {np.mean(T_FO[bsize])}')
                     print(f'T_slc w/ {bsize} batch {np.mean(T_slc[bsize])}')
@@ -457,7 +457,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                     print(f'T_cpu w/ {bsize} batch {np.mean(T_cpu[bsize])}')
                     print(f'T_NLP w/ {bsize} batch {np.mean(T_NLP[bsize])}')
                 print('#'*60)
-                print('gRTS portion')
+                print('DART portion')
                 for bsize in T_FO.keys():
                     total = np.sum(T_FO[bsize]) + np.sum(T_slc[bsize]) + np.sum(T_Ab[bsize]) + np.sum(T_safety[bsize]) + np.sum(T_cpu[bsize]) + np.sum(T_NLP[bsize])
                     print(f'T_FO w/ {bsize} batch {np.sum(T_FO[bsize])/total*100}')
@@ -481,15 +481,15 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             direct_pass = (ctx.flags == -1) + (ctx.flags == 1) # NOTE: (ctx.flags == -1)
             grad_input[direct_pass] = direction[direct_pass]
 
-            rts_success_pass = (ctx.flags == 0).nonzero().reshape(-1).cpu()
-            n_batch = rts_success_pass.numel()
+            rtd_success_pass = (ctx.flags == 0).nonzero().reshape(-1).cpu()
+            n_batch = rtd_success_pass.numel()
             if n_batch > 0:
                 QP_EQ_CONS = []
                 QP_INEQ_CONS = []
                 qp_solve_ind= []
 
-                lambd = ctx.lambd[rts_success_pass].cpu().numpy()
-                for j,i in enumerate(rts_success_pass):
+                lambd = ctx.lambd[rtd_success_pass].cpu().numpy()
+                for j,i in enumerate(rtd_success_pass):
                     k_opt = lambd[j]
                     # compute jacobian of each smooth constraint which will be constraints for QP
                     jac = ctx.infos[i]['jac_g']
@@ -559,7 +559,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                             grad_input[qp_solve_ind] = scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
                     except:
                         import pickle
-                        dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rts_success_pass':rts_success_pass.cpu(),'direction':direction.cpu()}
+                        dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
                         with open('gurobi_fail_data.pickle', 'wb') as handle:
                             pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
                         print('Training is quit due to GUROBI.')
@@ -572,7 +572,7 @@ def gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
             else:
                 return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device),None)
 
-    return grad_RTS_Locked_3D_Layer.apply
+    return DART_Locked_3D_Layer.apply
 
 
 if __name__ == '__main__':
@@ -591,7 +591,7 @@ if __name__ == '__main__':
     n_batch = 9
     env = Parallel_Locked_Arm_3D(n_envs = n_batch, n_obs=1, n_plots = 1, locked_idx = [0, 2, 4], locked_qpos = [0, 0, 0], FO_render_freq=0)
 
-    ##### 2. GENERATE RTS LAYER #####    
+    ##### 2. GENERATE DART LAYER #####    
     P,R,link_zonos = [],[],[]
     for p,r,l in zip(env.P0,env.R0,env.link_zonos):
         P.append(p.to(device=device,dtype=dtype))
@@ -599,9 +599,9 @@ if __name__ == '__main__':
         link_zonos.append(l.to(device=device,dtype=dtype))
     params = {'n_joints': env.n_links, 'P': P, 'R': R}
     joint_axes = [j for j in env.joint_axes.to(device=device,dtype=dtype)]
-    RTS = gen_grad_RTS_Locked_3D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, env.pos_lim, env.vel_lim, env.lim_flag, env.locked_idx, env.locked_qpos, params,device=device,dtype=dtype)
+    dart = gen_DART_Locked_3D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, env.pos_lim, env.vel_lim, env.lim_flag, env.locked_idx, env.locked_qpos, params,device=device,dtype=dtype)
 
-    ##### 3. RUN RTS #####
+    ##### 3. RUN DART #####
     t_forward, t_backward = 0, 0 
     t_render = 0
     n_steps = 30
@@ -614,20 +614,20 @@ if __name__ == '__main__':
 
         lam = torch.tensor([0.8]*env.dof,device=device,dtype=dtype)
         bias = torch.full((n_batch, 1), 0.0, requires_grad=True,device=device,dtype=dtype)
-        lam, FO_link, flag, nlp_info = RTS(torch.vstack(([lam] * n_batch))+bias, observ_temp, None)
+        lam, FO_link, flag, nlp_info = dart(torch.vstack(([lam] * n_batch))+bias, observ_temp, None)
               
         print(f'action: {lam[0]}')
         print(f'flag: {flag[0]}')
 
         t_elasped = time.time() - ts
         t_forward += t_elasped
-        print(f'Time elasped for RTS forward:{t_elasped}')
+        print(f'Time elasped for DART forward:{t_elasped}')
 
         ts = time.time()        
         lam.sum().backward(retain_graph=True)
         t_elasped = time.time() - ts       
         t_backward += t_elasped
-        print(f'Time elasped for RTS backward:{t_elasped}')
+        print(f'Time elasped for DART backward:{t_elasped}')
         print('='*90)
         
         observation, reward, done, info = env.step(lam.cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag.cpu().to(dtype=torch.get_default_dtype()))
@@ -639,6 +639,6 @@ if __name__ == '__main__':
 
 
 
-    print(f'Total time elasped for RTS forward with {n_steps} steps: {t_forward}')
-    print(f'Total time elasped for RTS backward with {n_steps} steps: {t_backward}')
+    print(f'Total time elasped for DART forward with {n_steps} steps: {t_forward}')
+    print(f'Total time elasped for DART backward with {n_steps} steps: {t_backward}')
     print(f'Total time elasped for rendering with {n_steps} steps: {t_render}')

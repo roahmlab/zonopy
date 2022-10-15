@@ -21,7 +21,7 @@ NUM_PROCESSES = 40
 EPS = 1e-6
 TOL = 1e-4
 
-def rts_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
+def rtd_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
     M_obs = n_links * n_timesteps * int(n_obs_in_frs)
     M = M_obs+2*n_links+6*n_pos_lim
     nlp_obj = NlpSetup3D(A,b,FO_link,qpos,qvel,qgoal,n_timesteps,n_links,int(n_obs_in_frs),n_pos_lim,actual_pos_lim,vel_lim,lim_flag,dimension,g_ka)
@@ -146,9 +146,9 @@ def gen_RTS_star_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
                 FO_links_nlp[:,j] = [fo for fo in FO_link_temp.cpu()]
                 FO_links[j] = FO_link_temp
 
-            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rts always
-            rts_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
-            n_problems = len(rts_pass_indices)
+            #unsafe_flag = torch.ones(n_batches, dtype=torch.bool)  # NOTE: activate rtd always
+            rtd_pass_indices = unsafe_flag.nonzero().reshape(-1).tolist()
+            n_problems = len(rtd_pass_indices)
     
             flags = -torch.ones(n_batches, dtype=torch.int, device=device)  # -1: direct pass, 0: safe plan from armtd pass, 1: fail-safe plan from armtd pass
             infos = [None for _ in range(n_batches)]
@@ -167,52 +167,52 @@ def gen_RTS_star_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
                 N_obs_in_frs = obs_in_reach_idx.sum(-1).cpu().numpy()
 
                 if multi_process:
-                    for idx in rts_pass_indices:
+                    for idx in rtd_pass_indices:
                         obs_idx = obs_in_reach_idx_list[idx]
                         for j in range(n_links):
                             As[idx,j] = As[-1,j][idx,obs_idx]
                             bs[idx,j] = bs[-1,j][idx,obs_idx]
                     with Pool(processes=min(num_processes, n_problems)) as pool:
                         results = pool.starmap(
-                            rts_pass,
+                            rtd_pass,
                             [x for x in
-                            zip(As[rts_pass_indices],
-                                bs[rts_pass_indices],
-                                FO_links_nlp[rts_pass_indices],
-                                qpos_np[rts_pass_indices],
-                                qvel_np[rts_pass_indices],
-                                qgoal_np[rts_pass_indices],
+                            zip(As[rtd_pass_indices],
+                                bs[rtd_pass_indices],
+                                FO_links_nlp[rtd_pass_indices],
+                                qpos_np[rtd_pass_indices],
+                                qvel_np[rtd_pass_indices],
+                                qgoal_np[rtd_pass_indices],
                                 [n_timesteps] * n_problems,
                                 [n_links] * n_problems,
-                                N_obs_in_frs[rts_pass_indices], 
+                                N_obs_in_frs[rtd_pass_indices], 
                                 [n_pos_lim] * n_problems,
                                 [actual_pos_lim_np] * n_problems,
                                 [vel_lim_np] * n_problems,
                                 [lim_flag_np] * n_problems, 
                                 [dimension] * n_problems,
                                 [g_ka] * n_problems,
-                                [lambd0[idx] for idx in rts_pass_indices],  #[ka_0] * n_problems,
-                                lambd_np[rts_pass_indices]
+                                [lambd0[idx] for idx in rtd_pass_indices],  #[ka_0] * n_problems,
+                                lambd_np[rtd_pass_indices]
                             )
                             ]
                         )
-                    rts_lambd_opts, rts_flags = [], []
+                    rtd_lambd_opts, rtd_flags = [], []
                     for idx, res in enumerate(results):
-                        rts_lambd_opts.append(res[0])
-                        rts_flags.append(res[1])
-                        infos[rts_pass_indices[idx]] = res[2]
-                    lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
-                    flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype, device=device)
+                        rtd_lambd_opts.append(res[0])
+                        rtd_flags.append(res[1])
+                        infos[rtd_pass_indices[idx]] = res[2]
+                    lambd[rtd_pass_indices] = torch.tensor(rtd_lambd_opts,dtype=dtype,device=device)
+                    flags[rtd_pass_indices] = torch.tensor(rtd_flags, dtype=flags.dtype, device=device)
                 else:
-                    rts_lambd_opts, rts_flags = [], []                    
-                    for idx in rts_pass_indices:
+                    rtd_lambd_opts, rtd_flags = [], []                    
+                    for idx in rtd_pass_indices:
 
                         obs_idx = obs_in_reach_idx_list[idx]
                         for j in range(n_links):
                             As[idx,j] = As[-1,j][idx,obs_idx]
                             bs[idx,j] = bs[-1,j][idx,obs_idx]
 
-                        rts_lambd_opt, rts_flag, info = rts_pass(
+                        rtd_lambd_opt, rtd_flag, info = rtd_pass(
                                                                 As[idx],
                                                                 bs[idx],
                                                                 FO_links_nlp[idx],
@@ -231,10 +231,10 @@ def gen_RTS_star_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
                                                                 lambd0[idx],
                                                                 lambd_np[idx])
                         infos[idx] = info
-                        rts_lambd_opts.append(rts_lambd_opt)
-                        rts_flags.append(rts_flag)
-                    lambd[rts_pass_indices] = torch.tensor(rts_lambd_opts,dtype=dtype,device=device)
-                    flags[rts_pass_indices] = torch.tensor(rts_flags, dtype=flags.dtype, device=device)
+                        rtd_lambd_opts.append(rtd_lambd_opt)
+                        rtd_flags.append(rtd_flag)
+                    lambd[rtd_pass_indices] = torch.tensor(rtd_lambd_opts,dtype=dtype,device=device)
+                    flags[rtd_pass_indices] = torch.tensor(rtd_flags, dtype=flags.dtype, device=device)
             zp.reset()
             return lambd, FO_links, flags, infos
 
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     n_batch = 9
     env = Parallel_Arm_3D(n_envs = n_batch, n_obs=1, n_plots = 1)
 
-    ##### 2. GENERATE RTS LAYER #####    
+    ##### 2. GENERATE RTS* LAYER #####    
     P,R,link_zonos = [],[],[]
     for p,r,l in zip(env.P0,env.R0,env.link_zonos):
         P.append(p.to(device=device,dtype=dtype))
@@ -269,9 +269,9 @@ if __name__ == '__main__':
         link_zonos.append(l.to(device=device,dtype=dtype))
     params = {'n_joints': env.n_links, 'P': P, 'R': R}
     joint_axes = [j for j in env.joint_axes.to(device=device,dtype=dtype)]
-    RTS = gen_RTS_star_3D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, env.pos_lim, env.vel_lim, env.lim_flag, params,device=device,dtype=dtype)
+    rts_star = gen_RTS_star_3D_Layer(link_zonos, joint_axes, env.n_links, env.n_obs, env.pos_lim, env.vel_lim, env.lim_flag, params,device=device,dtype=dtype)
 
-    ##### 3. RUN RTS #####
+    ##### 3. RUN RTS* #####
     t_forward = 0
     t_render = 0
     n_steps = 30
@@ -283,13 +283,13 @@ if __name__ == '__main__':
         observ_temp = torch.hstack([observation[key].reshape(n_batch,-1) for key in observation.keys()])
 
         lam = torch.tensor([0.8]*7,device=device,dtype=dtype)
-        lam, FO_link, flag, nlp_info = RTS(torch.vstack(([lam] * n_batch)), observ_temp)
+        lam, FO_link, flag, nlp_info = rts_star(torch.vstack(([lam] * n_batch)), observ_temp)
               
         print(f'action: {lam[0]}')
         print(f'flag: {flag[0]}')
 
         t_elasped = time.time() - ts
-        print(f'Time elasped for RTS forward:{t_elasped}')
+        print(f'Time elasped for RTS* forward:{t_elasped}')
         print('='*90)
         t_forward += t_elasped
         observation, reward, done, info = env.step(lam.cpu().to(dtype=torch.get_default_dtype()) * torch.pi / 24, flag.cpu().to(dtype=torch.get_default_dtype()))
@@ -301,5 +301,5 @@ if __name__ == '__main__':
 
 
 
-    print(f'Total time elasped for RTS forward with {n_steps} steps: {t_forward}')
+    print(f'Total time elasped for RTS* forward with {n_steps} steps: {t_forward}')
     print(f'Total time elasped for rendering with {n_steps} steps: {t_render}')
