@@ -25,6 +25,7 @@ NUM_PROCESSES = 40
 
 EPS = 1e-6
 TOL = 1e-4
+GUROBI_EPS = 1e-6
 
 def rtd_pass(A, b, FO_link, qpos, qvel, qgoal, n_timesteps, n_links, dof, n_obs_in_frs, n_pos_lim, actual_pos_lim, vel_lim, lim_flag, dimension, g_ka, ka_0, lambd_hat):
     '''
@@ -523,8 +524,8 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                     # normalize constraint for numerical stability
                     strong_qp_cons = np.nan_to_num(strong_qp_cons/np.linalg.norm(strong_qp_cons,axis=-1,keepdims=True))
                     weak_qp_cons = np.nan_to_num(weak_qp_cons/np.linalg.norm(weak_qp_cons,axis=-1,keepdims=True))
-                    strong_qp_cons = strong_qp_cons * (strong_qp_cons>1e-6)
-                    weak_qp_cons = weak_qp_cons * (weak_qp_cons>1e-6)
+                    strong_qp_cons = strong_qp_cons * (strong_qp_cons > GUROBI_EPS)
+                    weak_qp_cons = weak_qp_cons * (weak_qp_cons > GUROBI_EPS)
 
                     if strongly_active.sum() < dof or np.linalg.matrix_rank(strong_qp_cons) < dof:
                         QP_EQ_CONS.append(strong_qp_cons)
@@ -542,7 +543,9 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                     else:
                         f_d_unscale = - direction[qp_solve_ind].cpu().numpy().flatten()
                     scale_factor_f_d = np.linalg.norm(f_d_unscale) # scale f_d for numerical stability of Gurobi
-                    f_d = sp.csr_matrix((np.nan_to_num(f_d_unscale/scale_factor_f_d,nan=0), ([0] * qp_size, range(qp_size))))
+                    f_d = np.nan_to_num(f_d_unscale/scale_factor_f_d,nan=0)
+                    f_d = f_d * (f_d > GUROBI_EPS)
+                    f_d = sp.csr_matrix((f_d, ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
                     #qp.Params.LogToConsole = 0
                     z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
@@ -560,7 +563,6 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                         else:
                             grad_input[qp_solve_ind] = scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
                     except:
-                        import pdb; pdb.set_trace()
                         import pickle
                         dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
                         idx = 0
