@@ -523,7 +523,9 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                     # normalize constraint for numerical stability
                     strong_qp_cons = np.nan_to_num(strong_qp_cons/np.linalg.norm(strong_qp_cons,axis=-1,keepdims=True))
                     weak_qp_cons = np.nan_to_num(weak_qp_cons/np.linalg.norm(weak_qp_cons,axis=-1,keepdims=True))
-                    
+                    strong_qp_cons = strong_qp_cons * (strong_qp_cons>1e-6)
+                    weak_qp_cons = weak_qp_cons * (weak_qp_cons>1e-6)
+                                        
                     if strongly_active.sum() < dof or np.linalg.matrix_rank(strong_qp_cons) < dof:
                         QP_EQ_CONS.append(strong_qp_cons)
                         QP_INEQ_CONS.append(weak_qp_cons)
@@ -539,10 +541,10 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                         f_d_unscale = direction[qp_solve_ind].cpu().numpy().flatten()
                     else:
                         f_d_unscale = - direction[qp_solve_ind].cpu().numpy().flatten()
-                    scale_factor_f_d = abs(f_d_unscale).min() # scale f_d for numerical stability of Gurobi
-                    f_d = sp.csr_matrix((f_d_unscale/scale_factor_f_d, ([0] * qp_size, range(qp_size))))
+                    scale_factor_f_d = np.linalg.norm(f_d_unscale) # scale f_d for numerical stability of Gurobi
+                    f_d = sp.csr_matrix((np.nan_to_num(f_d_unscale/scale_factor_f_d,nan=0), ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
-                    qp.Params.LogToConsole = 0
+                    #qp.Params.LogToConsole = 0
                     z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
                     qp.setObjective(z @ H @ z + f_d @ z, GRB.MINIMIZE)
                     qp_eq_cons = sp.csr_matrix(block_diag(*QP_EQ_CONS))
@@ -554,10 +556,11 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                     qp.optimize()
                     try:
                         if gradient_step_sign == '-':
-                            grad_input[qp_solve_ind] = - scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
+                            grad_input[qp_solve_ind] = - scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
                         else:
-                            grad_input[qp_solve_ind] = scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, n_links),dtype=dtype,device=device)
+                            grad_input[qp_solve_ind] = scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
                     except:
+                        import pdb; pdb.set_trace()
                         import pickle
                         dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
                         with open('gurobi_fail_data.pickle', 'wb') as handle:

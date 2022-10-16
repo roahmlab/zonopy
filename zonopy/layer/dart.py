@@ -270,7 +270,9 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                     # normalize constraint for numerical stability
                     strong_qp_cons = np.nan_to_num(strong_qp_cons/np.linalg.norm(strong_qp_cons,axis=-1,keepdims=True))
                     weak_qp_cons = np.nan_to_num(weak_qp_cons/np.linalg.norm(weak_qp_cons,axis=-1,keepdims=True))
-
+                    strong_qp_cons = strong_qp_cons * (strong_qp_cons>1e-6)
+                    weak_qp_cons = weak_qp_cons * (weak_qp_cons>1e-6)
+                    
                     if strongly_active.sum() < n_links or np.linalg.matrix_rank(strong_qp_cons) < n_links:
                         QP_EQ_CONS.append(strong_qp_cons)
                         QP_INEQ_CONS.append(weak_qp_cons)
@@ -286,8 +288,8 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                         f_d_unscale = direction[qp_solve_ind].cpu().numpy().flatten()
                     else:
                         f_d_unscale = - direction[qp_solve_ind].cpu().numpy().flatten()
-                    scale_factor_f_d = abs(f_d_unscale).min() # scale f_d for numerical stability of Gurobi
-                    f_d = sp.csr_matrix((f_d_unscale/scale_factor_f_d, ([0] * qp_size, range(qp_size))))
+                    scale_factor_f_d = np.linalg.norm(f_d_unscale) # scale f_d for numerical stability of Gurobi
+                    f_d = sp.csr_matrix((np.nan_to_num(f_d_unscale/scale_factor_f_d,nan=0), ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
                     qp.Params.LogToConsole = 0
                     z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
