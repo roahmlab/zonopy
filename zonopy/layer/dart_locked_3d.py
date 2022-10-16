@@ -547,7 +547,7 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                     f_d = f_d * (f_d > GUROBI_EPS)
                     f_d = sp.csr_matrix((f_d, ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
-                    #qp.Params.LogToConsole = 0
+                    qp.Params.LogToConsole = 0
                     z = qp.addMVar(shape=qp_size, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
                     qp.setObjective(z @ H @ z + f_d @ z, GRB.MINIMIZE)
                     qp_eq_cons = sp.csr_matrix(block_diag(*QP_EQ_CONS))
