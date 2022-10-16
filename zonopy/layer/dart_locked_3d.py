@@ -525,7 +525,7 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                     weak_qp_cons = np.nan_to_num(weak_qp_cons/np.linalg.norm(weak_qp_cons,axis=-1,keepdims=True))
                     strong_qp_cons = strong_qp_cons * (strong_qp_cons>1e-6)
                     weak_qp_cons = weak_qp_cons * (weak_qp_cons>1e-6)
-                                        
+
                     if strongly_active.sum() < dof or np.linalg.matrix_rank(strong_qp_cons) < dof:
                         QP_EQ_CONS.append(strong_qp_cons)
                         QP_INEQ_CONS.append(weak_qp_cons)
@@ -563,7 +563,12 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                         import pdb; pdb.set_trace()
                         import pickle
                         dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
-                        with open('gurobi_fail_data.pickle', 'wb') as handle:
+                        idx = 0
+                        flag = True 
+                        while flag:
+                            idx += 1
+                            flag = exists(f'gurobi_fail_data_{idx}.pickle')
+                        with open(f'gurobi_fail_data_{idx}.pickle', 'wb') as handle:
                             pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
                         print('Training is quit due to GUROBI.')
                         exit()

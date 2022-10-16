@@ -339,7 +339,12 @@ def gen_DART_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, 
                     except:
                         import pickle
                         dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
-                        with open('gurobi_fail_data.pickle', 'wb') as handle:
+                        idx = 0
+                        flag = True 
+                        while flag:
+                            idx += 1
+                            flag = exists(f'gurobi_fail_data_{idx}.pickle')
+                        with open(f'gurobi_fail_data_{idx}.pickle', 'wb') as handle:
                             pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
                         print('Training is quit due to GUROBI.')
                         exit()
