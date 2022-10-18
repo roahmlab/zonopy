@@ -341,6 +341,8 @@ def gen_DART_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, 
                             grad_input[qp_solve_ind] = scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
                     except:
                         import pickle
+                        from os.path import exists
+                        
                         dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
                         idx = 0
                         flag = True 
