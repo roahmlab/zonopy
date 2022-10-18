@@ -565,7 +565,7 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                     except:
                         import pickle
                         from os.path import exists
-                        
+                        import wandb 
                         dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
                         idx = 0
                         flag = True 
@@ -575,6 +575,11 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                         with open(f'gurobi_fail_data_{idx}.pickle', 'wb') as handle:
                             pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
                         print('Training is quit due to GUROBI.')
+
+                        wandb.alert(
+                            title="Training Carshed [Gurobi]", 
+                            text=f"Training Crashed due to Gurobi Issue, and it saved configuration to gurobi_fail_data_{idx}.pickle."
+                        )
                         exit()
 
                 # NOTE: for fail-safe, keep into zeros             
