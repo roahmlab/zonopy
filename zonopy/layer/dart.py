@@ -271,8 +271,8 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                     # normalize constraint for numerical stability
                     strong_qp_cons = np.nan_to_num(strong_qp_cons/np.linalg.norm(strong_qp_cons,axis=-1,keepdims=True))
                     weak_qp_cons = np.nan_to_num(weak_qp_cons/np.linalg.norm(weak_qp_cons,axis=-1,keepdims=True))
-                    strong_qp_cons = strong_qp_cons * (strong_qp_cons > GUROBI_EPS)
-                    weak_qp_cons = weak_qp_cons * (weak_qp_cons > GUROBI_EPS)
+                    strong_qp_cons = strong_qp_cons * (abs(strong_qp_cons) > GUROBI_EPS)
+                    weak_qp_cons = weak_qp_cons * (abs(weak_qp_cons) > GUROBI_EPS)
 
                     if strongly_active.sum() < n_links or np.linalg.matrix_rank(strong_qp_cons) < n_links:
                         QP_EQ_CONS.append(strong_qp_cons)
@@ -291,7 +291,7 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                         f_d_unscale = - direction[qp_solve_ind].cpu().numpy().flatten()
                     scale_factor_f_d = np.linalg.norm(f_d_unscale) # scale f_d for numerical stability of Gurobi
                     f_d = np.nan_to_num(f_d_unscale/scale_factor_f_d,nan=0)
-                    f_d = f_d * (f_d > GUROBI_EPS)
+                    f_d = f_d * (abs(f_d) > GUROBI_EPS)
                     f_d = sp.csr_matrix((f_d, ([0] * qp_size, range(qp_size))))
                     qp = gp.Model("back_prop")
                     qp.Params.LogToConsole = 0
@@ -321,13 +321,49 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                             flag = exists(f'gurobi_fail_data_{idx}.pickle')
                         with open(f'gurobi_fail_data_{idx}.pickle', 'wb') as handle:
                             pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                        print('Training is quit due to GUROBI.')
+                        print('GUROBI raised the issue with batch QP, so trying to solve single QP serially.')
 
+                        if gradient_step_sign == '-':
+                            f_d_unscale = direction[qp_solve_ind].cpu().numpy()
+                        else:
+                            f_d_unscale = -direction[qp_solve_ind].cpu().numpy()
+
+                        scale_factor_f_d = np.linalg.norm(f_d_unscale)
+                        for j,i in enumerate(qp_solve_ind):                            
+                            # reduced batch QP
+                            # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
+                            H = 0.5 * sp.csr_matrix(([1.] * n_links, (range(n_links), range(n_links))))
+                            f_d = np.nan_to_num(f_d_unscale[j]/scale_factor_f_d,nan=0)
+                            f_d = f_d * (abs(f_d) > GUROBI_EPS)
+                            f_d = sp.csr_matrix((f_d, ([0] * n_links, range(n_links))))
+                            qp = gp.Model("back_prop")
+                            qp.Params.LogToConsole = 0
+                            
+                            z = qp.addMVar(shape=n_links, name="z", vtype=GRB.CONTINUOUS, ub=np.inf, lb=-np.inf)
+                            qp.setObjective(z @ H @ z + f_d @ z, GRB.MINIMIZE)
+                            qp_eq_cons = sp.csr_matrix(QP_EQ_CONS[j])
+                            rhs_eq = np.zeros(qp_eq_cons.shape[0])
+                            qp_ineq_cons = sp.csr_matrix(QP_INEQ_CONS[j])
+                            rhs_ineq = -0 * np.ones(qp_ineq_cons.shape[0])
+                            qp.addConstr(qp_eq_cons @ z == rhs_eq, name="eq")
+                            qp.addConstr(qp_ineq_cons @ z <= rhs_ineq, name="ineq")
+                            qp.optimize()
+                            try:
+                                if gradient_step_sign == '-':
+                                    grad_input[i] = - scale_factor_f_d * torch.tensor(z.X.reshape(n_links),dtype=dtype,device=device)
+                                else:
+                                    grad_input[i] = scale_factor_f_d * torch.tensor(z.X.reshape(n_links),dtype=dtype,device=device)
+                            except:
+                                print('GUROBI even raised the issue with single QP,so the training failed.')
+                                wandb.alert(
+                                    title="Training Failure", 
+                                    text=f"Training failed due to Gurobi issue, and it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
+                                )
+                                exit()                            
                         wandb.alert(
-                            title="Training Carshed [Gurobi]", 
-                            text=f"Training Crashed due to Gurobi Issue, and it saved configuration to gurobi_fail_data_{idx}.pickle."
+                            title="Gurobi Issue", 
+                            text=f"Gurobi raised the issue with batch QP, but was able to solve single QP. Also, it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
                         )
-                        exit()
                 # NOTE: for fail-safe, keep into zeros             
             if ctx.obs_type == 'dict':
                 return (grad_input.reshape(ctx.lambd_shape), None, None)
