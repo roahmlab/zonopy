@@ -275,6 +275,10 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                     weak_qp_cons = weak_qp_cons * (abs(weak_qp_cons) > GUROBI_EPS)
 
                     if strongly_active.sum() < n_links or np.linalg.matrix_rank(strong_qp_cons) < n_links:
+                        if len(strong_qp_cons)>0 and np.all(np.diff(strong_qp_cons,axis=0)<1e-4):
+                            strong_qp_cons = strong_qp_cons[0]
+                        if len(weak_qp_cons)>0 and np.all(np.diff(weak_qp_cons,axis=0)<1e-4):
+                            weak_qp_cons = weak_qp_cons[0]
                         QP_EQ_CONS.append(strong_qp_cons)
                         QP_INEQ_CONS.append(weak_qp_cons)
                         qp_solve_ind.append(int(i))
