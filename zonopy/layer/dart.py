@@ -354,15 +354,27 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                                 else:
                                     grad_input[i] = scale_factor_f_d * torch.tensor(z.X.reshape(n_links),dtype=dtype,device=device)
                             except:
-                                print('GUROBI even raised the issue with single QP,so the training failed.')
-                                wandb.alert(
-                                    title="Training Failure", 
-                                    text=f"Training failed due to Gurobi issue, and it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
-                                )
-                                exit()                            
+                                print('GUROBI even raised the issue with single QP,so trying to use BarHomogeneous.')
+                                qp.Params.BarHomogeneous = 1
+                                qp.optimize()
+                                try:
+                                    if gradient_step_sign == '-':
+                                        grad_input[i] = - scale_factor_f_d * torch.tensor(z.X.reshape(n_links),dtype=dtype,device=device)
+                                    else:
+                                        grad_input[i] = scale_factor_f_d * torch.tensor(z.X.reshape(n_links),dtype=dtype,device=device)
+                                except:
+
+
+                                    print('GUROBI even raised the issue with single QP,so the training failed.')
+                        
+                                    wandb.alert(
+                                        title="Training Failure", 
+                                        text=f"Training failed due to Gurobi issue, and it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
+                                    )
+                                    exit()                            
                         wandb.alert(
                             title="Gurobi Issue", 
-                            text=f"Gurobi raised the issue with batch QP, but was able to solve single QP. Also, it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
+                            text=f"Gurobi raised the issue with batch QP (or single QP), but was able to solve it eventually. Also, it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
                         )
                 # NOTE: for fail-safe, keep into zeros             
             if ctx.obs_type == 'dict':
