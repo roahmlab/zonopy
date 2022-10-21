@@ -18,6 +18,8 @@ class Parallel_Arm_2D:
             n_envs = 1, # number of environments
             n_links = 2, # number of links
             n_obs = 1, # number of obstacles
+            obs_size_max = [0.1,0.1], # maximum size of randomized obstacles in xy
+            obs_size_min = [0.1,0.1], # minimum size of randomized obstacle in xy
             T_len = 50, # number of discritization of time interval
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
@@ -52,6 +54,7 @@ class Parallel_Arm_2D:
         self.dof = self.n_links = n_links
         self.joint_id = torch.arange(self.n_links,dtype=int,device=device)
         self.n_obs = n_obs
+        self.obs_size_sampler = torch.distributions.uniform.Uniform(torch.tensor(obs_size_min,dtype=dtype,device=device),torch.tensor(obs_size_max,dtype=dtype,device=device),validate_args=False)
 
         link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device)
         self.link_zonos = [zp.polyZonotope(link_Z,0)]*n_links 
@@ -295,7 +298,7 @@ class Parallel_Arm_2D:
         r,th = torch.rand(2,n_envs,dtype=self.dtype,device=self.device)
         #obs_pos = torch.rand(n_envs,2)*2*self.n_links-self.n_links
         obs_pos = (3/4*self.n_links*r*torch.vstack((torch.cos(2*self.PI*th),torch.sin(2*self.PI*th)))).T
-        obs_Z = torch.cat((torch.cat((obs_pos.unsqueeze(1),self.obstacle_config['side_length'][:n_envs]),1),self.obstacle_config['zero_pad'][:n_envs]),-1)
+        obs_Z = torch.cat((torch.cat((obs_pos.unsqueeze(1),torch.diag_embed(self.obs_size_sampler.sample((n_envs,)))),1),self.obstacle_config['zero_pad'][:n_envs]),-1)
         obs = zp.batchZonotope(obs_Z)
         safe_flag = torch.zeros(len(idx),dtype=bool,device=self.device)
         safe_flag[idx] = True
