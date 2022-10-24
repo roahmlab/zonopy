@@ -585,14 +585,15 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                         else:
                             f_d_unscale = -direction[qp_solve_ind].cpu().numpy()
 
-                        scale_factor_f_d = np.linalg.norm(f_d_unscale)
+                        scale_factor_f_d = np.linalg.norm(f_d_unscale,axis=1,keepdims=True)
+                        f_d_scaled = np.nan_to_num(f_d_unscale/scale_factor_f_d,nan=0)
+                        f_d_scaled = f_d_scaled * (abs(f_d_scaled) > GUROBI_EPS)
+
                         for j,i in enumerate(qp_solve_ind):                            
                             # reduced batch QP
                             # compute cost for QP: no alph, constant g_k, so we can simplify cost fun.
                             H = 0.5 * sp.csr_matrix(([1.] * dof, (range(dof), range(dof))))
-                            f_d = np.nan_to_num(f_d_unscale[j]/scale_factor_f_d,nan=0)
-                            f_d = f_d * (abs(f_d) > GUROBI_EPS)
-                            f_d = sp.csr_matrix((f_d, ([0] * dof, range(dof))))
+                            f_d = sp.csr_matrix((f_d_scaled[j], ([0] * dof, range(dof))))
                             qp = gp.Model("back_prop")
                             qp.Params.LogToConsole = 0
                             
@@ -607,21 +608,21 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                             qp.optimize()
                             try:
                                 if gradient_step_sign == '-':
-                                    grad_input[i] = - scale_factor_f_d * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
+                                    grad_input[i] = - scale_factor_f_d[j,0] * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
                                 else:
-                                    grad_input[i] = scale_factor_f_d * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
+                                    grad_input[i] = scale_factor_f_d[j,0] * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
                             except:
                                 print('GUROBI even raised the issue with single QP,so trying to use BarHomogeneous.')
                                 qp.Params.BarHomogeneous = 1
                                 qp.optimize()
                                 try:
                                     if gradient_step_sign == '-':
-                                        grad_input[i] = - scale_factor_f_d * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
+                                        grad_input[i] = - scale_factor_f_d[j,0] * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
                                     else:
-                                        grad_input[i] = scale_factor_f_d * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
+                                        grad_input[i] = scale_factor_f_d[j,0] * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
                                 except: 
                                     print('GUROBI even raised the issue with single QP,so the training failed.')
-                        
+
                                     wandb.alert(
                                         title="Training Failure", 
                                         text=f"Training failed due to Gurobi issue, and it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
