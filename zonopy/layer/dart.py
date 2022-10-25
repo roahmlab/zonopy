@@ -362,7 +362,7 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                                     gurobi_failure = True
 
 
--                       if gurobi_failure:
+                        if gurobi_failure:
                             import pickle
                             from os.path import exists
                             import wandb 
