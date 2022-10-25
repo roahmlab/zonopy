@@ -358,8 +358,8 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                                     else:
                                         grad_input[i] = scale_factor_f_d[j,0] * torch.tensor(z.X.reshape(n_links),dtype=dtype,device=device)
                                 except:
-                                    print('GUROBI even raised the issue with single QP,so just send zero gradient.')
-                                    gurobi_failure = True  
+                                    print('GUROBI even raised the issue with single QP with BarHomogeneous,so just send zero gradient.')
+                                    gurobi_failure = True
 
 
 -                       if gurobi_failure:
