@@ -344,19 +344,8 @@ def gen_DART_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, 
                         else:
                             grad_input[qp_solve_ind] = scale_factor_f_d * torch.tensor(z.X.reshape(n_qp, dof),dtype=dtype,device=device)
                     except:
-                        import pickle
-                        from os.path import exists
-                        import wandb 
-                        dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
-                        idx = 0
-                        flag = True 
-                        while flag:
-                            idx += 1
-                            flag = exists(f'gurobi_fail_data_{idx}.pickle')
-                        with open(f'gurobi_fail_data_{idx}.pickle', 'wb') as handle:
-                            pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        gurobi_failure = False
                         print('GUROBI raised the issue with batch QP, so trying to solve single QP serially.')
-
                         if gradient_step_sign == '-':
                             f_d_unscale = direction[qp_solve_ind].cpu().numpy()
                         else:
@@ -398,17 +387,29 @@ def gen_DART_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_lim, 
                                     else:
                                         grad_input[i] = scale_factor_f_d[j,0] * torch.tensor(z.X.reshape(dof),dtype=dtype,device=device)
                                 except: 
-                                    print('GUROBI even raised the issue with single QP,so the training failed.')
-                        
-                                    wandb.alert(
-                                        title="Training Failure", 
-                                        text=f"Training failed due to Gurobi issue, and it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
-                                    )
-                                    exit()                               
-                        wandb.alert(
-                            title="Gurobi Issue", 
-                            text=f"Gurobi raised the issue with batch QP (or single QP), but was able to solve it eventually. Also, it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
-                        )
+                                    print('GUROBI even raised the issue with single QP,so just send zero gradient.')
+                                    gurobi_failure = True
+
+
+                        if gurobi_failure:
+                            import pickle
+                            from os.path import exists
+                            import wandb 
+                            dump = {'flags':ctx.flags.cpu(), 'lambd':ctx.lambd.cpu(), 'infos':ctx.infos, 'rtd_success_pass':rtd_success_pass.cpu(),'direction':direction.cpu()}
+                            idx = 0
+                            flag = True 
+                            while flag:
+                                idx += 1
+                                flag = exists(f'gurobi_fail_data_{idx}.pickle')
+                            with open(f'gurobi_fail_data_{idx}.pickle', 'wb') as handle:
+                                pickle.dump(dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                            wandb.alert(
+                                title="Gurobi Failure", 
+                                text=f"Gurobi failed due to numerical issue, and it saved the configuration of QP to gurobi_fail_data_{idx}.pickle."
+                            )
+
+
 
                 # NOTE: for fail-safe, keep into zeros             
             return (grad_input.reshape(ctx.lambd_shape), torch.zeros(ctx.obs_shape,dtype=dtype,device=device), None)
