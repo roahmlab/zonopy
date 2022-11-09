@@ -52,6 +52,7 @@ class Arm_3D:
         self.n_obs = n_obs
         self.obs_size_sampler = torch.distributions.Uniform(torch.tensor(obs_size_min,dtype=dtype,device=device),torch.tensor(obs_size_max,dtype=dtype,device=device),validate_args=False)
         self.scale = scale
+        self.num_envs = 1
 
         #### load
         params, _ = zp.load_sinlge_robot_arm_params(robot)
@@ -125,6 +126,7 @@ class Arm_3D:
         self.FO_render_freq = FO_render_freq
         self.ticks = ticks
 
+    
         self._max_episode_steps = max_episode_steps
         self._elapsed_steps = 0
         self._frame_steps = 0     
@@ -132,7 +134,7 @@ class Arm_3D:
         self.device = device
         self.reset()
 
-    def wrap_cont_joint_to_pi(self,phases):
+    def wrap_cont_joint_to_pi(self,phases,internal):
         phases_new = torch.clone(phases)
         phases_new[~self.lim_flag] = (phases[~self.lim_flag] + torch.pi) % (2 * torch.pi) - torch.pi
         return phases_new
