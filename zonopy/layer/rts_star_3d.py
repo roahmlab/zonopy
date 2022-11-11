@@ -74,17 +74,37 @@ def gen_RTS_star_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
         def forward(ctx, lambd, observation):
             zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
-            ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
+            ctx.lambd_shape = lambd.shape
             lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
             # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
             observation = observation.to(dtype=dtype,device=device)
             ka = g_ka * lambd
 
-            n_batches = observation.shape[0]
-            qpos = observation[:, :n_links]
-            qvel = observation[:, n_links:2 * n_links]
-            obstacle_center = observation[:, -6 * n_obs:-3 * n_obs].reshape(n_batches,n_obs,1,dimension)
-            obstacle_generators = torch.diag_embed(observation[:, -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+            dof = n_links
+            if isinstance(observation,dict):
+                ctx.obs_type = 'dict'
+                ctx.obs_shape = observation["observation"].shape 
+                n_batches, obs_dim = ctx.obs_shape
+                qpos = observation["achieved_goal"].to(dtype=dtype,device=device)
+                #qgoal = observation["desired_goal"].to(dtype=dtype,device=device)
+                observation_observation = observation["observation"].to(dtype=dtype,device=device)
+                qvel = observation_observation[:,:dof]
+                obstacle_center = observation_observation[:, obs_dim -6 * n_obs: obs_dim -3 * n_obs].reshape(n_batches,n_obs,1,dimension)
+                obstacle_generators = torch.diag_embed(observation_observation[:, obs_dim -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+            else:
+                ctx.obs_type = 'tensor'
+
+                ctx.obs_shape = observation.shape
+                
+                # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
+                observation = observation.to(dtype=dtype,device=device)
+
+                n_batches, obs_dim = observation.shape
+                qpos = observation[:, :dof]
+                qvel = observation[:, dof:2 * dof]
+                obstacle_center = observation[:, obs_dim -6 * n_obs: obs_dim -3 * n_obs].reshape(n_batches,n_obs,1,dimension)
+                obstacle_generators = torch.diag_embed(observation[:, obs_dim -3 * n_obs:].reshape(n_batches,n_obs,dimension))
+
             obs_Z = torch.cat((obstacle_center,obstacle_generators),-2).unsqueeze(-3).repeat(1,1,n_timesteps,1,1)
             
             qgoal = qpos + qvel * T_PLAN + 0.5 * ka * T_PLAN ** 2
