@@ -76,8 +76,6 @@ def gen_RTS_star_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, vel_l
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             ctx.lambd_shape = lambd.shape
             lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
-            # observation = observation.reshape(-1,observation.shape[-1]).to(dtype=torch.get_default_dtype())
-            observation = observation.to(dtype=dtype,device=device)
             ka = g_ka * lambd
 
             dof = n_links
