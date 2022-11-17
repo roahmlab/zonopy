@@ -11,7 +11,7 @@ def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
 T_PLAN, T_FULL = 0.5, 1.0
-
+BUFFER_AMOUNT = 0.03
 class ARMTD_3D_planner():
     def __init__(self,env,zono_order=40,max_combs=200,dtype=torch.float,device=torch.device('cpu')):
         self.dtype, self.device = dtype, device
@@ -52,7 +52,7 @@ class ARMTD_3D_planner():
     def generate_combinations_upto(self):
         self.combs = [torch.combinations(torch.arange(i,device=self.device),2) for i in range(self.max_combs+1)]
 
-    def prepare_constraints(self,qpos,qvel,obstacles):
+    def prepare_constraints0(self,qpos,qvel,obstacles):
         t1 = time.time()
         _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos.to(dtype=self.dtype,device=self.device),qvel.to(dtype=self.dtype,device=self.device),self.joint_axes)
         self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
@@ -87,6 +87,10 @@ class ARMTD_3D_planner():
 
         obs_Z = []
         for obs in obstacles:
+            #Z = obs.Z.clone()
+            #Z[1:] += torch.eye(3) * BUFFER_AMOUNT
+            #obs_Z.append(Z.unsqueeze(0))
+            # import pdb;pdb.set_trace()
             obs_Z.append(obs.Z.unsqueeze(0))
         obs_Z = torch.cat(obs_Z,0).to(dtype=self.dtype, device=self.device).unsqueeze(1).repeat(1,self.n_timesteps,1,1)
 
@@ -158,14 +162,14 @@ class ARMTD_3D_planner():
                     ka = torch.tensor(x,dtype=self.dtype).unsqueeze(0).repeat(self.n_timesteps,1)
                     Cons = torch.zeros(M,dtype=self.dtype)
                     Jac = torch.zeros(M,self.n_links,dtype=self.dtype)
-                    Hess = torch.zeros(M,self.n_links,self.n_links,dtype=self.dtype)
+                    # Hess = torch.zeros(M,self.n_links,self.n_links,dtype=self.dtype)
                     
                     # position and velocity constraints
                     t_peak_optimum = -self.qvel/(self.g_ka*ka[0]) # time to optimum of first half traj.
                     qpos_peak_optimum = (t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(self.qpos+self.qvel*t_peak_optimum+0.5*(self.g_ka*ka[0])*t_peak_optimum**2).nan_to_num()
                     #grad_qpos_peak_optimum = torch.diag((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.g_ka*t_peak_optimum**2).nan_to_num())
                     grad_qpos_peak_optimum = torch.diag((t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(0.5*self.qvel**2/(self.g_ka*ka[0]**2)).nan_to_num())
-                    hess_qpos_peak_optimum = torch.sparse_coo_tensor([list(range(self.n_links))]*3,(t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(-self.qvel**2/(self.g_ka*ka[0]**3)).nan_to_num(),(self.n_links,)*3).to_dense()
+                    # hess_qpos_peak_optimum = torch.sparse_coo_tensor([list(range(self.n_links))]*3,(t_peak_optimum>0)*(t_peak_optimum<T_PLAN)*(-self.qvel**2/(self.g_ka*ka[0]**3)).nan_to_num(),(self.n_links,)*3).to_dense()
 
                     qpos_peak = self.qpos + self.qvel * T_PLAN + 0.5 * (self.g_ka * ka[0]) * T_PLAN**2
                     grad_qpos_peak = 0.5 * self.g_ka * T_PLAN**2 * torch.eye(self.n_links,dtype=self.dtype)
@@ -186,8 +190,8 @@ class ARMTD_3D_planner():
 
                     Cons[M_obs:] = torch.hstack((qvel_peak-self.vel_lim, -self.vel_lim-qvel_peak,qpos_ub,qpos_lb))
                     Jac[M_obs:] = torch.vstack((grad_qvel_peak, -grad_qvel_peak, grad_qpos_ub, grad_qpos_lb))
-                    Hess[M_obs+2*self.n_links:M_obs+2*self.n_links+self.n_pos_lim] = hess_qpos_peak_optimum[self.lim_flag]
-                    Hess[M_obs+2*self.n_links+3*self.n_pos_lim:M_obs+2*self.n_links+4*self.n_pos_lim] = - hess_qpos_peak_optimum[self.lim_flag]
+                    #Hess[M_obs+2*self.n_links:M_obs+2*self.n_links+self.n_pos_lim] = hess_qpos_peak_optimum[self.lim_flag]
+                    #Hess[M_obs+2*self.n_links+3*self.n_pos_lim:M_obs+2*self.n_links+4*self.n_pos_lim] = - hess_qpos_peak_optimum[self.lim_flag]
 
                     if self.n_obs_in_frs > 0:
                         for j in range(self.n_links):
@@ -201,12 +205,12 @@ class ARMTD_3D_planner():
                             hess_obs = (A_max.reshape(self.n_obs_in_frs,self.n_timesteps,1,1,self.dimension)@hess_c_k.transpose(-3,-2)).reshape(n_obs_cons,self.n_links,self.n_links)
                             Cons[j*n_obs_cons:(j+1)*n_obs_cons] = - cons_obs.reshape(n_obs_cons)
                             Jac[j*n_obs_cons:(j+1)*n_obs_cons] = - grad_obs
-                            Hess[j*n_obs_cons:(j+1)*n_obs_cons] = - hess_obs
+                            # Hess[j*n_obs_cons:(j+1)*n_obs_cons] = - hess_obs
                             
                     
                     p.Cons = Cons.numpy()
                     p.Jac = Jac.numpy()
-                    p.Hess = Hess.numpy()
+                    # p.Hess = Hess.numpy()
                     p.x_prev = np.copy(x)   
 
             def intermediate(p, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
