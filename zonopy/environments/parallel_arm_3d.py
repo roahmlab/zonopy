@@ -19,8 +19,8 @@ class Parallel_Arm_3D:
             n_envs = 1, # number of environments
             robot='Kinova3', # robot model
             n_obs=1, # number of obstacles
-            obs_size_max = [0.1,0.1,0.5], # maximum size of randomized obstacles in xyz
-            obs_size_min = [0.1,0.1,0.5], # minimum size of randomized obstacle in xyz
+            obs_size_max = [0.1,0.1,0.1], # maximum size of randomized obstacles in xyz
+            obs_size_min = [0.1,0.1,0.1], # minimum size of randomized obstacle in xyz
             T_len=50, # number of discritization of time interval
             interpolate = True, # flag for interpolation
             check_collision = True, # flag for whehter check collision
