@@ -32,9 +32,9 @@ class VideoRecorder:
             '-framerate',fr, # how often change to next frame of image
             '-i', os.path.join(self.frame_dir_path,'frame_%04d.png'), # frame images for video geneartion
             '-r', fr, # frame rate of video
-            '-pix_fmt', 'yuv420p',
+            # '-pix_fmt', 'yuv420p',
             #'-crf','25', # quality of video, lower means better
-            '-vcodec','h264',
+            # '-vcodec','h264',
             '-s', '1280x960', # '1280x960', '640x480', '320x240'
             self.video_path + '.mp4'
         ],stdout=subprocess.DEVNULL,

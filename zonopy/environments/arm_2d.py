@@ -38,19 +38,21 @@ class Arm_2D:
             FO_render_level = 2, # 0: no rendering, 1: a single geom, 2: seperate geoms for each links, 3: seperate geoms for each links and timesteps
             ticks = False,
             dtype= torch.float,
-            device = torch.device('cpu')
+            device = torch.device('cpu'),
+            scale_down = 1
             ):
 
         self.dimension = 2
+        self.scale_down = scale_down
         self.dof = self.n_links = n_links
         self.joint_id = torch.arange(self.n_links,dtype=int,device=device)
         self.n_obs = n_obs
-        self.obs_size_sampler = torch.distributions.uniform.Uniform(torch.tensor(obs_size_min,dtype=dtype,device=device),torch.tensor(obs_size_max,dtype=dtype,device=device),validate_args=False)
-        link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device)
+        self.obs_size_sampler = torch.distributions.uniform.Uniform(torch.tensor(obs_size_min,dtype=dtype,device=device) / scale_down,torch.tensor(obs_size_max,dtype=dtype,device=device) / scale_down,validate_args=False)
+        link_Z = torch.tensor([[0.5, 0, 0],[0.5,0,0],[0,0.01,0]],dtype=dtype,device=device) / scale_down
         self.link_zonos = [zp.polyZonotope(link_Z,0)]*n_links
         self.__link_zonos = [zp.zonotope(link_Z)]*n_links 
         self.link_polygon = [zono.project([0,1]).polygon() for zono in self.__link_zonos]
-        self.P0 = [torch.tensor([0.0,0.0,0.0],dtype=dtype,device=device)]+[torch.tensor([1.0,0.0,0.0],dtype=dtype,device=device)]*(n_links-1)
+        self.P0 = [torch.tensor([0.0,0.0,0.0],dtype=dtype,device=device)]+[torch.tensor([1.0,0.0,0.0],dtype=dtype,device=device) / scale_down]*(n_links-1)
         self.R0 = [torch.eye(3,dtype=dtype,device=device)]*n_links
         self.joint_axes = torch.tensor([[0.0,0.0,1.0]]*n_links,dtype=dtype,device=device)
         w = torch.tensor([[[0,0,0],[0,0,1],[0,-1,0]],[[0,0,-1],[0,0,0],[1,0,0]],[[0,1,0],[-1,0,0],[0,0,0.0]]],dtype=dtype,device=device)
@@ -142,7 +144,7 @@ class Arm_2D:
             while True:
                 r,th = torch.rand(2,dtype=self.dtype,device=self.device)
                 #obs_pos = torch.rand(2)*2*self.n_links-self.n_links
-                obs_pos = 3/4*self.n_links*r*torch.tensor([torch.cos(2*torch.pi*th),torch.sin(2*torch.pi*th)])
+                obs_pos = 3/4*self.n_links*r*torch.tensor([torch.cos(2*torch.pi*th),torch.sin(2*torch.pi*th)]) / self.scale_down
                 obs = torch.hstack((torch.vstack((obs_pos,torch.diag(obs_size[o]))),torch.zeros(3,1)))
                 obs = zp.zonotope(obs)
                 safe_flag = True
@@ -529,7 +531,7 @@ class Arm_2D:
                 self.link_patches = PatchCollection(link_trace_patches, match_original=True)
                 self.ax.add_collection(self.link_patches)
                 ax_scale = 1.2
-                axis_lim = ax_scale*self.n_links
+                axis_lim = ax_scale*self.n_links / self.scale_down
                 
                 plt.axis([-axis_lim,axis_lim,-axis_lim,axis_lim])
                 self.fig.canvas.draw()
