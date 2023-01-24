@@ -197,12 +197,11 @@ class ARMTD_3D_planner():
                         for j in range(self.n_links):
                             c_k = self.FO_link[j].center_slice_all_dep(ka)
                             grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka)
-                            hess_c_k = self.FO_link[j].hess_center_slice_all_dep(ka)
+                            # hess_c_k = self.FO_link[j].hess_center_slice_all_dep(ka)
                             h_obs = (self.A[j]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j]
                             cons_obs, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1)
                             A_max = self.A[j].gather(-2,ind.reshape(self.n_obs_in_frs,self.n_timesteps,1,1).repeat(1,1,1,self.dimension))
                             grad_obs = (A_max@grad_c_k).reshape(n_obs_cons,self.n_links)
-                            hess_obs = (A_max.reshape(self.n_obs_in_frs,self.n_timesteps,1,1,self.dimension)@hess_c_k.transpose(-3,-2)).reshape(n_obs_cons,self.n_links,self.n_links)
                             Cons[j*n_obs_cons:(j+1)*n_obs_cons] = - cons_obs.reshape(n_obs_cons)
                             Jac[j*n_obs_cons:(j+1)*n_obs_cons] = - grad_obs
                             # Hess[j*n_obs_cons:(j+1)*n_obs_cons] = - hess_obs
