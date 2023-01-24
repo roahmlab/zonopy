@@ -50,28 +50,65 @@ class ARMTD_2D_planner():
         self.qpos = qpos.to(dtype=self.dtype,device='cpu')
         self.qvel = qvel.to(dtype=self.dtype,device='cpu')
 
+    def prepare_constraints2(self,qpos,qvel,obstacles):
+        _, R_trig = zp.process_batch_JRS_trig(self.JRS_tensor,qpos.to(dtype=self.dtype,device=self.device),qvel.to(dtype=self.dtype,device=self.device),self.joint_axes)
+        self.FO_link,_, _ = forward_occupancy(R_trig,self.link_zonos,self.params) # NOTE: zono_order
+        self.A = np.zeros((self.n_links),dtype=object)
+        self.b = np.zeros((self.n_links),dtype=object)
+        self.g_ka = torch.pi/24 #torch.maximum(self.PI/24,abs(qvel/3))
+
+        obs_Z = []
+        for obs in obstacles:
+            #Z = obs.Z.clone()
+            #Z[1:] += torch.eye(3) * BUFFER_AMOUNT
+            #obs_Z.append(Z.unsqueeze(0))
+            # import pdb;pdb.set_trace()
+            obs_Z.append(obs.Z[:,:self.dimension].unsqueeze(0))
+        obs_Z = torch.cat(obs_Z,0).to(dtype=self.dtype, device=self.device).unsqueeze(1).repeat(1,self.n_timesteps,1,1)
+
+        obs_in_reach_idx = torch.zeros(self.n_obs,dtype=bool,device=self.device)
+        for j in range(self.n_links):
+            temp = self.FO_link[j].project([0,1]).to(device=self.device)
+            obs_buff_Grest = zp.batchZonotope(torch.cat((obs_Z,temp.Grest.unsqueeze(0).repeat(self.n_obs,1,1,1)),-2))
+            A_Grest, b_Grest  = obs_buff_Grest.polytope()
+            obs_buff = obs_buff_Grest - zp.batchZonotope(temp.Z[temp.batch_idx_all+(slice(temp.n_dep_gens+1),)].unsqueeze(0).repeat(self.n_obs,1,1,1))
+            _, b_obs = obs_buff.reduce(3).polytope()
+            obs_in_reach_idx += (torch.min(b_obs.nan_to_num(torch.inf),-1)[0] > -1e-6).any(-1)
+            self.FO_link[j] = self.FO_link[j].project([0,1]).cpu()
+            self.A[j] = A_Grest
+            self.b[j] = b_Grest
+        
+        for j in range(self.n_links):
+            self.A[j] = self.A[j][obs_in_reach_idx].cpu()
+            self.b[j] = self.b[j][obs_in_reach_idx].cpu()
+
+        self.n_obs_in_frs = int(sum(obs_in_reach_idx))
+        self.qpos = qpos.to(dtype=self.dtype,device='cpu')
+        self.qvel = qvel.to(dtype=self.dtype,device='cpu')
+
     def trajopt(self,qgoal,ka_0):
-        M_obs = self.n_links*self.n_timesteps*self.n_obs
+        n_obs_cons = self.n_timesteps*self.n_obs_in_frs
+        M_obs = self.n_links*n_obs_cons
         M = M_obs+2*self.n_links
 
         class nlp_setup():
             x_prev = np.zeros(self.n_links)*np.nan
             def objective(p,x):
-                qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
+                qplan = self.qpos + self.qvel*T_PLAN + 0.5*self.g_ka*x*T_PLAN**2
                 return torch.sum(wrap_to_pi(qplan-qgoal)**2)
 
             def gradient(p,x):
-                qplan = self.qpos + self.qvel*T_PLAN + 0.5*x*T_PLAN**2
-                qplan_grad = 0.5*T_PLAN**2
+                qplan = self.qpos + self.qvel*T_PLAN + 0.5*self.g_ka*x*T_PLAN**2
+                qplan_grad = 0.5*self.g_ka*T_PLAN**2
                 return (2*qplan_grad*wrap_to_pi(qplan-qgoal)).numpy()
 
             def constraints(p,x): 
                 p.compute_constraints(x)     
-                return p.cons_obs
+                return p.Cons
 
             def jacobian(p,x):
                 p.compute_constraints(x)
-                return p.grad_cons_obs
+                return p.Jac
             '''
             def hessianstructure(p):
                 return np.nonzero(np.tril(np.ones((self.n_links,self.n_links))))
@@ -89,45 +126,44 @@ class ARMTD_2D_planner():
                 pass
             
             def compute_constraints(p,x):
-                #if (p.x_prev!=x).any():
-                if True:
-
+                if (p.x_prev!=x).any():
                     ka = torch.tensor(x,dtype=torch.get_default_dtype()).unsqueeze(0).repeat(self.n_timesteps,1)
-                    cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links)                   
-                    grad_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links)
+                    Cons = torch.zeros(M,dtype=self.dtype)
+                    Jac = torch.zeros(M,self.n_links,dtype=self.dtype)
                     # hess_cons_obs = torch.zeros(self.n_timesteps*self.n_links*self.n_obs+2*self.n_links,self.n_links,self.n_links)
                     # velocity min max constraints
                     
-                    q_dot_peak = self.qvel+x*T_PLAN
-                    grad_q_dot_peak = T_PLAN * torch.eye(self.n_links)
+                    qvel_peak = self.qvel + self.g_ka * ka[0] * T_PLAN
+                    grad_qvel_peak = self.g_ka * T_PLAN * torch.eye(self.n_links,dtype=self.dtype)
 
-                    cons_obs[-2*self.n_links:] = torch.hstack((q_dot_peak,q_dot_peak))
-                    grad_cons_obs[-2*self.n_links:] = torch.vstack((grad_q_dot_peak,grad_q_dot_peak))
+                    Cons[-2*self.n_links:] = torch.hstack((qvel_peak,qvel_peak))
+                    Jac[-2*self.n_links:] = torch.vstack((grad_qvel_peak,grad_qvel_peak))
                     # velocity min max constraints
-                    for j in range(self.n_links):
-                        c_k = self.FO_link[j].center_slice_all_dep(ka/self.g_ka)
-                        grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka/self.g_ka)/self.g_ka
-                        #hess_c_k = self.FO_link[j].hess_center_slice_all_dep(ka/self.g_ka)/self.g_ka
-                        for o in range(self.n_obs):
-                            h_obs = (self.A[j][o]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j][o]
-                            cons, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1) # shape: n_timsteps, SAFE if >=1e-6 
-                            A_max = self.A[j][o].gather(-2,ind.reshape(self.n_timesteps,1,1).repeat(1,1,self.dimension)) 
-                            grad_cons = (A_max@grad_c_k).squeeze(-2) # shape: n_timsteps, n_links safe if >=1e-6
-                            #hess_cons =  (A_max.reshape(self.n_timesteps,1,1,self.dimension)@hess_c_k.transpose(-3,-2)).squeeze(-2)
-                            cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = cons
-                            grad_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = grad_cons
-                            #hess_cons_obs[(j+self.n_links*o)*self.n_timesteps:(j+self.n_links*o+1)*self.n_timesteps] = hess_cons
-                    p.cons_obs = cons_obs.numpy()
-                    p.grad_cons_obs = grad_cons_obs.numpy()
-                    #p.hess_cons_obs = hess_cons_obs.numpy()
-                    p.x_prev = np.copy(x)               
+                    if self.n_obs_in_frs > 0:
+                        for j in range(self.n_links):
+                            c_k = self.FO_link[j].center_slice_all_dep(ka)
+                            grad_c_k = self.FO_link[j].grad_center_slice_all_dep(ka)
+                            # hess_c_k = self.FO_link[j].hess_center_slice_all_dep(ka)
+                            h_obs = (self.A[j]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j]
+                            cons_obs, ind = torch.max(h_obs.nan_to_num(-torch.inf),-1)
+                            A_max = self.A[j].gather(-2,ind.reshape(self.n_obs_in_frs,self.n_timesteps,1,1).repeat(1,1,1,self.dimension))
+                            grad_obs = (A_max@grad_c_k).reshape(n_obs_cons,self.n_links)
+                            Cons[j*n_obs_cons:(j+1)*n_obs_cons] = - cons_obs.reshape(n_obs_cons)
+                            Jac[j*n_obs_cons:(j+1)*n_obs_cons] = - grad_obs
+                            # Hess[j*n_obs_cons:(j+1)*n_obs_cons] = - hess_obs
+                            
+                    
+                    p.Cons = Cons.numpy()
+                    p.Jac = Jac.numpy()
+                    # p.Hess = Hess.numpy()
+                    p.x_prev = np.copy(x)        
         
         nlp = cyipopt.Problem(
         n = self.n_links,
         m = M,
         problem_obj=nlp_setup(),
-        lb = [-self.g_ka]*self.n_links,
-        ub = [self.g_ka]*self.n_links,
+        lb = [-1]*self.n_links,
+        ub = [1]*self.n_links,
         cl = [1e-6]*M_obs+[-1e20]*self.n_links+[-torch.pi/2+1e-6]*self.n_links,
         cu = [1e20]*M_obs+[torch.pi/2-1e-6]*self.n_links+[1e20]*self.n_links,
         )
@@ -145,11 +181,11 @@ class ARMTD_2D_planner():
         # prob = nlp_setup() 
         #(prob.constraints(ka_0.cpu().numpy()+np.array([1e-8,0])) - prob.constraints(ka_0.cpu().numpy())) /1e-8
         # prob.jacobian(ka_0.cpu().numpy())
-        return torch.tensor(k_opt,dtype=self.dtype,device=self.device), self.info['status']
+        return torch.tensor(self.g_ka*k_opt,dtype=self.dtype,device=self.device), self.info['status']
         
     def plan(self,env,ka_0):
         zp.reset()
-        self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
+        self.prepare_constraints2(env.qpos,env.qvel,env.obs_zonos)
         t1 = time.time()
         k_opt, flag = self.trajopt(env.qgoal,ka_0)
         return k_opt, flag, time.time()-t1
