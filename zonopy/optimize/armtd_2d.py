@@ -68,7 +68,7 @@ class ARMTD_2D_planner():
 
         obs_in_reach_idx = torch.zeros(self.n_obs,dtype=bool,device=self.device)
         for j in range(self.n_links):
-            temp = self.FO_link[j].project([0,1]).to(device=self.device)
+            temp = self.FO_link[j].project([0,1])
             obs_buff_Grest = zp.batchZonotope(torch.cat((obs_Z,temp.Grest.unsqueeze(0).repeat(self.n_obs,1,1,1)),-2))
             A_Grest, b_Grest  = obs_buff_Grest.polytope()
             obs_buff = obs_buff_Grest - zp.batchZonotope(temp.Z[temp.batch_idx_all+(slice(temp.n_dep_gens+1),)].unsqueeze(0).repeat(self.n_obs,1,1,1))
@@ -164,8 +164,8 @@ class ARMTD_2D_planner():
         problem_obj=nlp_setup(),
         lb = [-1]*self.n_links,
         ub = [1]*self.n_links,
-        cl = [1e-6]*M_obs+[-1e20]*self.n_links+[-torch.pi/2+1e-6]*self.n_links,
-        cu = [1e20]*M_obs+[torch.pi/2-1e-6]*self.n_links+[1e20]*self.n_links,
+        cl = [-1e20]*M_obs+[-1e20]*self.n_links+[-torch.pi/2+1e-6]*self.n_links,
+        cu = [-1e-6]*M_obs+[torch.pi/2-1e-6]*self.n_links+[1e20]*self.n_links,
         )
         #nlp.add_option('mu_strategy', 'adaptive')
 
@@ -228,7 +228,7 @@ if __name__ == '__main__':
         observations, reward, done, info = env.step(ka.cpu(),flag)
 
         ts =time.time()
-        #env.render(planner.FO_link)
+        env.render(planner.FO_link)
         t_render += time.time()-ts
     print(f'Total time elasped for ARMTD-2D with {n_steps} steps: {t_armtd}')
     print(f'Total time elasped for rendering with {n_steps} steps: {t_render}')
