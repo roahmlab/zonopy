@@ -4,6 +4,41 @@ from zonopy.joint_reachable_set.utils import remove_dependence_and_compress
 import zonopy as zp
 PI = torch.tensor(torch.pi)
 
+
+from zonopy.trajectories import BernsteinArmTrajectory
+import numpy as np
+
+class JrsGenerator:
+    def __init__(self, \
+                 robot, \
+                 traj_class=BernsteinArmTrajectory, \
+                 param_center=0, \
+                 param_range=np.pi/36, \
+                 tplan=0.5, \
+                 tfinal=1.0, \
+                 ):
+        self.robot = robot
+        self.traj = traj_class
+
+        self.num_q = len(robot.actuated_joints)
+        self.joint_axis = [joint.axis for joint in robot.actuated_joints]
+        self.joint_axis = np.array(self.joint_axis)
+
+        self.param_center = torch.ones(self.num_q) * param_center
+        self.param_range = torch.ones(self.num_q) * param_range
+
+        self.tplan = tplan
+        self.tfinal = tfinal
+    
+    def gen_JRS(q, qd, qdd, taylor_degree=1, make_gens_independent=True):
+        q = q.squeeze()
+        qd = qd.squeeze()
+        qdd = qdd.squeeze()
+
+        # Create initial PZ's of k, time, and error
+        
+
+
 def gen_JRS(q,dq,joint_axes=None,taylor_degree=1,make_gens_independent=True):
     n_q = len(q)
     if joint_axes is None:

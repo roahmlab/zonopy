@@ -2,3 +2,4 @@ __pycache__/
 zonopy.egg-info/
 test/training/results/
 video_test/
+.vscode/
