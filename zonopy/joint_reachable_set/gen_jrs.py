@@ -43,6 +43,7 @@ class JrsGenerator:
 
         # Create base PZ's for parameters
         self.base_params = np.empty(self.num_q, dtype=object)
+        self.k_ids = np.empty(self.num_q, dtype=int)
         for i in range(self.num_q):
             id = len(self.id_map)
             self.id_map[f'k{i}'] = id
@@ -50,6 +51,7 @@ class JrsGenerator:
                 [[0],[1]],
                 1, id=id
             )
+            self.k_ids[i] = id
 
         # Create base PZ's for time
         self.times = np.empty(num_t, dtype=object)
@@ -115,7 +117,24 @@ class JrsGenerator:
             R = np.empty_like(q)
             for i in range(self.num_q):
                 R[:,i] = rot_from_q(q[:,i], self.joint_axis[i], taylor_deg=taylor_degree)
-        else:
+
+        # Make independence if requested
+        if make_gens_independent:
+            print("Making non-k generators independent")
+            rem_dep = np.vectorize(remove_dependence_and_compress, excluded=[1])
+            q_ref = rem_dep(q_ref, self.k_ids)
+            qd_ref = rem_dep(qd_ref, self.k_ids)
+            qdd_ref = rem_dep(qdd_ref, self.k_ids)
+            R_ref = rem_dep(R_ref, self.k_ids)
+            if self.ultimate is not None:
+                q = rem_dep(q, self.k_ids)
+                qd = rem_dep(qd, self.k_ids)
+                qd_aux = rem_dep(qd_aux, self.k_ids)
+                qdd_aux = rem_dep(qdd_aux, self.k_ids)
+                R = rem_dep(R, self.k_ids)
+
+        # Filler
+        if self.ultimate is None:
             q, qd = q_ref, qd_ref
             qd_aux, qdd_aux = qd_ref, qdd_ref
             R = R_ref
