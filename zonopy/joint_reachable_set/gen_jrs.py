@@ -159,7 +159,7 @@ class JrsGenerator:
         cos_sin_q = cos_q.exactCartProd(sin_q)
         # Rotation Matrix
         e = rotation_axis/np.linalg.norm(rotation_axis)
-        U = np.array([[0, -e[2], e[1]],[e[2], 0, -e[0]],[-e[1], e[0], 0]])
+        U = torch.tensor([[0, -e[2], e[1]],[e[2], 0, -e[0]],[-e[1], e[0], 0]])
 
         # Create rotation matrices from cos and sin dimensions
         cq = cos_sin_q.c[0]

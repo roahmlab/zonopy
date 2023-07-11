@@ -33,7 +33,7 @@ class __DefaultOptions(object):
             assert itype == torch.int or itype == torch.long or itype == torch.short, 'Default itype should be integer.'
             self.__itype = itype
         if device is not None:
-            PROPERTY_ID.to(device)
+            # PROPERTY_ID.to(device)
             self.__device = device
 
 DEFAULT_OPTS = __DefaultOptions()
