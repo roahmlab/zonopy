@@ -50,7 +50,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
         self._qdpeak = self.qd0 \
             + self._param * self.tbrake
         
-        self._stopping_qdd = (0 - self._qdpeak) / stopping_time
+        self._stopping_qdd = (0 - self._qdpeak) * (1.0 / stopping_time)
 
         self._final_q = self._qpeak \
             + self._qdpeak * stopping_time \
@@ -74,7 +74,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
             if hasattr(v, 'c'):
                 val = v.c
             mask_plan[i] = val <= self.tbrake
-            mask_stopping[i] = (val < self.tfinal) - mask_plan[i]
+            mask_stopping[i] = (val < self.tfinal) + ~mask_plan[i]
         
         q_out = np.tile(self._final_q,(num_t,1))
         qd_out = np.tile(self._final_q * 0,(num_t,1))
@@ -146,7 +146,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
         super().__init__(q0, qd0, qdd0, kparam, krange, tbrake, tfinal)
 
         # Precompute some extra parameters
-        self._final_q = q0 + self._param
+        self._final_q = self._param + q0
         
         betas = self._match_deg5_bernstein_coeff\
             (q0, qd0, qdd0, self._final_q, 0, 0, dtype=object)
@@ -177,7 +177,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
             beta[2] = (tspan * tspan * qdd0) * (1.0/20.0) \
                 + (2 * tspan * qd0) * (1.0/5.0) + q0
             beta[3] = (tspan * tspan * qdd1) * (1.0/20.0) \
-                + (2 * tspan * qd1) * (1.0/5.0) + q1
+                - (2 * tspan * qd1) * (1.0/5.0) + q1
             
             return beta
         

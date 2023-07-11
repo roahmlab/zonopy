@@ -139,9 +139,26 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
     L1 = len(id1)
     L2 = len(id2)
 
+    import numpy as np
     # ID vectors are identical
     if L1 == L2 and all(id1==id2):
         id = id1
+
+    elif isinstance(id1, np.ndarray):
+        ind2 =np.zeros_like(id2)
+
+        Ind_rep = id2.reshape(-1,1) == id1
+        ind = np.any(Ind_rep,axis=1)
+        non_ind = ~ind
+        ind2[ind] = Ind_rep.nonzero()[1]
+        ind2[non_ind] = np.arange(non_ind.sum()) + len(id1)
+        id = np.hstack((id1,id2[non_ind]))
+        # construct the new exponent matrices
+        L = len(id)
+        expMat1 = torch.hstack((expMat1,torch.zeros(len(expMat1),L-L1,dtype=expMat1.dtype,device=expMat1.device)))
+        temp = torch.zeros(len(expMat2),L,dtype=expMat1.dtype,device=expMat1.device)
+        temp[:,ind2] = expMat2
+        expMat2 = temp
 
     # ID vectors not identical -> MERGE
     else:

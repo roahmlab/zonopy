@@ -19,7 +19,7 @@ class interval:
     Eq.
     I = { inf*(1-a)/2 + sup*(1+a)/2 | coef. a \in [-1,1] }
     '''
-    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR):
+    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR, dtype=float, device=None):
         if isinstance(inf,list):
             inf = torch.tensor(inf)
         if isinstance(sup,list):
@@ -32,8 +32,8 @@ class interval:
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
         assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
-        self.__inf = inf
-        self.__sup = sup
+        self.__inf = inf.to(dtype=dtype, device=device)
+        self.__sup = sup.to(dtype=dtype, device=device)
     @property
     def dtype(self):
         '''

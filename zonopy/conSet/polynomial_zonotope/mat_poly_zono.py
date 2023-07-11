@@ -4,10 +4,11 @@ Author: Yongseok Kwon
 Reference: Patrick Holme's implementation
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, mergeExpMatrix
-from zonopy.conSet import PROPERTY_ID
+# from zonopy.conSet import PROPERTY_ID
 from zonopy import polyZonotope
 import zonopy as zp
 import torch
+import numpy as np
 
 class matPolyZonotope():
     '''
@@ -44,12 +45,13 @@ class matPolyZonotope():
         C = Z[0]
         G = Z[1:1+n_dep_gens]
         Grest = Z[1+n_dep_gens:]
-        if expMat == None and id == None:
+        if expMat is None and id is None:
             nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
             G = G[nonzero_g]
-            self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)            
-            self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
-        elif expMat != None:
+            self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)   
+            self.id = np.arange(self.expMat.shape[1],dtype=int)         
+            # self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
+        elif expMat is not None:
             #check correctness of user input 
             if isinstance(expMat, list):
                 expMat = torch.tensor(expMat,dtype=torch.long,device=Z.device)
@@ -64,19 +66,28 @@ class matPolyZonotope():
                 self.expMat =expMat[nonzero_g]
             else:
                 self.expMat =expMat
-            if id != None:
-                if isinstance(id, list):
-                    id = torch.tensor(id,dtype=torch.long,device=Z.device)
-                if id.numel() !=0:
-                    assert prop == 'None', 'Either ID or property should not be defined.'
-                    assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
-                assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
-                assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
-                self.id = id
+            if id is not None:
+                self.id = np.array(id, dtype=int)
             else:
-                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device)  
+                self.id = np.arange(self.expMat.shape[1],dtype=int)
+            # if id != None:
+            #     if isinstance(id, list):
+            #         id = torch.tensor(id,dtype=torch.long,device=Z.device)
+            #     if id.numel() !=0:
+            #         assert prop == 'None', 'Either ID or property should not be defined.'
+            #         assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
+            #     assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
+            #     assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
+            #     self.id = id
+            # else:
+            #     self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device)  
         else:
-            assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
+            # assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
+            # Assume if an id is given, that the expmat is the identity
+            self.id = np.array(id, dtype=int).flatten()
+            assert len(self.id) == n_dep_gens, 'Number of dependent generators must match number of id\'s!'
+            self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device)
+        
         self.Z = torch.vstack((C.unsqueeze(0),G,Grest))
         self.n_dep_gens = G.shape[0]
     @property
@@ -114,20 +125,22 @@ class matPolyZonotope():
         return matPolyZonotope(self.Z.transpose(1,2),self.n_dep_gens,self.expMat,self.id,compress=0)
     @property 
     def input_pairs(self):
-        id_sorted, order = torch.sort(self.id)
+        # id_sorted, order = torch.sort(self.id)
+        order = np.argsort(self.id)
         expMat_sorted = self.expMat[:,order] 
-        return self.Z, self.n_dep_gens, expMat_sorted, id_sorted
+        # return self.Z, self.n_dep_gens, expMat_sorted, id_sorted
+        return self.Z, self.n_dep_gens, expMat_sorted, self.id[order]
         
     def to(self,dtype=None,itype=None,device=None):
         Z = self.Z.to(dtype=dtype,device=device)
         expMat = self.expMat.to(dtype=itype,device=device)
-        id = self.id.to(device=device)
-        return matPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+        # id = self.id.to(device=device)
+        return matPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0)
     def cpu(self):
         Z = self.Z.cpu()
         expMat = self.expMat.cpu()
-        id = self.id.cpu()
-        return matPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+        # id = self.id.cpu()
+        return matPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0)
         
     def __matmul__(self,other):
         '''

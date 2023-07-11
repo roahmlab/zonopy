@@ -207,45 +207,46 @@ class ArmRobot:
         self.robot = robot
         
 
-a = load_robot('/home/adamli/zonopy/zonopy/robots/assets/robots/kinova_arm/gen3.urdf')
-a.show()
+if __name__ == '__main__':
+    a = load_robot('/home/adamli/zonopy/zonopy/robots/assets/robots/kinova_arm/gen3.urdf')
+    a.show()
 
-link = a.links[4]
-mesh = link.collision_mesh
-import matplotlib.pyplot as plt
-fig=plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces)
+    link = a.links[4]
+    mesh = link.collision_mesh
+    import matplotlib.pyplot as plt
+    fig=plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces)
 
-mesh = link.collision_mesh.bounding_box
-# fig=plt.figure()
-# ax = fig.add_subplot(projection='3d')
-ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces, alpha=0.2)
+    mesh = link.collision_mesh.bounding_box
+    # fig=plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces, alpha=0.2)
 
-mesh = link.collision_mesh.bounding_box_oriented
-fig=plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces)
+    mesh = link.collision_mesh.bounding_box_oriented
+    fig=plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces)
 
-mesh = link.collision_mesh.bounding_cylinder
-fig=plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces, alpha=0.2)
+    mesh = link.collision_mesh.bounding_cylinder
+    fig=plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces, alpha=0.2)
 
-test = a.collision_trimesh_fk(cfg={'joint_4':3.14/2.0},links=[link])
-mesh = link.collision_mesh
-from trimesh import transformations
-mesh.apply_transform(transformations.random_rotation_matrix())
-fig=plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces)
+    test = a.collision_trimesh_fk(cfg={'joint_4':3.14/2.0},links=[link])
+    mesh = link.collision_mesh
+    from trimesh import transformations
+    mesh.apply_transform(transformations.random_rotation_matrix())
+    fig=plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces)
 
-mesh = link.collision_mesh.bounding_box
-import matplotlib.pyplot as plt
-# fig=plt.figure()
-# ax = fig.add_subplot(projection='3d')
-ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces, alpha=0.2)
+    mesh = link.collision_mesh.bounding_box
+    import matplotlib.pyplot as plt
+    # fig=plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    ax.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces, alpha=0.2)
 
-plt.show()
+    plt.show()
 
-print('end')
+    print('end')
