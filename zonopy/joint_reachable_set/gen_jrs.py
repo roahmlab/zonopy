@@ -181,7 +181,7 @@ class JrsGenerator:
         
         Z = torch.concat((C, tmp_G, tmp_Grest), dim=0)
         # Z_t = Z.transpose(1,2)
-        out = zp.matPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0)
+        out = zp.matPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0,copy_Z=False)
         # out_t = zp.matPolyZonotope(Z_t, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0)
         # return (out, out_t)
         return out
@@ -238,7 +238,7 @@ class JrsGenerator:
         G = out.G
         Grest = torch.sum(out.Grest) + remainder.rad()
         Z = torch.vstack([c, G, Grest])
-        out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+        out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
         return out
 
     # Put this here for now, but eventually find a better place to put this
@@ -293,7 +293,7 @@ class JrsGenerator:
         G = out.G
         Grest = torch.sum(out.Grest) + remainder.rad()
         Z = torch.vstack([c, G, Grest])
-        out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+        out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
         return out
 
 

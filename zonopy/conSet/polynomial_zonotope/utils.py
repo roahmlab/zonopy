@@ -143,6 +143,7 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
     # ID vectors are identical
     if L1 == L2 and all(id1==id2):
         id = id1
+        return id, expMat1, expMat2
 
     elif isinstance(id1, np.ndarray):
         ind2 =np.zeros_like(id2)
@@ -153,12 +154,6 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
         ind2[ind] = Ind_rep.nonzero()[1]
         ind2[non_ind] = np.arange(non_ind.sum()) + len(id1)
         id = np.hstack((id1,id2[non_ind]))
-        # construct the new exponent matrices
-        L = len(id)
-        expMat1 = torch.hstack((expMat1,torch.zeros(len(expMat1),L-L1,dtype=expMat1.dtype,device=expMat1.device)))
-        temp = torch.zeros(len(expMat2),L,dtype=expMat1.dtype,device=expMat1.device)
-        temp[:,ind2] = expMat2
-        expMat2 = temp
 
     # ID vectors not identical -> MERGE
     else:
@@ -170,12 +165,13 @@ def mergeExpMatrix(id1, id2, expMat1, expMat2):
         ind2[ind] = Ind_rep.nonzero()[:,1]
         ind2[non_ind] = torch.arange(non_ind.sum(),device=non_ind.device) + len(id1)
         id = torch.hstack((id1,id2[non_ind]))
-        # construct the new exponent matrices
-        L = len(id)
-        expMat1 = torch.hstack((expMat1,torch.zeros(len(expMat1),L-L1,dtype=expMat1.dtype,device=expMat1.device)))
-        temp = torch.zeros(len(expMat2),L,dtype=expMat1.dtype,device=expMat1.device)
-        temp[:,ind2] = expMat2
-        expMat2 = temp
+    
+    # construct the new exponent matrices
+    L = len(id)
+    expMat1 = torch.hstack((expMat1,torch.zeros(len(expMat1),L-L1,dtype=expMat1.dtype,device=expMat1.device)))
+    temp = torch.zeros(len(expMat2),L,dtype=expMat1.dtype,device=expMat1.device)
+    temp[:,ind2] = expMat2
+    expMat2 = temp
 
     return id, expMat1, expMat2
 

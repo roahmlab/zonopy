@@ -3,3 +3,4 @@ zonopy.egg-info/
 test/training/results/
 video_test/
 .vscode/
+trace.json

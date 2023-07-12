@@ -37,18 +37,29 @@ class matPolyZonotope():
     pZ = c + a1*Gi1 + a2*Gi2 + ... + aN*GiN + b1^i11*b2^i21*...*bp^ip1*Gd1 + b1^i12*b2^i22*...*bp^ip2*Gd2 + ... 
     + b1^i1M*b2^i2M*...*bp^ipM*GdM
     '''
-    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,prop='None',compress=2):
+    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,prop='None',compress=2,copy_Z=True):
+        # If compress=2, it will always copy.
+
         if isinstance(Z,list):
             Z = torch.tensor(Z,dtype=torch.float)
-        assert isinstance(prop,str), 'Property should be string.'
+        # assert isinstance(prop,str), 'Property should be string.'
         assert isinstance(Z, torch.Tensor), 'The input matrix should be either torch tensor or list.'
-        C = Z[0]
-        G = Z[1:1+n_dep_gens]
-        Grest = Z[1+n_dep_gens:]
+        # C = Z[0]
+        # G = Z[1:1+n_dep_gens]
+        # Grest = Z[1+n_dep_gens:]
+        G_ind = np.arange(1, 1+n_dep_gens)
+        Grest_ind = np.arange(1+n_dep_gens, Z.shape[0])
+        G = Z[G_ind]
+        if compress == 1:
+            nonzero_g = (torch.sum(G!=0,(-1,-2))!=0).cpu().numpy() # non-zero generator index
+            G_ind = G_ind[nonzero_g]
+            G = Z[G_ind]
+
         if expMat is None and id is None:
-            nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
-            G = G[nonzero_g]
-            self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)   
+            # nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
+            # G = G[nonzero_g]
+            # self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)   
+            self.expMat = torch.eye(G_ind.shape[0],dtype=torch.long,device=Z.device)
             self.id = np.arange(self.expMat.shape[1],dtype=int)         
             # self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat is not None:
@@ -60,14 +71,15 @@ class matPolyZonotope():
             assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
             if compress == 2: 
                 self.expMat,G = removeRedundantExponents(expMat,G)
+                copy_Z = True
             elif compress == 1:
-                nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
-                G = G[nonzero_g]    
+                # nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
+                # G = G[nonzero_g]    
                 self.expMat =expMat[nonzero_g]
             else:
                 self.expMat =expMat
             if id is not None:
-                self.id = np.array(id, dtype=int)
+                self.id = np.asarray(id, dtype=int)
             else:
                 self.id = np.arange(self.expMat.shape[1],dtype=int)
             # if id != None:
@@ -86,9 +98,13 @@ class matPolyZonotope():
             # Assume if an id is given, that the expmat is the identity
             self.id = np.array(id, dtype=int).flatten()
             assert len(self.id) == n_dep_gens, 'Number of dependent generators must match number of id\'s!'
-            self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device)
+            self.expMat = torch.eye(G_ind.shape[0],dtype=torch.long,device=Z.device)
         
-        self.Z = torch.vstack((C.unsqueeze(0),G,Grest))
+        if copy_Z:
+            self.Z = torch.vstack((Z[0].unsqueeze(0), G, Z[Grest_ind]))
+        else:
+            ind = np.concatenate([[0], G_ind, Grest_ind])
+            self.Z = Z[ind]
         self.n_dep_gens = G.shape[0]
     @property
     def dtype(self):
@@ -122,7 +138,7 @@ class matPolyZonotope():
         return self.Z.shape[2]
     @property
     def T(self):        
-        return matPolyZonotope(self.Z.transpose(1,2),self.n_dep_gens,self.expMat,self.id,compress=0)
+        return matPolyZonotope(self.Z.transpose(1,2),self.n_dep_gens,self.expMat,self.id,compress=0,copy_Z=False)
     @property 
     def input_pairs(self):
         # id_sorted, order = torch.sort(self.id)
@@ -135,12 +151,12 @@ class matPolyZonotope():
         Z = self.Z.to(dtype=dtype,device=device)
         expMat = self.expMat.to(dtype=itype,device=device)
         # id = self.id.to(device=device)
-        return matPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0)
+        return matPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0,copy_Z=False)
     def cpu(self):
         Z = self.Z.cpu()
         expMat = self.expMat.cpu()
         # id = self.id.cpu()
-        return matPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0)
+        return matPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0,copy_Z=False)
         
     def __matmul__(self,other):
         '''
@@ -157,13 +173,13 @@ class matPolyZonotope():
             
             if len(other.shape) == 1:
                 Z = self.Z @ other
-                return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
+                return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1,copy_Z=False)
             elif len(other.shape) == 2:
                 Z = self.Z @ other
-                return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
+                return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1,copy_Z=False)
             else:
                 Z = self.Z @ other.unsqueeze(-3)
-                return zp.batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
+                return zp.batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1,copy_Z=False)
 
         # NOTE: this is 'OVERAPPROXIMATED' multiplication for keeping 'fully-k-sliceables'
         # The actual multiplication should take
@@ -185,7 +201,11 @@ class matPolyZonotope():
             z3 = _Z[self.n_dep_gens+1:].reshape(-1,self.n_rows)
             z4 = _Z[:self.n_dep_gens+1,other.n_dep_gens+1:].reshape(-1,self.n_rows)
             Z = torch.vstack((z1,z2,z3,z4))
-            expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
+            # expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
+            # Rewrite to use views
+            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(-1,expMat2.shape[1])
+            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(-1,expMat1.shape[1])
+            expMat = torch.vstack((expMat1,expMat2,first + second))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return polyZonotope(Z,n_dep_gens,expMat,id)
 
@@ -198,7 +218,11 @@ class matPolyZonotope():
             z3 = _Z[self.n_dep_gens+1:].reshape(-1,self.n_rows,other.n_cols)
             z4 = _Z[:self.n_dep_gens+1,other.n_dep_gens+1:].reshape(-1,self.n_rows,other.n_cols)
             Z = torch.vstack((z1,z2,z3,z4))
-            expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
+            # expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
+            # Rewrite to use views
+            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(-1,expMat2.shape[1])
+            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(-1,expMat1.shape[1])
+            expMat = torch.vstack((expMat1,expMat2,first + second))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return matPolyZonotope(Z,n_dep_gens,expMat,id)
         elif isinstance(other,zp.batchMatPolyZonotope):
@@ -220,7 +244,7 @@ class matPolyZonotope():
             assert len(other.shape) == 2, 'The other object should be 2-D tensor.'  
             assert other.shape[1] == self.n_rows
             Z = other @ self.Z
-            return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
+            return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1,copy_Z=False)
 
     def to_matZonotope(self):
         if self.n_dep_gens != 0:
@@ -283,7 +307,7 @@ class matPolyZonotope():
         idRed = self.id[ind]
         if self.n_rows == 1 and self.n_cols == 1:
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
-        return matPolyZonotope(ZRed,n_dg_red,expMatRed,idRed,compress=1)
+        return matPolyZonotope(ZRed,n_dg_red,expMatRed,idRed,compress=1,copy_Z=False)
 
     def reduce_indep(self,order,option='girard'):
         # extract dimensions
@@ -312,7 +336,7 @@ class matPolyZonotope():
         if self.n_rows == 1 == self.n_cols and n_dg_red != 1:
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
             n_dg_red = 1
-        return matPolyZonotope(ZRed,n_dg_red,self.expMat,self.id,compress=1)
+        return matPolyZonotope(ZRed,n_dg_red,self.expMat,self.id,compress=1,copy_Z=False)
 
 if __name__ == '__main__':
     
