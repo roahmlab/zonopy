@@ -20,12 +20,11 @@ class JrsGenerator:
                  tdiscretization=0.01,
                  ultimate_bound=None,
                  k_r=None):
+        
         self.robot = robot
         self.traj = traj_class
 
-        self.num_q = len(robot.actuated_joints)
-        self.joint_axis = [joint.axis for joint in robot.actuated_joints]
-        self.joint_axis = np.array(self.joint_axis)
+        self.num_q = robot.num_q
 
         self.param_range = np.ones(self.num_q) * param_range
         self.param_range = np.vstack(
@@ -104,7 +103,7 @@ class JrsGenerator:
         print('Creating Reference Rotatotopes')
         R_ref = np.empty_like(q_ref)
         for i in range(self.num_q):
-            R_ref[:,i] = rot_from_q(q_ref[:,i], self.joint_axis[i], taylor_deg=taylor_degree)
+            R_ref[:,i] = rot_from_q(q_ref[:,i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
 
         # Add tracking error if provided
         if self.ultimate is not None:
@@ -116,7 +115,7 @@ class JrsGenerator:
             print('Creating Output Rotatotopes')
             R = np.empty_like(q)
             for i in range(self.num_q):
-                R[:,i] = rot_from_q(q[:,i], self.joint_axis[i], taylor_deg=taylor_degree)
+                R[:,i] = rot_from_q(q[:,i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
 
         # Make independence if requested
         if make_gens_independent:
@@ -167,13 +166,13 @@ class JrsGenerator:
         C = torch.eye(3) + sq*U + (1-cq)*U@U
         C = C.unsqueeze(0)
 
-        tmp_Grest = None
+        tmp_Grest = torch.empty(0)
         if cos_sin_q.Grest.shape[0] > 0:
             cq = cos_sin_q.Grest[:,0].reshape([-1,1,1])
             sq = cos_sin_q.Grest[:,1].reshape([-1,1,1])
             tmp_Grest = sq*U + -cq*U@U
 
-        tmp_G = None
+        tmp_G = torch.empty(0)
         if cos_sin_q.G.shape[0] > 0:
             cq = cos_sin_q.G[:,0].reshape([-1,1,1])
             sq = cos_sin_q.G[:,1].reshape([-1,1,1])

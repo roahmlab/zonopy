@@ -11,7 +11,7 @@ basedirname = os.path.dirname(zp.__file__)
 robots2.DEBUG_VIZ = False
 print('Loading Robot')
 # This is hardcoded for now
-rob = robots2.load_robot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
+rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
 q = np.array([0.624819195837238,-1.17185521197975,-2.04687142485692,1.69686054456768,-2.28521956398477,0.151194251967712,1.54233217035569])
 qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])
 qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290896919579042,-0.133005741757336,0.133000561712863,0.0608503609673116])
@@ -22,12 +22,40 @@ if use_cuda:
     zp.setup_cuda()
 
 print('Staring JRS Generation')
-traj_class=zp.trajectories.BernsteinArmTrajectory
-# traj_class=zp.trajectories.PiecewiseArmTrajectory
+JrsGenerator._get_pz_rotations_from_q(zp.polyZonotope([[2.5]]), np.array([0,0,1.0]))
+# traj_class=zp.trajectories.BernsteinArmTrajectory
+traj_class=zp.trajectories.PiecewiseArmTrajectory
 a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
 # c = JrsGenerator._get_pz_rotations_from_q(b[0][0][0],a.joint_axis[0],taylor_deg=1)
+
+print('Testing kinematics')
+import zonopy.kinematics as kin
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import mpl_toolkits.mplot3d as a3
+fig = plt.figure()
+# ax = fig.gca()
+ax = a3.Axes3D(fig)
+for i in range (0,100,10):
+    patches = []
+    print('t', i)
+    fk = kin.forward_kinematics(b['R'][i], rob)
+    print('updating plot')
+    for name, (pos, rot) in fk.items():
+        if name in ['base_link']:#,'shoulder_link','half_arm_1_link']:
+            continue
+        bounds = torch.as_tensor(rob.robot.link_parent_joint[name].radius)
+        pos = pos + rot@zp.polyZonotope(torch.vstack([torch.zeros(3), torch.diag(bounds)]))
+        patch = pos.to_zonotope().reduce(4).polyhedron_patch(ax)
+        patches.extend(patch)
+    patches = Poly3DCollection(patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.5)
+    ax.add_collection3d(patches)  
+    # plt.autoscale()
+    plt.draw()
+    plt.pause(0.1)
+plt.show()
 
 # Timing
 num = 10

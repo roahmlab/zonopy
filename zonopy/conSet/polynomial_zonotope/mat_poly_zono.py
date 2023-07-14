@@ -203,8 +203,8 @@ class matPolyZonotope():
             Z = torch.vstack((z1,z2,z3,z4))
             # expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
             # Rewrite to use views
-            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(-1,expMat2.shape[1])
-            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(-1,expMat1.shape[1])
+            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(self.n_dep_gens*expMat2.shape[0],expMat2.shape[1])
+            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(other.n_dep_gens*expMat1.shape[0],expMat1.shape[1])
             expMat = torch.vstack((expMat1,expMat2,first + second))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return polyZonotope(Z,n_dep_gens,expMat,id)
@@ -220,8 +220,8 @@ class matPolyZonotope():
             Z = torch.vstack((z1,z2,z3,z4))
             # expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
             # Rewrite to use views
-            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(-1,expMat2.shape[1])
-            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(-1,expMat1.shape[1])
+            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(self.n_dep_gens*expMat2.shape[0],expMat2.shape[1])
+            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(other.n_dep_gens*expMat1.shape[0],expMat1.shape[1])
             expMat = torch.vstack((expMat1,expMat2,first + second))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return matPolyZonotope(Z,n_dep_gens,expMat,id)
@@ -301,7 +301,7 @@ class matPolyZonotope():
             n_dg_red = self.n_dep_gens
             expMatRed = self.expMat
         # remove all exponent vector dimensions that have no entries
-        ind = torch.sum(expMatRed,0)>0
+        ind = (torch.sum(expMatRed,0)>0).cpu().numpy()
         #ind = temp.nonzero().reshape(-1)
         expMatRed = expMatRed[:,ind]
         idRed = self.id[ind]

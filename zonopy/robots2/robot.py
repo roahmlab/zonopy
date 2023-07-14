@@ -56,10 +56,10 @@ def load_robot(filepath):
     robot = URDF.load(filepath)
 
     # # Preprocess link parent joints and add that to a map
-    # robot.link_parent_joint = {}
-    # for joint in robot.joints:
-    #     # Joint must have parent or child
-    #     robot.link_parent_joint[joint.child] = joint
+    robot.link_parent_joint = {}
+    for joint in robot.joints:
+        # Joint must have parent or child
+        robot.link_parent_joint[joint.child] = joint
 
 
     ##### THE ORIGIN DENOTES THE JOINT TO JOINT AXIS!
@@ -205,6 +205,16 @@ class ArmRobot:
         if type(robot) == str:
             robot = load_robot(robot)
         self.robot = robot
+        
+        self.num_q = len(robot.actuated_joints)
+
+        self.joint_axis = [joint.axis for joint in robot.actuated_joints]
+        self.joint_axis = np.array(self.joint_axis)
+
+        self.joint_origins = [joint.origin for joint in robot.actuated_joints]
+        self.joint_origins = np.array(self.joint_origins)
+
+        self.actuated_joint_names = [joint.name for joint in robot.actuated_joints]
         
 
 if __name__ == '__main__':
