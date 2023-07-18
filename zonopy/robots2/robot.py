@@ -2,7 +2,8 @@ from urchin import URDF, xyz_rpy_to_matrix
 import numpy as np
 import trimesh
 from typing import Union
-
+import torch
+import zonopy as zp
 
 # Function to create a 3D basis for any defining normal vector (to an arbitrary hyperplane)
 # Returns the basis as column vectors
@@ -56,7 +57,7 @@ def load_robot(filepath):
     robot = URDF.load(filepath)
 
     # # Preprocess link parent joints and add that to a map
-    robot.link_parent_joint = {}
+    robot.link_parent_joint = {robot.base_link.name: None}
     for joint in robot.joints:
         # Joint must have parent or child
         robot.link_parent_joint[joint.child] = joint
@@ -190,11 +191,30 @@ def load_robot(filepath):
         joint.radius = joint_bb[:,1]
         joint.aabb = joint_bb
 
-
+        # Store zonotopes for the outer_bb and the aabb
+        outer_rad = np.max(joint.radius)
+        joint.outer_pz = zp.polyZonotope(torch.vstack([torch.zeros(3), torch.eye(3)*outer_rad]))
+        center = np.sum(joint.aabb,axis=1) / 2
+        gens = np.diag(joint.aabb[:,1] - center)
+        joint.bounding_pz = zp.polyZonotope(torch.as_tensor(np.vstack([center,gens])))
+        # joint.bounding_pz = 
         # test = a.collision_trimesh_fk(cfg={'joint_4':3.14/2.0},links=[link])
 
-    # test = a.collision_trimesh_fk(cfg={'joint_4':3.14/2.0},links=[link])
-
+    # Create pz bounding boxes for each link
+    for link in robot.links:
+        try:
+            trimesh_bb = link.collision_mesh.bounding_box
+            bounds = trimesh_bb.vertices
+            bounds = np.column_stack([np.amin(bounds, axis=0), np.amax(bounds, axis=0)])
+        except AttributeError:
+            # If there's no collision mesh, then make it just a 5cm square cube.
+            bounds = np.ones(3)*0.05
+            bounds = np.column_stack([-bounds, bounds])
+        # Create the zonotope
+        center = np.sum(bounds,axis=1) / 2
+        gens = np.diag(bounds[:,1] - center)
+        link_pz = zp.polyZonotope(torch.as_tensor(np.vstack([center,gens])))
+        link.bounding_pz = link_pz
 
     return robot
 
@@ -218,7 +238,10 @@ class ArmRobot:
         
 
 if __name__ == '__main__':
-    a = load_robot('/home/adamli/zonopy/zonopy/robots/assets/robots/kinova_arm/gen3.urdf')
+    import os
+    import zonopy as zp
+    basedirname = os.path.dirname(zp.__file__)
+    a = load_robot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
     a.show()
 
     link = a.links[4]

@@ -5,6 +5,14 @@ import zonopy.transformations.rotation as rot
 from zonopy.joint_reachable_set.gen_jrs import JrsGenerator
 import zonopy as zp
 
+
+# Set cuda if desired and available
+use_cuda = True
+if use_cuda:
+    zp.setup_cuda()
+
+
+# Load robot
 import os
 basedirname = os.path.dirname(zp.__file__)
 
@@ -16,12 +24,8 @@ q = np.array([0.624819195837238,-1.17185521197975,-2.04687142485692,1.6968605445
 qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])
 qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290896919579042,-0.133005741757336,0.133000561712863,0.0608503609673116])
 
-# Set cuda if desired and available
-use_cuda = False
-if use_cuda:
-    zp.setup_cuda()
 
-print('Staring JRS Generation')
+print('Starting JRS Generation')
 JrsGenerator._get_pz_rotations_from_q(zp.polyZonotope([[2.5]]), np.array([0,0,1.0]))
 # traj_class=zp.trajectories.BernsteinArmTrajectory
 traj_class=zp.trajectories.PiecewiseArmTrajectory
@@ -41,7 +45,7 @@ ax = a3.Axes3D(fig)
 for i in range (0,100,10):
     patches = []
     print('t', i)
-    fk = kin.forward_kinematics(b['R'][i], rob)
+    fk = kin.forward_kinematics(list(b['R'][i]), rob.robot)
     print('updating plot')
     for name, (pos, rot) in fk.items():
         if name in ['base_link']:#,'shoulder_link','half_arm_1_link']:
