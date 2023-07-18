@@ -60,7 +60,7 @@ class matPolyZonotope():
             # G = G[nonzero_g]
             # self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)   
             self.expMat = torch.eye(G_ind.shape[0],dtype=torch.long,device=Z.device)
-            self.id = np.arange(self.expMat.shape[1],dtype=int)         
+            self.id = np.arange(self.expMat.shape[1],dtype=int)
             # self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat is not None:
             #check correctness of user input 
@@ -227,6 +227,10 @@ class matPolyZonotope():
             return matPolyZonotope(Z,n_dep_gens,expMat,id)
         elif isinstance(other,zp.batchMatPolyZonotope):
             return other.__rmatmul__(self)
+        elif isinstance(other,zp.batchPolyZonotope):
+            # Shim self to batchMatPolyZono and return that matmul
+            tmp_self = zp.batchMatPolyZonotope(self.Z.unsqueeze(0), self.n_dep_gens, self.expMat, self.id, compress=0)
+            return tmp_self.__matmul__(other)
         else:
             raise ValueError('the other object should be torch tensor or polynomial zonotope.')
 

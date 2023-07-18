@@ -1,4 +1,4 @@
-from zonopy import polyZonotope, matPolyZonotope
+from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from urchin import URDF
 import torch
@@ -27,11 +27,12 @@ def make_rotato_cfg(rotatotopes: Union[Dict[str, matPolyZonotope], List[matPolyZ
 
 
 # This is based on the Urchin's FK source
-def forward_kinematics(rotatotopes: Union[Dict[str, matPolyZonotope], List[matPolyZonotope]],
+def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]], List[Union[matPolyZonotope, batchMatPolyZonotope]]],
                        robot: URDF,
                        zono_order: int = 20,
                        links: List[str] = None,
-                       ) -> OrderedDictType[str, Tuple[polyZonotope, matPolyZonotope]]:
+                       ) -> OrderedDictType[str, Tuple[Union[polyZonotope, batchPolyZonotope],
+                                                       Union[matPolyZonotope, batchMatPolyZonotope]]]:
     # Create the rotato config dictionary
     cfg_map = make_rotato_cfg(rotatotopes, robot)
 
@@ -78,13 +79,13 @@ def forward_kinematics(rotatotopes: Union[Dict[str, matPolyZonotope], List[matPo
             rot = joint_rot@rot
 
             # Check existing FK to see if we can exit early
-            if parent in fk:
-                parent_pos, parent_rot = fk[parent]
+            if parent.name in fk:
+                parent_pos, parent_rot = fk[parent.name]
                 pos = parent_rot@pos + parent_pos
                 rot = parent_rot@rot
                 break
 
         # Save the values & reduce
-        fk[lnk.name] = (pos.reduce(zono_order), rot.reduce(zono_order))
+        fk[lnk.name] = (pos.reduce_indep(zono_order), rot.reduce_indep(zono_order))
 
     return fk

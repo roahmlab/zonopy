@@ -4,11 +4,12 @@ Author: Yongseok Kwon
 Reference: Patrick Holme's implementation
 """
 from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponentsBatch, mergeExpMatrix
-from zonopy.conSet import PROPERTY_ID
+# from zonopy.conSet import PROPERTY_ID
 from zonopy import batchPolyZonotope
 from zonopy import matPolyZonotope
 import zonopy as zp
 import torch
+import numpy as np
 
 class batchMatPolyZonotope():
     '''
@@ -49,7 +50,8 @@ class batchMatPolyZonotope():
             nonzero_g = torch.sum(G!=0,tuple(range(self.batch_dim))+(-1,-2))!=0 # non-zero generator index
             G = G[self.batch_idx_all+(nonzero_g,)]
             self.expMat = torch.eye(G.shape[self.batch_dim],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
-            self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
+            self.id = np.arange(self.expMat.shape[1],dtype=int)
+            # self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat != None:
             #check correctness of user input 
             if isinstance(expMat, list):
@@ -64,21 +66,29 @@ class batchMatPolyZonotope():
                 G = G[self.batch_idx_all+(nonzero_g,)]
                 self.expMat = expMat[nonzero_g]
             else:
-                self.expMat =expMat 
-            #self.expMat =expMat
-            if id != None:
-                if isinstance(id, list):
-                    id = torch.tensor(id,dtype=torch.long,device=Z.device)
-                if id.numel() !=0:
-                    assert prop == 'None', 'Either ID or property should not be defined.'
-                    assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
-                assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
-                assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
-                self.id = id
+                self.expMat =expMat
+            if id is not None:
+                self.id = np.asarray(id, dtype=int)
             else:
-                self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device)
+                self.id = np.arange(self.expMat.shape[1],dtype=int)
+            # #self.expMat =expMat
+            # if id != None:
+            #     if isinstance(id, list):
+            #         id = torch.tensor(id,dtype=torch.long,device=Z.device)
+            #     if id.numel() !=0:
+            #         assert prop == 'None', 'Either ID or property should not be defined.'
+            #         assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
+            #     assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
+            #     assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
+            #     self.id = id
+            # else:
+            #     self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device)
         else:
-            assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
+            # assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
+            # Assume if an id is given, that the expmat is the identity
+            self.id = np.array(id, dtype=int).flatten()
+            assert len(self.id) == n_dep_gens, 'Number of dependent generators must match number of id\'s!'
+            self.expMat = torch.eye(G.shape[self.batch_dim],dtype=torch.long,device=Z.device)
         self.Z = torch.cat((C.unsqueeze(-3),G,Grest),dim=-3)
         self.n_dep_gens = G.shape[-3]
     def __getitem__(self,idx):
@@ -135,14 +145,14 @@ class batchMatPolyZonotope():
     def to(self,dtype=None,itype=None,device=None):
         Z = self.Z.to(dtype=dtype,device=device)
         expMat = self.expMat.to(dtype=itype,device=device)
-        id = self.id.to(device=device)
-        return batchMatPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+        # id = self.id.to(device=device)
+        return batchMatPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0)
         
     def cpu(self):
         Z = self.Z.cpu()
         expMat = self.expMat.cpu()
-        id = self.id.cpu()
-        return batchMatPolyZonotope(Z,self.n_dep_gens,expMat,id,compress=0)
+        # id = self.id.cpu()
+        return batchMatPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0)
 
     def __matmul__(self,other):
         '''
@@ -208,7 +218,7 @@ class batchMatPolyZonotope():
         '''
         if isinstance(other,torch.Tensor):
             assert other.shape[-1] == self.n_rows
-            assert len(other.shape) > 2
+            assert len(other.shape) >= 2
             Z = other @ self.Z
             return batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
         elif isinstance(other,matPolyZonotope):

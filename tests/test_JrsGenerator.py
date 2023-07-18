@@ -7,7 +7,7 @@ import zonopy as zp
 
 
 # Set cuda if desired and available
-use_cuda = True
+use_cuda = False
 if use_cuda:
     zp.setup_cuda()
 
@@ -26,7 +26,6 @@ qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290
 
 
 print('Starting JRS Generation')
-JrsGenerator._get_pz_rotations_from_q(zp.polyZonotope([[2.5]]), np.array([0,0,1.0]))
 # traj_class=zp.trajectories.BernsteinArmTrajectory
 traj_class=zp.trajectories.PiecewiseArmTrajectory
 a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
@@ -59,6 +58,17 @@ for i in range (0,100,10):
     # plt.autoscale()
     plt.draw()
     plt.pause(0.1)
+# Combine all the R for a joint into one batch mat poly zono
+# joints = []
+# for joint_Rs in b['R'].T:
+#     # Assume these all have the same expMat and id's!
+#     # This only true for a single given call to JrsGenerator
+#     Z = torch.stack([zono.Z for zono in joint_Rs])
+#     batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id, compress=0)
+#     joints.append(batch_zono)
+
+# kin.forward_kinematics(joints, rob.robot)
+
 plt.show()
 
 # Timing
