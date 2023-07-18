@@ -8,10 +8,11 @@ from typing import OrderedDict as OrderedDictType
 
 
 # Helper function to create a config dictionary from the rotatotopes if a list is provided
-def make_rotato_cfg(rotatotopes: Union[Dict[str, matPolyZonotope], List[matPolyZonotope]],
+def make_rotato_cfg(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
+                                       List[Union[matPolyZonotope, batchMatPolyZonotope]]],
                     robot: URDF,
                     allow_incomplete: bool = False,
-                    ) -> Dict[str, matPolyZonotope]: 
+                    ) -> Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]]: 
     if isinstance(rotatotopes, dict):
         assert all(isinstance(x, str) for x in rotatotopes.keys()), "Keys for the rotato config are not strings!"
     elif isinstance(rotatotopes, list):
@@ -27,12 +28,13 @@ def make_rotato_cfg(rotatotopes: Union[Dict[str, matPolyZonotope], List[matPolyZ
 
 
 # This is based on the Urchin's FK source
-def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]], List[Union[matPolyZonotope, batchMatPolyZonotope]]],
+def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
+                                          List[Union[matPolyZonotope, batchMatPolyZonotope]]],
                        robot: URDF,
                        zono_order: int = 20,
                        links: List[str] = None,
-                       ) -> OrderedDictType[str, Tuple[Union[polyZonotope, batchPolyZonotope],
-                                                       Union[matPolyZonotope, batchMatPolyZonotope]]]:
+                       ) -> OrderedDictType[str, Union[Tuple[polyZonotope, matPolyZonotope],
+                                                       Tuple[batchPolyZonotope, batchMatPolyZonotope]]]:
     # Create the rotato config dictionary
     cfg_map = make_rotato_cfg(rotatotopes, robot)
 

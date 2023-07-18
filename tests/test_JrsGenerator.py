@@ -26,8 +26,8 @@ qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290
 
 
 print('Starting JRS Generation')
-# traj_class=zp.trajectories.BernsteinArmTrajectory
-traj_class=zp.trajectories.PiecewiseArmTrajectory
+traj_class=zp.trajectories.BernsteinArmTrajectory
+# traj_class=zp.trajectories.PiecewiseArmTrajectory
 a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
@@ -57,25 +57,48 @@ for i in range (0,100,10):
     ax.add_collection3d(patches)  
     # plt.autoscale()
     plt.draw()
-    plt.pause(0.1)
-# Combine all the R for a joint into one batch mat poly zono
-# joints = []
-# for joint_Rs in b['R'].T:
-#     # Assume these all have the same expMat and id's!
-#     # This only true for a single given call to JrsGenerator
-#     Z = torch.stack([zono.Z for zono in joint_Rs])
-#     batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id, compress=0)
-#     joints.append(batch_zono)
-
-# kin.forward_kinematics(joints, rob.robot)
-
+    plt.pause(0.001)
 plt.show()
+
+print('Testing batched kinematics')
+# Combine all the R for a joint into one batch mat poly zono
+joints = []
+for joint_Rs in b['R'].T:
+    # Assume these all have the same expMat and id's!
+    # This only true for a single given call to JrsGenerator
+    # Z = torch.stack([zono.Z for zono in joint_Rs])
+    n_mats = np.max([zono.Z.shape[0] for zono in joint_Rs])
+    n_t = len(joint_Rs)
+    # because all are rot mats, they are 3x3
+    Z = torch.zeros((n_t, n_mats, 3, 3), dtype=torch.float64)
+    for i in range(n_t):
+        Z[i][:joint_Rs[i].Z.shape[0]] = joint_Rs[i].Z
+    batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id, compress=0)
+    joints.append(batch_zono)
+
+fk = kin.forward_kinematics(joints, rob.robot)
+fo = kin.forward_occupancy(joints, rob.robot)
+jo = kin.joint_occupancy(joints, rob.robot)
 
 # Timing
 num = 10
-print("Start Timing", num, "Loops")
+print("Start Timing JRS", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd), number=num)
+print('Took', duration/num, 'seconds each loop for', num, 'loops')
+
+# Timing
+num = 10
+print("Start Timing Serial FK", num, "Loops")
+import timeit
+duration = timeit.timeit(lambda: [kin.forward_kinematics(list(R), rob.robot) for R in b['R']], number=num)
+print('Took', duration/num, 'seconds each loop for', num, 'loops')
+
+# Timing
+num = 10
+print("Start Timing Batch FK", num, "Loops")
+import timeit
+duration = timeit.timeit(lambda: kin.forward_kinematics(joints, rob.robot), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Profiling

@@ -1,4 +1,4 @@
-from zonopy import polyZonotope, matPolyZonotope
+from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from .FK import forward_kinematics
 from urchin import URDF
@@ -7,13 +7,15 @@ from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
 
 # Use forward kinematics to get the forward occupancy
-def forward_occupancy(rotatotopes: Union[Dict[str, matPolyZonotope], List[matPolyZonotope]],
+def forward_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
+                                         List[Union[matPolyZonotope, batchMatPolyZonotope]]],
                       robot: URDF,
                       zono_order: int = 20,
                       links: List[str] = None,
                       link_zono_override: Dict[str, polyZonotope] = None,
-                      ) -> Tuple[OrderedDictType[str, polyZonotope],
-                                 OrderedDictType[str, Tuple[polyZonotope, matPolyZonotope]]]:
+                      ) -> Tuple[OrderedDictType[str, Union[polyZonotope, batchPolyZonotope]],
+                                 OrderedDictType[str, Union[Tuple[polyZonotope, matPolyZonotope],
+                                                            Tuple[batchPolyZonotope, batchMatPolyZonotope]]]]:
     
     link_fk_dict = forward_kinematics(rotatotopes, robot, zono_order, links=links)
     link_zonos = {name: robot._link_map[name].bounding_pz for name in link_fk_dict.keys()}

@@ -19,7 +19,8 @@ class JrsGenerator:
                  tfinal=1.0,
                  tdiscretization=0.01,
                  ultimate_bound=None,
-                 k_r=None):
+                 k_r=None,
+                 batched=False):
         
         self.robot = robot
         self.traj = traj_class
@@ -53,14 +54,24 @@ class JrsGenerator:
             self.k_ids[i] = id
 
         # Create base PZ's for time
-        self.times = np.empty(num_t, dtype=object)
-        for i in range(num_t):
-            id = len(self.id_map)
-            self.id_map[f't{i}'] = id
-            self.times[i] = zp.polyZonotope(
-                [[self.tdiscretization*i+self.tdiscretization/2],[self.tdiscretization/2]],
-                1, id=id
-            )
+        if batched:
+            i_s = np.arange(num_t)
+            ids = i_s + len(self.id_map)
+            expMat = torch.eye(num_t, dtype=int)
+            centers = torch.as_tensor(self.tdiscretization*i_s+self.tdiscretization/2)
+            gens = torch.eye(num_t) * self.tdiscretization/2
+            # Some tricks to make it into a batched poly zono
+            z = torch.vstack([centers, gens]).unsqueeze(2).transpose(0,1)
+            self.times = zp.batchPolyZonotope(z, num_t, expMat, ids)
+        else:
+            self.times = np.empty(num_t, dtype=object)
+            for i in range(num_t):
+                id = len(self.id_map)
+                self.id_map[f't{i}'] = id
+                self.times[i] = zp.polyZonotope(
+                    [[self.tdiscretization*i+self.tdiscretization/2],[self.tdiscretization/2]],
+                    1, id=id
+                )
         
         # Create PZ's for error
         self.error_vel = None

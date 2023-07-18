@@ -1,4 +1,4 @@
-from zonopy import polyZonotope, matPolyZonotope
+from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from .FK import forward_kinematics
 from urchin import URDF
@@ -8,14 +8,16 @@ from typing import OrderedDict as OrderedDictType
 
 # Use forward occupancy or forward kinematics to get the joint occupancy
 # For the true bohao approach, enable use_outer_bb
-def joint_occupancy(rotatotopes: Union[Dict[str, matPolyZonotope], List[matPolyZonotope]],
+def joint_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
+                                       List[Union[matPolyZonotope, batchMatPolyZonotope]]],
                     robot: URDF,
                     zono_order: int = 20,
                     joints: List[str] = None,
                     joint_zono_override: Dict[str, polyZonotope] = {},
                     use_outer_bb: bool = False,
-                    ) -> Tuple[OrderedDictType[str, polyZonotope],
-                               OrderedDictType[str, Tuple[polyZonotope, matPolyZonotope]]]:
+                    ) -> Tuple[OrderedDictType[str, Union[polyZonotope, batchPolyZonotope]],
+                               OrderedDictType[str, Union[Tuple[polyZonotope, matPolyZonotope],
+                                                          Tuple[batchPolyZonotope, batchMatPolyZonotope]]]]:
     
     # Process out the joint bb's
     if joints is None:

@@ -2,6 +2,7 @@ import torch
 from typing import Union
 import numpy as np
 import math
+import zonopy as zp
 
 # Rewrite it in a more basic way to start split
 class BaseArmTrajectory:
@@ -61,8 +62,42 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
             return self._getReferenceTorchImpl(times)
         elif isinstance(times, np.ndarray):
             return self._getReferenceNpImpl(times)
+        elif isinstance(times, zp.batchPolyZonotope):
+            return self._getReferenceBatchZpImpl(times)
         else:
             raise TypeError
+
+    def _getReferenceBatchZpImpl(self, times: zp.batchPolyZonotope):
+        mask_plan = times.c <= self.tbrake
+        mask_stopping = ((times.c < self.tfinal) - mask_plan).to(bool)
+        num_t = len(times.c)
+        
+        raise NotImplementedError
+        # q_out_first = None
+        # qd_out_first = None
+        # qdd_out_first = None
+
+        # # First half of the trajectory
+        # if torch.any(mask_plan):
+        #     t = times[mask_plan]
+        #     q_out[mask_plan,:] = self.q0 \
+        #         + torch.outer(t, self.qd0) \
+        #         + 0.5 * torch.outer(t*t, self._param)
+        #     qd_out[mask_plan,:] = self.qd0 \
+        #         + torch.outer(t, self._param)
+        #     qdd_out[mask_plan,:] = self._param
+        
+        # # Second half of the trajectory
+        # if torch.any(mask_stopping):
+        #     t = times[mask_stopping]
+        #     q_out[mask_stopping,:] = self._qpeak \
+        #         + torch.outer(t, self._qdpeak) \
+        #         + 0.5 * torch.outer(t*t, self._stopping_qdd)
+        #     qd_out[mask_stopping,:] = self._qdpeak \
+        #         + torch.outer(t, self._stopping_qdd)
+        #     qdd_out[mask_stopping,:] = self._stopping_qdd
+
+        # return (q_out, qd_out, qdd_out)
 
     def _getReferenceNpImpl(self, times: np.ndarray):
         mask_plan = np.zeros_like(times, dtype=bool)
