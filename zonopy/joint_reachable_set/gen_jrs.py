@@ -20,7 +20,8 @@ class JrsGenerator:
                  tdiscretization=0.01,
                  ultimate_bound=None,
                  k_r=None,
-                 batched=False):
+                 batched=False,
+                 unique_tid=True):
         
         self.robot = robot
         self.traj = traj_class
@@ -36,6 +37,7 @@ class JrsGenerator:
         self.tfinal = tfinal
         self.tdiscretization = tdiscretization
         num_t = int(tfinal/tdiscretization)
+        self.num_t = num_t
 
         self.id_map = OrderedDict()
 
@@ -54,20 +56,34 @@ class JrsGenerator:
             self.k_ids[i] = id
 
         # Create base PZ's for time
+        self.batched = batched
+        batched = False
+        # So time id's do not need to be unique
         if batched:
-            i_s = np.arange(num_t)
-            ids = i_s + len(self.id_map)
-            expMat = torch.eye(num_t, dtype=int)
-            centers = torch.as_tensor(self.tdiscretization*i_s+self.tdiscretization/2)
-            gens = torch.eye(num_t) * self.tdiscretization/2
+            if unique_tid:
+                i_s = np.arange(num_t)
+                ids = i_s + len(self.id_map)
+                expMat = torch.eye(num_t, dtype=int)
+                gens = torch.eye(num_t) * self.tdiscretization/2
+                n_dep_gens = num_t
+            else:
+                ids = [len(self.id_map)]
+                expMat = torch.eye(1, dtype=int)
+                gens = torch.ones(num_t) * self.tdiscretization/2
+                n_dep_gens = 1
             # Some tricks to make it into a batched poly zono
+            centers = torch.as_tensor(self.tdiscretization*i_s+self.tdiscretization/2)
             z = torch.vstack([centers, gens]).unsqueeze(2).transpose(0,1)
-            self.times = zp.batchPolyZonotope(z, num_t, expMat, ids)
+            self.times = zp.batchPolyZonotope(z, n_dep_gens, expMat, ids)
         else:
             self.times = np.empty(num_t, dtype=object)
-            for i in range(num_t):
+            if not unique_tid:
                 id = len(self.id_map)
-                self.id_map[f't{i}'] = id
+                self.id_map[f't'] = id
+            for i in range(num_t):
+                if unique_tid:
+                    id = len(self.id_map)
+                    self.id_map[f't{i}'] = id
                 self.times[i] = zp.polyZonotope(
                     [[self.tdiscretization*i+self.tdiscretization/2],[self.tdiscretization/2]],
                     1, id=id
@@ -107,6 +123,42 @@ class JrsGenerator:
         # Get the reference trajectory
         print('Creating Reference Trajectory')
         q_ref, qd_ref, qdd_ref = gen.getReference(self.times)
+
+        # Start to merge
+        # a = q_ref.T
+        # q_ref = np.empty(self.num_q, dtype=object)
+        # for i in range(self.num_q):
+        #     n_t = len(a[i])
+        #     all_ids = [z.id for z in a[i]]
+        #     all_ids = np.unique(np.array(all_ids).flatten())
+        #     dep_gens = [z.n_dep_gens for z in a[i]]
+        #     all_dep_gens = np.sum(dep_gens)
+        #     dep_gens_idxs = np.cumsum([0]+[z.n_dep_gens for z in a[i]])
+        #     all_expMat = torch.zeros((all_dep_gens, len(all_ids)), dtype=torch.int64)
+        #     last_expMat_idx = 0
+        #     all_c = torch.stack([z.c.unsqueeze(0) for z in a[i]])
+        #     n_grest = np.max([z.Grest.shape[0] for z in a[i]])
+        #     # we can assume 1D for all Q's
+        #     all_grest = torch.zeros((n_t, n_grest, 1))
+        #     all_G = torch.zeros((n_t, all_dep_gens, 1))
+
+        #     # expand expmat to ids and save
+        #     for zid in range(len(a[i])):
+        #         matches = np.any(np.expand_dims(a[i,zid].id,1) == all_ids,0)
+        #         end_idx = last_expMat_idx + a[i,zid].expMat.shape[0]
+        #         all_expMat[last_expMat_idx:end_idx,matches] = a[i,zid].expMat
+        #         last_expMat_idx = end_idx
+            
+        #         # expand out all G matrices
+        #         all_G[zid,dep_gens_idxs[zid]:dep_gens_idxs[zid+1]] = a[i,zid].G
+
+        #         # Expand out all grest
+        #         grest = a[i,zid].Grest
+        #         all_grest[zid,:grest.shape[0]] = grest
+        #     Z = torch.concat((all_c, all_G, all_grest), dim=1)
+        #     q_ref[i] = zp.batchPolyZonotope(Z, all_dep_gens, all_expMat, all_ids)
+            # print("here")
+
 
         # Vectorize over q
         rot_from_q = np.vectorize(JrsGenerator._get_pz_rotations_from_q, excluded=[1,'taylor_deg'])

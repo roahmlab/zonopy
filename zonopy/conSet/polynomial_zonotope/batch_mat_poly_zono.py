@@ -231,7 +231,7 @@ class batchMatPolyZonotope():
             return batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1)
         elif isinstance(other,matPolyZonotope):
             assert other.n_cols == self.n_rows
-            id, expMat1, expMat2 = mergeExpMatrix(other.id,self.id,other.expMat,self.expMat)
+            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             _Z = other.Z.unsqueeze(-3) @ self.Z.unsqueeze(-4)
             Z_shape = _Z.shape[:-4]+(-1,other.n_rows,self.n_cols)
 
@@ -247,6 +247,12 @@ class batchMatPolyZonotope():
             expMat = torch.vstack((expMat1,expMat2,first + second))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return batchMatPolyZonotope(Z,n_dep_gens,expMat,id)
+        elif isinstance(other,zp.polyZonotope):
+            tmp_other = zp.matPolyZonotope(other.Z.unsqueeze(1),other.n_dep_gens,other.expMat,other.id,compress=0,copy_Z=False)
+            res = tmp_other.__matmul__(self)
+            return zp.batchPolyZonotope(res.Z.squeeze(-2),res.n_dep_gens,res.expMat,res.id)
+        else:
+            return other.__matmul__(self)
 
     def to_batchMatZonotope(self):
         if self.n_dep_gens != 0:

@@ -219,6 +219,7 @@ class batchPolyZonotope:
             return batchPolyZonotope(Z,n_dep_gens,expMat,id,compress=0)
 
         elif isinstance(other,(polyZonotope,batchPolyZonotope)):
+            # DOESN'T WORK
             assert self.dimension == other.dimension, 'Both polynomial zonotope must have same dimension.'
             id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
             

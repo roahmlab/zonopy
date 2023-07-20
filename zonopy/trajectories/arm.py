@@ -22,6 +22,7 @@ class BaseArmTrajectory:
         self.krange = krange
         self.tbrake = tbrake
         self.tfinal = tfinal
+        self.num_q = len(q0)
 
         # Scale kparam from -1 to 1 to the output range
         self._param = 0.5 * (self.kparam + 1) \
@@ -68,24 +69,25 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
             raise TypeError
 
     def _getReferenceBatchZpImpl(self, times: zp.batchPolyZonotope):
-        mask_plan = times.c <= self.tbrake
-        mask_stopping = ((times.c < self.tfinal) - mask_plan).to(bool)
+        mask_plan = (times.c <= self.tbrake).flatten()
+        mask_stopping = (times.c < self.tfinal).flatten() * ~mask_plan
         num_t = len(times.c)
         
-        raise NotImplementedError
-        # q_out_first = None
-        # qd_out_first = None
-        # qdd_out_first = None
+        # raise NotImplementedError
+        q_out = [None]*self.num_q
+        qd_out = [None]*self.num_q
+        qdd_out = [None]*self.num_q
 
-        # # First half of the trajectory
-        # if torch.any(mask_plan):
-        #     t = times[mask_plan]
-        #     q_out[mask_plan,:] = self.q0 \
-        #         + torch.outer(t, self.qd0) \
-        #         + 0.5 * torch.outer(t*t, self._param)
-        #     qd_out[mask_plan,:] = self.qd0 \
-        #         + torch.outer(t, self._param)
-        #     qdd_out[mask_plan,:] = self._param
+        # First half of the trajectory
+        if torch.any(mask_plan):
+            t = times[mask_plan]
+            for i in range(self.num_q):
+                q_out[i] = self.q0 \
+                    + t * self.qd0[i] \
+                    + 0.5 * t * t * self._param[i]
+                qd_out[i] = self.qd0 \
+                    + t * self._param[i]
+                qdd_out[i] = 0*t + self._param[i]
         
         # # Second half of the trajectory
         # if torch.any(mask_stopping):
@@ -97,7 +99,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
         #         + torch.outer(t, self._stopping_qdd)
         #     qdd_out[mask_stopping,:] = self._stopping_qdd
 
-        # return (q_out, qd_out, qdd_out)
+        return (q_out, qd_out, qdd_out)
 
     def _getReferenceNpImpl(self, times: np.ndarray):
         mask_plan = np.zeros_like(times, dtype=bool)
@@ -109,7 +111,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
             if hasattr(v, 'c'):
                 val = v.c
             mask_plan[i] = val <= self.tbrake
-            mask_stopping[i] = (val < self.tfinal) + ~mask_plan[i]
+            mask_stopping[i] = (val < self.tfinal) * ~mask_plan[i]
         
         q_out = np.tile(self._final_q,(num_t,1))
         qd_out = np.tile(self._final_q * 0,(num_t,1))
@@ -139,7 +141,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
 
     def _getReferenceTorchImpl(self, times: torch.Tensor):
         mask_plan = times <= self.tbrake
-        mask_stopping = ((times < self.tfinal) - mask_plan).to(bool)
+        mask_stopping = (times.c < self.tfinal) * ~mask_plan
         num_t = len(times)
         
         q_out = torch.tile(self._final_q,(num_t,1))

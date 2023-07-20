@@ -26,9 +26,9 @@ qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290
 
 
 print('Starting JRS Generation')
-traj_class=zp.trajectories.BernsteinArmTrajectory
-# traj_class=zp.trajectories.PiecewiseArmTrajectory
-a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
+# traj_class=zp.trajectories.BernsteinArmTrajectory
+traj_class=zp.trajectories.PiecewiseArmTrajectory
+a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
 # c = JrsGenerator._get_pz_rotations_from_q(b[0][0][0],a.joint_axis[0],taylor_deg=1)

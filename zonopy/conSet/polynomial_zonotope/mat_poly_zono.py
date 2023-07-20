@@ -249,6 +249,12 @@ class matPolyZonotope():
             assert other.shape[1] == self.n_rows
             Z = other @ self.Z
             return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1,copy_Z=False)
+        elif isinstance(other,polyZonotope):
+            tmp_other = zp.matPolyZonotope(other.Z.unsqueeze(1),other.n_dep_gens,other.expMat,other.id,compress=0,copy_Z=False)
+            res = tmp_other.__matmul__(self)
+            return zp.polyZonotope(res.Z.squeeze(-2),res.n_dep_gens,res.expMat,res.id)
+        else:
+            return other.__matmul__(self)
 
     def to_matZonotope(self):
         if self.n_dep_gens != 0:
