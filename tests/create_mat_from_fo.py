@@ -5,6 +5,9 @@ from scipy.io import savemat
 from zonopy.joint_reachable_set.gen_jrs import JrsGenerator
 import zonopy as zp
 import zonopy.kinematics as kin
+import os
+basedirname = os.path.dirname(zp.__file__)
+
 
 # Settings
 robot_file = 'robots/assets/robots/kinova_arm/gen3.urdf'
@@ -28,12 +31,9 @@ if use_cuda:
     zp.setup_cuda()
 
 # Load robot
-import os
-basedirname = os.path.dirname(zp.__file__)
-
-robots2.DEBUG_VIZ = False
 print('Loading Robot')
-# This is hardcoded for now
+# make sure not to show any debug vizualizations
+robots2.DEBUG_VIZ = False
 rob = robots2.ArmRobot(os.path.join(basedirname, robot_file))
 
 
@@ -42,6 +42,7 @@ traj_class=zp.trajectories.BernsteinArmTrajectory if use_bernstein else zp.traje
 generator = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
 jrs_out = generator.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
+
 
 # Combine all the R for a joint into one batch mat poly zono
 print("Converting to batched for speed")
@@ -59,11 +60,15 @@ for joint_Rs in jrs_out['R'].T:
     batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id, compress=0)
     joints.append(batch_zono)
 
+
+print("Perform forward operations")
 # fk = kin.forward_kinematics(joints, rob.robot)
 fo, _ = kin.forward_occupancy(joints, rob.robot)
 jo, _ = kin.joint_occupancy(joints, rob.robot)
 jobz, _ = kin.joint_occupancy(joints, rob.robot, use_outer_bb=True)
 
+
+print("Exporting")
 # Process out the forward occupancy (Assume only 1 batch dim of time)
 def process_out(in_dict):
     out_rec = np.recarray((1,), dtype=[(n,object) for n in in_dict.keys()])
@@ -98,4 +103,5 @@ if save_jobz:
     export['jobz'] = process_out(jobz)
     name += '_jobz'
 
+print("Saving to", save_base_locname + name + '.mat')
 savemat(save_base_locname + name + '.mat', export, do_compression=True)
