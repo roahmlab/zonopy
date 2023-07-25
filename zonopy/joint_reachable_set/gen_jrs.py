@@ -117,7 +117,7 @@ class JrsGenerator:
                     [[0],[2*ultimate_bound]], 1, id=id
                 )
     
-    def gen_JRS(self, q_in, qd_in, qdd_in=None, taylor_degree=1, make_gens_independent=True):
+    def gen_JRS(self, q_in, qd_in, qdd_in=None, taylor_degree=1, make_gens_independent=True, only_R=False):
         q_in = q_in.squeeze()
         qd_in = qd_in.squeeze()
         qdd_in = qdd_in.squeeze() if qdd_in is not None else None
@@ -128,6 +128,10 @@ class JrsGenerator:
             self.base_params, self.param_range,
             self.tplan, self.tfinal
         )
+
+        # If only R, do a mini version
+        if only_R:
+            return self._gen_JRS_only_R(gen, taylor_degree, make_gens_independent)
 
         # Get the reference trajectory
         if self.verbose: print('Creating Reference Trajectory')
@@ -191,6 +195,38 @@ class JrsGenerator:
             'qdd_aux': qdd_aux.T,
             'R': R.T
         }
+    
+    def _gen_JRS_only_R(self, traj_gen, taylor_degree=1, make_gens_independent=True):
+        if self.verbose: print('Only Generating R, Creating Reference Trajectory')
+        q_ref = traj_gen.getReference(self.times)[0]
+
+        if self.batched:
+            # Chose the right function
+            rot_from_q = JrsGenerator._get_pz_rotations_from_q
+        else:
+            # Vectorize over q
+            rot_from_q = np.vectorize(JrsGenerator._get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
+            q_ref = q_ref.T
+        
+        # Add tracking error if provided
+        if self.ultimate is not None:
+            if self.verbose: print('Adding tracking error to make tracked trajectory')
+            q = (q_ref.T + self.error_pos).T
+        else:
+            q = q_ref
+        
+        # Create the rotatotope
+        if self.verbose: print('Creating Output Rotatotopes')
+        R = np.empty_like(q)
+        for i in range(self.num_q):
+            R[i] = rot_from_q(q[i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
+        
+        # Make independence if requested
+        if make_gens_independent:
+            if self.verbose: print("Making non-k generators independent")
+            rem_dep = np.vectorize(remove_dependence_and_compress, excluded=[1])
+            R = rem_dep(R, self.k_ids)
+        return R
     
     @staticmethod
     def _get_pz_rotations_from_q(q, rotation_axis, taylor_deg=6):

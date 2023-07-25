@@ -61,6 +61,8 @@ def load_robot(filepath):
     for joint in robot.joints:
         # Joint must have parent or child
         robot.link_parent_joint[joint.child] = joint
+        # Also make an origin tensor
+        joint.origin_tensor = torch.as_tensor(joint.origin, dtype=torch.float64)
 
 
     ##### THE ORIGIN DENOTES THE JOINT TO JOINT AXIS!

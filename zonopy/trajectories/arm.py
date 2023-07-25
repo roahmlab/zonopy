@@ -360,17 +360,22 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
         if np.any(mask):
             # Scale time
             scale = 1.0/self.tfinal
-            t = times[mask] * scale
+            t_mask = times[mask] * scale
+            # Precompute all the t powers
+            tpow = np.empty(len(self._alphas), dtype=object)
+            tpow[0] = t_mask**0
+            for i in range(1,len(self._alphas)):
+                tpow[i] = tpow[i-1]*t_mask
             q_out[mask,:] = q_out[mask,:] * 0
             for idx, alpha in enumerate(self._alphas):
                 q_out[mask,:] = q_out[mask,:] \
-                    + np.outer(t**idx, alpha)
+                    + np.outer(tpow[idx], alpha)
                 if idx > 0:
                     qd_out[mask,:] = qd_out[mask,:] \
-                        + float(idx) * np.outer(t**(idx-1), alpha)
+                        + float(idx) * np.outer(tpow[idx-1], alpha)
                 if idx > 1:
                     qdd_out[mask,:] = qdd_out[mask,:] \
-                        + float(idx * (idx-1)) * np.outer(t**(idx-2), alpha)
+                        + float(idx * (idx-1)) * np.outer(tpow[idx-2], alpha)
             qd_out[mask,:] *= scale
             qdd_out[mask,:] *= scale*scale
         

@@ -368,3 +368,10 @@ class batchMatPolyZonotope():
         out = zp.batchMatPolyZonotope(Z, all_dep_gens, all_expMat, all_ids, compress=2)
         return out
     
+    @staticmethod
+    def combine_bmpz(bmpzlist, idxs):
+        # Takes a list of bpz and respective idxs for them and combines them appropriately
+        out_list = np.empty(np.concatenate(idxs, axis=None).max()+1, dtype=object)
+        for i,locations in enumerate(idxs):
+            out_list[locations] = [bmpzlist[i][j] for j in range(len(locations))]
+        return zp.batchMatPolyZonotope.from_pzlist(out_list)

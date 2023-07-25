@@ -26,8 +26,8 @@ qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290
 
 
 print('Starting JRS Generation')
-traj_class=zp.trajectories.BernsteinArmTrajectory
-# traj_class=zp.trajectories.PiecewiseArmTrajectory
+# traj_class=zp.trajectories.BernsteinArmTrajectory
+traj_class=zp.trajectories.PiecewiseArmTrajectory
 a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
@@ -87,22 +87,22 @@ c = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batc
 d = c.gen_JRS(q, qd, qdd)
 print('Finished batched JRS Generation')
 
-fk = kin.forward_kinematics(list(d['R']), rob.robot)
-fo = kin.forward_occupancy(list(d['R']), rob.robot)
-jo = kin.joint_occupancy(list(d['R']), rob.robot)
+fk = kin.forward_kinematics(d['R'], rob.robot)
+fo = kin.forward_occupancy(d['R'], rob.robot)
+jo = kin.joint_occupancy(d['R'], rob.robot)
 
 # Timing
 num = 10
 print("Start Timing JRS", num, "Loops")
 import timeit
-duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd), number=num)
+duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd, only_R=True), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
 num = 10
 print("Start Timing Batch JRS", num, "Loops")
 import timeit
-duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd), number=num)
+duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing

@@ -1,10 +1,14 @@
 from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from urchin import URDF
+import numpy as np
 import torch
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
+
+ZERO_POS = polyZonotope(torch.zeros(3, dtype=torch.float64).unsqueeze(0),compress=0,copy_Z=False)
+ZERO_ROT = matPolyZonotope(torch.eye(3, dtype=torch.float64).unsqueeze(0),compress=0,copy_Z=False)
 
 
 # Helper function to create a config dictionary from the rotatotopes if a list is provided
@@ -15,7 +19,7 @@ def make_rotato_cfg(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMat
                     ) -> Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]]: 
     if isinstance(rotatotopes, dict):
         assert all(isinstance(x, str) for x in rotatotopes.keys()), "Keys for the rotato config are not strings!"
-    elif isinstance(rotatotopes, list):
+    elif isinstance(rotatotopes, (list, np.ndarray)):
         # Assume that this is for all actuated joints
         joint_names = [joint.name for joint in robot.actuated_joints]
         if allow_incomplete:
@@ -53,8 +57,8 @@ def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batch
             continue
         # Get the path back to the base and build with that
         path = robot._paths_to_base[lnk]
-        pos = polyZonotope(torch.zeros(3, dtype=torch.float64).unsqueeze(0),compress=0,copy_Z=False)
-        rot = matPolyZonotope(torch.eye(3, dtype=torch.float64).unsqueeze(0),compress=0,copy_Z=False)
+        pos = ZERO_POS
+        rot = ZERO_ROT
         for i in range(len(path) - 1):
             child = path[i]
             parent = path[i + 1]
@@ -72,8 +76,10 @@ def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batch
                 rotato_cfg = torch.eye(3, dtype=torch.float64)
             
             # Get the transform for the joint
-            joint_rot = torch.as_tensor(joint.origin[0:3,0:3], dtype=torch.float64)
-            joint_pos = torch.as_tensor(joint.origin[0:3,3], dtype=torch.float64)
+            # joint_rot = torch.as_tensor(joint.origin[0:3,0:3], dtype=torch.float64)
+            # joint_pos = torch.as_tensor(joint.origin[0:3,3], dtype=torch.float64)
+            joint_rot = joint.origin_tensor[0:3,0:3]
+            joint_pos = joint.origin_tensor[0:3,3]
             joint_rot = joint_rot@rotato_cfg
             
             # We are moving from child to parent, so apply in reverse

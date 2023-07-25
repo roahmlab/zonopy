@@ -13,11 +13,12 @@ basedirname = os.path.dirname(zp.__file__)
 robot_file = 'robots/assets/robots/kinova_arm/gen3.urdf'
 save_base_locname = 'export'
 use_cuda = False
-use_bernstein = False
+use_bernstein = True
 save_fo = True
-save_jo = False
-save_jobz = False
-reduce = False
+save_jo = True
+save_jobz = True
+reduce = True
+only_generate_R_online = True
 
 q = np.array([0.624819195837238,-1.17185521197975,-2.04687142485692,1.69686054456768,-2.28521956398477,0.151194251967712,1.54233217035569])
 qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])
@@ -40,10 +41,13 @@ rob = robots2.ArmRobot(os.path.join(basedirname, robot_file))
 print('Starting JRS Generation')
 traj_class=zp.trajectories.BernsteinArmTrajectory if use_bernstein else zp.trajectories.PiecewiseArmTrajectory
 generator = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
-jrs_out = generator.gen_JRS(q, qd, qdd)
+jrs_out = generator.gen_JRS(q, qd, qdd, only_R=only_generate_R_online)
 print('Finished JRS Generation')
 
-joints = list(jrs_out['R'])
+if only_generate_R_online:
+    joints = jrs_out
+else:
+    joints = jrs_out['R']
 
 print("Perform forward operations")
 # fk = kin.forward_kinematics(joints, rob.robot)
