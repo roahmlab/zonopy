@@ -58,7 +58,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
             + self._qdpeak * stopping_time \
             + 0.5 * self._stopping_qdd * stopping_time * stopping_time
 
-    def getReference(self, times: Union[torch.Tensor, np.ndarray]):
+    def getReference(self, times: Union[torch.Tensor, np.ndarray, zp.batchPolyZonotope]):
         if isinstance(times, torch.Tensor):
             return self._getReferenceTorchImpl(times)
         elif isinstance(times, np.ndarray):
@@ -271,7 +271,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
                     * betas[j]
         return alphas
 
-    def getReference(self, times: Union[torch.Tensor, np.ndarray]):
+    def getReference(self, times: Union[torch.Tensor, np.ndarray, zp.batchPolyZonotope]):
         if isinstance(times, torch.Tensor):
             return self._getReferenceTorchImpl(times)
         elif isinstance(times, np.ndarray):

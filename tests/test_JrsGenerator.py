@@ -120,11 +120,11 @@ duration = timeit.timeit(lambda: kin.forward_kinematics(joints, rob.robot), numb
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Profiling
-# from torch.profiler import profile, record_function, ProfilerActivity
-# with profile(activities=[ProfilerActivity.CPU,ProfilerActivity.CUDA], record_shapes=True, use_cuda=use_cuda) as prof:
-#     with record_function("create_jrs"):
-#         JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd)
-# prof.export_chrome_trace("trace.json")
+from torch.profiler import profile, record_function, ProfilerActivity
+with profile(activities=[ProfilerActivity.CPU,ProfilerActivity.CUDA], record_shapes=True) as prof:
+    with record_function("create_jrs"):
+        JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd)
+prof.export_chrome_trace("trace.json")
 
 print('pause')
 

@@ -102,9 +102,11 @@ class matPolyZonotope():
         
         if copy_Z:
             self.Z = torch.vstack((Z[0].unsqueeze(0), G, Z[Grest_ind]))
-        else:
+        elif compress == 1:
             ind = np.concatenate([[0], G_ind, Grest_ind])
             self.Z = Z[ind]
+        else:
+            self.Z = Z
         self.n_dep_gens = G.shape[0]
     @property
     def dtype(self):
