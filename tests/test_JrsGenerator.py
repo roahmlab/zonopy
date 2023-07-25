@@ -26,8 +26,8 @@ qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290
 
 
 print('Starting JRS Generation')
-# traj_class=zp.trajectories.BernsteinArmTrajectory
-traj_class=zp.trajectories.PiecewiseArmTrajectory
+traj_class=zp.trajectories.BernsteinArmTrajectory
+# traj_class=zp.trajectories.PiecewiseArmTrajectory
 a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
@@ -83,8 +83,6 @@ fo = kin.forward_occupancy(joints, rob.robot)
 jo = kin.joint_occupancy(joints, rob.robot)
 
 print('Testing batched JRS Generation')
-# traj_class=zp.trajectories.BernsteinArmTrajectory
-traj_class=zp.trajectories.PiecewiseArmTrajectory
 c = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
 d = c.gen_JRS(q, qd, qdd)
 print('Finished batched JRS Generation')

@@ -43,23 +43,7 @@ generator = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=
 jrs_out = generator.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
 
-
-# Combine all the R for a joint into one batch mat poly zono
-print("Converting to batched for speed")
-joints = []
-for joint_Rs in jrs_out['R'].T:
-    # Assume these all have the same expMat and id's!
-    # This only true for a single given call to JrsGenerator
-    # Z = torch.stack([zono.Z for zono in joint_Rs])
-    n_mats = np.max([zono.Z.shape[0] for zono in joint_Rs])
-    n_t = len(joint_Rs)
-    # because all are rot mats, they are 3x3
-    Z = torch.zeros((n_t, n_mats, 3, 3), dtype=torch.float64)
-    for i in range(n_t):
-        Z[i][:joint_Rs[i].Z.shape[0]] = joint_Rs[i].Z
-    batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id, compress=0)
-    joints.append(batch_zono)
-
+joints = list(jrs_out['R'])
 
 print("Perform forward operations")
 # fk = kin.forward_kinematics(joints, rob.robot)

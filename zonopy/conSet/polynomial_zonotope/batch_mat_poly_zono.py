@@ -328,8 +328,8 @@ class batchMatPolyZonotope():
 
         # expand remaining values
         for mpzid in range(n_mpz):
-            # Expand ExpMat
-            matches = np.any(np.expand_dims(mpzlist[mpzid].id,1) == all_ids,0)
+            # Expand ExpMat (replace any with nonzero to fix order bug!)
+            matches = np.nonzero(np.expand_dims(mpzlist[mpzid].id,1) == all_ids)[1]
             end_idx = last_expMat_idx + mpzlist[mpzid].expMat.shape[0]
             all_expMat[last_expMat_idx:end_idx,matches] = mpzlist[mpzid].expMat
             last_expMat_idx = end_idx

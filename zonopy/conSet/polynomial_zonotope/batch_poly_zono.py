@@ -103,7 +103,7 @@ class batchPolyZonotope:
         if len(Z.shape) > 2:
             return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=0)
         else:
-            return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=0)
+            return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=0,copy_Z=False)
     @property 
     def batch_shape(self):
         return self.Z.shape[:-2]
@@ -242,6 +242,22 @@ class batchPolyZonotope:
             expMat = torch.vstack((expMat1,expMat2,first + second))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return batchPolyZonotope(Z,n_dep_gens,expMat,id)
+
+    def __pow__(self, other):
+        '''
+        Simple overloaded power operator for 1-D pZ's.
+        Repeatedly multiply by self n times.
+        '''
+        if not isinstance(other, int):
+            raise TypeError
+        
+        if self.dimension != 1:
+            raise ValueError
+        
+        out = 1.
+        for _ in range(other):
+            out = self * out
+        return out
 
 
     __rmul__ = __mul__
@@ -518,8 +534,8 @@ class batchPolyZonotope:
 
         # expand remaining values
         for pzid in range(n_pz):
-            # Expand ExpMat
-            matches = np.any(np.expand_dims(pzlist[pzid].id,1) == all_ids,0)
+            # Expand ExpMat (replace any with nonzero to fix order bug!)
+            matches = np.nonzero(np.expand_dims(pzlist[pzid].id,1) == all_ids)[1]
             end_idx = last_expMat_idx + pzlist[pzid].expMat.shape[0]
             all_expMat[last_expMat_idx:end_idx,matches] = pzlist[pzid].expMat
             last_expMat_idx = end_idx
@@ -536,3 +552,10 @@ class batchPolyZonotope:
         out = zp.batchPolyZonotope(Z, all_dep_gens, all_expMat, all_ids, compress=2)
         return out
     
+    @staticmethod
+    def combine_bpz(bpzlist, idxs):
+        # Takes a list of bpz and respective idxs for them and combines them appropriately
+        out_list = np.empty(np.concatenate(idxs, axis=None).max()+1, dtype=object)
+        for i,locations in enumerate(idxs):
+            out_list[locations] = [bpzlist[i][j] for j in range(len(locations))]
+        return zp.batchPolyZonotope.from_pzlist(out_list)

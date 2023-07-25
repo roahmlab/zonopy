@@ -71,33 +71,63 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
     def _getReferenceBatchZpImpl(self, times: zp.batchPolyZonotope):
         mask_plan = (times.c <= self.tbrake).flatten()
         mask_stopping = (times.c < self.tfinal).flatten() * ~mask_plan
-        num_t = len(times.c)
+        mask_plan = np.nonzero(mask_plan.cpu().numpy())[0]
+        mask_stopping = np.nonzero(mask_stopping.cpu().numpy())[0]
+        stopped_idxs = np.nonzero((times.c >= self.tfinal).flatten().cpu().numpy())[0]
+        # num_t = len(times.c)
         
-        # raise NotImplementedError
-        q_out = [None]*self.num_q
-        qd_out = [None]*self.num_q
-        qdd_out = [None]*self.num_q
+        zero = [zp.polyZonotope([[0]])]*len(stopped_idxs)
+        q_stopped = [[el] * len(stopped_idxs) for el in self._final_q]
+        qd_stopped = [zero] * self.num_q
+        qdd_stopped = [zero] * self.num_q
+
+        q_plan = [None]*self.num_q
+        qd_plan = [None]*self.num_q
+        qdd_plan = [None]*self.num_q
 
         # First half of the trajectory
-        if torch.any(mask_plan):
+        if len(mask_plan) > 0:
             t = times[mask_plan]
             for i in range(self.num_q):
-                q_out[i] = self.q0 \
+                q_plan[i] = self.q0[i] \
                     + t * self.qd0[i] \
                     + 0.5 * t * t * self._param[i]
-                qd_out[i] = self.qd0 \
+                qd_plan[i] = self.qd0[i] \
                     + t * self._param[i]
-                qdd_out[i] = 0*t + self._param[i]
+                qdd_plan[i] = 0*t + self._param[i]
         
-        # # Second half of the trajectory
-        # if torch.any(mask_stopping):
-        #     t = times[mask_stopping]
-        #     q_out[mask_stopping,:] = self._qpeak \
-        #         + torch.outer(t, self._qdpeak) \
-        #         + 0.5 * torch.outer(t*t, self._stopping_qdd)
-        #     qd_out[mask_stopping,:] = self._qdpeak \
-        #         + torch.outer(t, self._stopping_qdd)
-        #     qdd_out[mask_stopping,:] = self._stopping_qdd
+        q_stopping = [None]*self.num_q
+        qd_stopping = [None]*self.num_q
+        qdd_stopping = [None]*self.num_q
+
+        # Second half of the trajectory
+        if len(mask_stopping) > 0:
+            t = times[mask_stopping]
+            for i in range(self.num_q):
+                q_stopping[i] = self._qpeak[i] \
+                    + t * self._qdpeak[i] \
+                    + 0.5 * t * t * self._stopping_qdd[i]
+                qd_stopping[i] = self._qdpeak[i] \
+                    + t * self._stopping_qdd[i]
+                qdd_stopping[i] = 0*t + self._stopping_qdd[i]
+
+        q_out = np.empty(self.num_q, dtype=object)
+        qd_out = np.empty(self.num_q, dtype=object)
+        qdd_out = np.empty(self.num_q, dtype=object)
+        
+        for i in range(self.num_q):
+            q_out[i] = zp.batchPolyZonotope.combine_bpz(
+                [q_stopped[i], q_plan[i], q_stopping[i]],
+                [stopped_idxs, mask_plan, mask_stopping]
+                )
+            qd_out[i] = zp.batchPolyZonotope.combine_bpz(
+                [qd_stopped[i], qd_plan[i], qd_stopping[i]],
+                [stopped_idxs, mask_plan, mask_stopping]
+                )
+            qdd_out[i] = zp.batchPolyZonotope.combine_bpz(
+                [qdd_stopped[i], qdd_plan[i], qdd_stopping[i]],
+                [stopped_idxs, mask_plan, mask_stopping]
+                )
 
         return (q_out, qd_out, qdd_out)
 
@@ -246,8 +276,71 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
             return self._getReferenceTorchImpl(times)
         elif isinstance(times, np.ndarray):
             return self._getReferenceNpImpl(times)
+        elif isinstance(times, zp.batchPolyZonotope):
+            return self._getReferenceBatchZpImpl(times)
         else:
             raise TypeError
+
+    def _getReferenceBatchZpImpl(self, times: zp.batchPolyZonotope):
+        mask = np.nonzero((times.c < self.tfinal).flatten().cpu().numpy())[0]
+        stopped_idxs = np.nonzero((times.c >= self.tfinal).flatten().cpu().numpy())[0]
+
+        # Main trajectory part
+        q_plan = np.empty(self.num_q, dtype=object)
+        qd_plan = np.empty(self.num_q, dtype=object)
+        qdd_plan = np.empty(self.num_q, dtype=object)
+        if len(mask) > 0:
+            # Scale time
+            scale = 1.0/self.tfinal
+            t_mask = times[mask] * scale
+            # Precompute all the t powers
+            tpow = np.empty(len(self._alphas), dtype=object)
+            tpow[0] = zp.batchPolyZonotope.from_pzlist([zp.polyZonotope([[1]])]*len(mask))
+            for i in range(1,len(self._alphas)):
+                tpow[i] = tpow[i-1]*t_mask
+            # Set all q initial conditions
+            zero = zp.batchPolyZonotope.from_pzlist([zp.polyZonotope([[0]])]*len(mask))
+            q_plan[:] = zero
+            qd_plan[:] = zero
+            qdd_plan[:] = zero
+            # Update all q
+            for idx, alpha in enumerate(self._alphas):
+                q_plan = q_plan + alpha * tpow[idx]
+                if idx > 0:
+                    qd_plan = qd_plan + float(idx) * alpha * tpow[idx-1]
+                if idx > 1:
+                    qdd_plan = qdd_plan + float(idx * (idx-1)) * alpha * tpow[idx-2]
+            qd_plan *= scale
+            qdd_plan *= scale*scale
+
+        if len(stopped_idxs) > 0:
+            # End condition
+            zero = [zp.polyZonotope([[0]])]*len(stopped_idxs)
+            q_stopped = [[el] * len(stopped_idxs) for el in self._final_q]
+            qd_stopped = [zero] * self.num_q
+            qdd_stopped = [zero] * self.num_q
+            
+            q_out = np.empty(self.num_q, dtype=object)
+            qd_out = np.empty(self.num_q, dtype=object)
+            qdd_out = np.empty(self.num_q, dtype=object)
+
+            for i in range(self.num_q):
+                q_out[i] = zp.batchPolyZonotope.combine_bpz(
+                    [q_stopped[i], q_plan[i]],
+                    [stopped_idxs, mask]
+                    )
+                qd_out[i] = zp.batchPolyZonotope.combine_bpz(
+                    [qd_stopped[i], qd_plan[i]],
+                    [stopped_idxs, mask]
+                    )
+                qdd_out[i] = zp.batchPolyZonotope.combine_bpz(
+                    [qdd_stopped[i], qdd_plan[i]],
+                    [stopped_idxs, mask]
+                    )
+        else:
+            q_out, qd_out, qdd_out = q_plan, qd_plan, qdd_plan
+
+        return (q_out, qd_out, qdd_out)
 
     def _getReferenceNpImpl(self, times: np.ndarray):
         mask = np.zeros_like(times, dtype=bool)
@@ -275,7 +368,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
                 if idx > 0:
                     qd_out[mask,:] = qd_out[mask,:] \
                         + float(idx) * np.outer(t**(idx-1), alpha)
-                if idx > 2:
+                if idx > 1:
                     qdd_out[mask,:] = qdd_out[mask,:] \
                         + float(idx * (idx-1)) * np.outer(t**(idx-2), alpha)
             qd_out[mask,:] *= scale
@@ -303,7 +396,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
                 if idx > 0:
                     qd_out[mask,:] = qd_out[mask,:] \
                         + float(idx) * torch.outer(t**(idx-1), alpha)
-                if idx > 2:
+                if idx > 1:
                     qdd_out[mask,:] = qdd_out[mask,:] \
                         + float(idx * (idx-1)) * torch.outer(t**(idx-2), alpha)
             qd_out[mask,:] *= scale

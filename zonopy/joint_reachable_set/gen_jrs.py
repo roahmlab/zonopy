@@ -21,8 +21,11 @@ class JrsGenerator:
                  ultimate_bound=None,
                  k_r=None,
                  batched=False,
-                 unique_tid=True):
+                 unique_tid=True,
+                 verbose=False):
         
+        self.verbose = verbose
+
         self.robot = robot
         self.traj = traj_class
 
@@ -60,11 +63,11 @@ class JrsGenerator:
         if batched and unique_tid:
             import warnings
             warnings.warn("Using batched online JRS generation with unique_tid isn't recommended and may be slower. Consider setting unique_tid=False.")
-        batched = False
+        # batched = False
         # So time id's do not need to be unique
         if batched:
+            i_s = np.arange(num_t)
             if unique_tid:
-                i_s = np.arange(num_t)
                 ids = i_s + len(self.id_map)
                 expMat = torch.eye(num_t, dtype=int)
                 gens = torch.eye(num_t) * self.tdiscretization/2
@@ -78,11 +81,14 @@ class JrsGenerator:
             centers = torch.as_tensor(self.tdiscretization*i_s+self.tdiscretization/2)
             z = torch.vstack([centers, gens]).unsqueeze(2).transpose(0,1)
             self.times = zp.batchPolyZonotope(z, n_dep_gens, expMat, ids)
+            # Make sure to update the id map (fixes slicing bug)!
+            idmap = OrderedDict((f't{i}', id) for i,id in enumerate(ids))
+            self.id_map.update(idmap)
         else:
             self.times = np.empty(num_t, dtype=object)
             if not unique_tid:
                 id = len(self.id_map)
-                self.id_map[f't'] = id
+                self.id_map[f't0'] = id
             for i in range(num_t):
                 if unique_tid:
                     id = len(self.id_map)
@@ -124,47 +130,37 @@ class JrsGenerator:
         )
 
         # Get the reference trajectory
-        print('Creating Reference Trajectory')
+        if self.verbose: print('Creating Reference Trajectory')
         q_ref, qd_ref, qdd_ref = gen.getReference(self.times)
 
         if self.batched:
-            # Merge into batches
-            q_ref_batch = np.empty(self.num_q, dtype=object)
-            qd_ref_batch = np.empty(self.num_q, dtype=object)
-            qdd_ref_batch = np.empty(self.num_q, dtype=object)
-            for i in range(self.num_q):
-                q_ref_batch[i] = zp.batchPolyZonotope.from_pzlist(q_ref.T[i])
-                qd_ref_batch[i] = zp.batchPolyZonotope.from_pzlist(qd_ref.T[i])
-                qdd_ref_batch[i] = zp.batchPolyZonotope.from_pzlist(qdd_ref.T[i])
-            
-            q_ref, qd_ref, qdd_ref = q_ref_batch, qd_ref_batch, qdd_ref_batch
-
+            # Chose the right function
             rot_from_q = JrsGenerator._get_pz_rotations_from_q
         else:
             # Vectorize over q
             rot_from_q = np.vectorize(JrsGenerator._get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
             q_ref, qd_ref, qdd_ref = q_ref.T, qd_ref.T, qdd_ref.T
 
-        print('Creating Reference Rotatotopes')
+        if self.verbose: print('Creating Reference Rotatotopes')
         R_ref = np.empty_like(q_ref)
         for i in range(self.num_q):
             R_ref[i] = rot_from_q(q_ref[i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
 
         # Add tracking error if provided
         if self.ultimate is not None:
-            print('Adding tracking error to make tracked trajectory')
+            if self.verbose: print('Adding tracking error to make tracked trajectory')
             q = (q_ref.T + self.error_pos).T
             qd = (qd_ref.T + self.error_vel).T
             qd_aux = (qd_ref.T + self.ultimate[1] * self.error_pos).T
             qdd_aux = (qdd_ref.T + self.ultimate[1] * self.error_vel).T
-            print('Creating Output Rotatotopes')
+            if self.verbose: print('Creating Output Rotatotopes')
             R = np.empty_like(q)
             for i in range(self.num_q):
                 R[i] = rot_from_q(q[i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
 
         # Make independence if requested
         if make_gens_independent:
-            print("Making non-k generators independent")
+            if self.verbose: print("Making non-k generators independent")
             rem_dep = np.vectorize(remove_dependence_and_compress, excluded=[1])
             q_ref = rem_dep(q_ref, self.k_ids)
             qd_ref = rem_dep(qd_ref, self.k_ids)
@@ -356,140 +352,6 @@ class JrsGenerator:
         else:
             out = input_type(Z, out.n_dep_gens, out.expMat, out.id)
         return out
-
-
-
-
-def gen_JRS(q,dq,joint_axes=None,taylor_degree=1,make_gens_independent=True):
-    n_q = len(q)
-    if joint_axes is None:
-        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_q)]
-    
-    traj_type = 'orig'
-    T_full,T_plan, dt = 1, 0.5 ,0.01
-    n_t = int(T_full/dt)
-    n_t_p = int(T_plan/T_full*n_t)
-
-    c_k = torch.zeros(n_q)
-    g_k = torch.min(torch.max(PI/24,abs(dq/3)),PI/3)
-    T, K = [],[]
-    Q, R= [[[] for _ in range(n_t)]for _ in range(2)]
-    for _ in range(n_q):
-        K.append(zp.polyZonotope([0],[[1]],prop='k'))
-    for t in range(n_t):
-        T.append(zp.polyZonotope([dt*t+dt/2],[[dt/2]]))
-
-    Qd_plan, Qdd_brake, Q_plan = [[] for _ in range(3)]
-    if traj_type == 'orig':
-        for j in range(n_q):
-            Qd_plan.append(dq[j]+(c_k[j]+g_k[j]*K[j])*T_plan)
-            Qdd_brake.append((-1)*Qd_plan[-1]*(1/(T_full-T_plan))) 
-            Q_plan.append(q[j]+dq[j]*T_plan+0.5*(c_k[j]+g_k[j]*K[j])*T_plan**2)
-
-    # main loop
-    for t in range(n_t):
-        for j in range(n_q):
-            if traj_type == 'orig':
-                if t < n_t_p:
-                   Q[t].append(q[j]+dq[j]*T[t]+0.5*(c_k[j]+g_k[j]*K[j])*T[t]*T[t])
-                else:
-                   Q[t].append(Q_plan[j]+Qd_plan[j]*(T[t]-T_plan)+0.5*Qdd_brake[j]*(T[t]-T_plan)*(T[t]-T_plan))
-
-            R_temp= gen_rotatotope_from_jrs(Q[t][-1],joint_axes[j],taylor_degree)
-            R[t].append(R_temp)
-
-    
-
-    # throw away time/error gens and compress indep. gens to just one (if 1D) 
-    if make_gens_independent:
-        for t in range(n_t):
-            for j in range(n_q):
-                k_id = zp.conSet.PROPERTY_ID['k'][j]
-                Q[t][j] = remove_dependence_and_compress(Q[t][j], k_id)
-                R[t][j] = remove_dependence_and_compress(R[t][j], k_id)
-        
-    return Q, R
-
-
-
-def gen_traj_JRS(q,dq,joint_axes=None,taylor_degree=1,make_gens_independent=True):
-
-    n_q = len(q)
-    if joint_axes is None:
-        joint_axes = [torch.tensor([0.0,0.0,1.0]) for _ in range(n_q)]
-    
-    traj_type = 'orig'
-    ultimate_bound = 0.0191
-    k_r = 10 # Kr = kr*eye(n_q)
-
-    T_full,T_plan, dt = 1, 0.5 ,0.01
-    n_t = int(T_full/dt)
-    n_t_p = int(T_plan/T_full*n_t)
-
-    c_k = torch.zeros(n_q)
-    g_k = torch.min(torch.max(PI/24,abs(dq/3)),PI/3)
-    T, K = [],[]
-    Q_des, Qd_des, Qdd_des, Q, Qd, Qd_a, Qdd_a, R_des, R_t_des, R, R_t = [[[] for _ in range(n_t)]for _ in range(11)]
-    for _ in range(n_q):
-        K.append(zp.polyZonotope([0],[[1]],prop='k'))
-    for t in range(n_t):
-        T.append(zp.polyZonotope([dt*t+dt/2],[[dt/2]]))
-    E_p = zp.polyZonotope([0],[[ultimate_bound/k_r]])
-    E_v = zp.polyZonotope([0],[[2*ultimate_bound]])
-
-    Qd_plan, Qdd_brake, Q_plan = [[] for _ in range(3)]
-    if traj_type == 'orig':
-        for j in range(n_q):
-            Qd_plan.append(dq[j]+(c_k[j]+g_k[j]*K[j])*T_plan)
-            Qdd_brake.append((-1)*Qd_plan[-1]*(1/(T_full-T_plan))) 
-            Q_plan.append(q[j]+dq[j]*T_plan+0.5*(c_k[j]+g_k[j]*K[j])*T_plan**2)
-
-    # main loop
-    for t in range(n_t):
-        for j in range(n_q):
-            if traj_type == 'orig':
-                if t < n_t_p:
-                   Q_des[t].append(q[j]+dq[j]*T[t]+0.5*(c_k[j]+g_k[j]*K[j])*T[t]*T[t])
-                   Qd_des[t].append(dq[j]+(c_k[j]+g_k[j]*K[j])*T[t])
-                   Qdd_des[t].append(c_k[j]+g_k[j]*K[j])
-                else:
-                   Q_des[t].append(Q_plan[j]+Qd_plan[j]*(T[t]-T_plan)+0.5*Qdd_brake[j]*(T[t]-T_plan)*(T[t]-T_plan))
-                   Qd_des[t].append(Qd_plan[j]+Qdd_brake[j]*(T[t]-T_plan))
-                   Qdd_des[t].append(Qdd_brake[j])
-
-            Q[t].append(Q_des[t][-1]+E_p)
-            Qd[t].append(Qd_des[t][-1]+E_v)
-            Qd_a[t].append(Qd_des[t][-1]+k_r*E_p)
-            Qdd_a[t].append(Qd_des[t][-1]+k_r*E_v)
-            R_temp= gen_rotatotope_from_jrs(Q_des[t][-1],joint_axes[j],taylor_degree)
-            R_des[t].append(R_temp)
-            R_t_des[t].append(R_temp.T)
-            R_temp = gen_rotatotope_from_jrs(Q[t][-1],joint_axes[j],taylor_degree)
-            R[t].append(R_temp)
-            R_t[t].append(R_temp.T)
-    
-
-    # throw away time/error gens and compress indep. gens to just one (if 1D) 
-    if make_gens_independent:
-        for t in range(n_t):
-            for j in range(n_q):
-                k_id = zp.conSet.PROPERTY_ID['k'][j]
-                Q_des[t][j] = remove_dependence_and_compress(Q_des[t][j], k_id)
-                Qd_des[t][j] = remove_dependence_and_compress(Qd_des[t][j], k_id)
-                Qdd_des[t][j] = remove_dependence_and_compress(Qdd_des[t][j], k_id)
-                Q[t][j] = remove_dependence_and_compress(Q[t][j], k_id)
-                Qd[t][j] = remove_dependence_and_compress(Qd[t][j], k_id)
-                Qd_a[t][j] = remove_dependence_and_compress(Qd_a[t][j], k_id)
-                Qdd_a[t][j] = remove_dependence_and_compress(Qdd_a[t][j], k_id)
-                R_des[t][j] = remove_dependence_and_compress(R_des[t][j], k_id)
-                R_t_des[t][j] = remove_dependence_and_compress(R_t_des[t][j], k_id)
-                R[t][j] = remove_dependence_and_compress(R[t][j], k_id)
-                R_t[t][j] = remove_dependence_and_compress(R_t[t][j], k_id)
-    #import pdb; pdb.set_trace()
-    return Q_des, Qd_des, Qdd_des, Q, Qd, Qd_a, Qdd_a, R_des, R_t_des, R, R_t
-
-
-
 
 
 if __name__ == '__main__':

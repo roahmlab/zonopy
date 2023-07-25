@@ -227,6 +227,8 @@ class polyZonotope:
         elif isinstance(other,zp.zonotope): # exact Plus
             n_dep_gens, expMat, id = self.n_dep_gens, self.expMat, self.id
             Z = torch.vstack((self.c+other.center, self.G,self.Grest,other.generators))
+        elif isinstance(other, zp.batchPolyZonotope):
+            return other.__add__(self)
         return polyZonotope(Z,n_dep_gens,expMat,id,compress=0,copy_Z=False)
     __radd__ = __add__
     def __sub__(self,other):
@@ -305,6 +307,10 @@ class polyZonotope:
             expMat = torch.vstack((expMat1,expMat2,first + second))
             n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
             return polyZonotope(Z,n_dep_gens,expMat,id)
+        elif isinstance(other,zp.batchPolyZonotope):
+            return other.__mul__(self)
+        else:
+            raise TypeError
     __rmul__ = __mul__
 
     def __rmatmul__(self,other):
