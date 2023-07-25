@@ -62,7 +62,7 @@ def load_robot(filepath):
         # Joint must have parent or child
         robot.link_parent_joint[joint.child] = joint
         # Also make an origin tensor
-        joint.origin_tensor = torch.as_tensor(joint.origin, dtype=torch.float64)
+        joint.origin_tensor = torch.as_tensor(joint.origin, dtype=torch.get_default_dtype())
 
 
     ##### THE ORIGIN DENOTES THE JOINT TO JOINT AXIS!
@@ -198,7 +198,7 @@ def load_robot(filepath):
         joint.outer_pz = zp.polyZonotope(torch.vstack([torch.zeros(3), torch.eye(3)*outer_rad]))
         center = np.sum(joint.aabb,axis=1) / 2
         gens = np.diag(joint.aabb[:,1] - center)
-        joint.bounding_pz = zp.polyZonotope(torch.as_tensor(np.vstack([center,gens])))
+        joint.bounding_pz = zp.polyZonotope(torch.as_tensor(np.vstack([center,gens]), dtype=torch.get_default_dtype()))
         # joint.bounding_pz = 
         # test = a.collision_trimesh_fk(cfg={'joint_4':3.14/2.0},links=[link])
 
@@ -215,7 +215,7 @@ def load_robot(filepath):
         # Create the zonotope
         center = np.sum(bounds,axis=1) / 2
         gens = np.diag(bounds[:,1] - center)
-        link_pz = zp.polyZonotope(torch.as_tensor(np.vstack([center,gens])))
+        link_pz = zp.polyZonotope(torch.as_tensor(np.vstack([center,gens]), dtype=torch.get_default_dtype()))
         link.bounding_pz = link_pz
 
     return robot

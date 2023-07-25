@@ -7,7 +7,7 @@ import zonopy as zp
 
 
 # Set cuda if desired and available
-use_cuda = False
+use_cuda = True
 if use_cuda:
     zp.setup_cuda()
 
@@ -26,8 +26,8 @@ qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290
 
 
 print('Starting JRS Generation')
-# traj_class=zp.trajectories.BernsteinArmTrajectory
-traj_class=zp.trajectories.PiecewiseArmTrajectory
+traj_class=zp.trajectories.BernsteinArmTrajectory
+# traj_class=zp.trajectories.PiecewiseArmTrajectory
 a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
@@ -49,7 +49,7 @@ for i in range (0,100,10):
     for name, (pos, rot) in fk.items():
         if name in ['base_link']:#,'shoulder_link','half_arm_1_link']:
             continue
-        bounds = torch.as_tensor(rob.robot.link_parent_joint[name].radius)
+        bounds = torch.as_tensor(rob.robot.link_parent_joint[name].radius, dtype=torch.get_default_dtype())
         pos = pos + rot@zp.polyZonotope(torch.vstack([torch.zeros(3), torch.diag(bounds)]))
         patch = pos.to_zonotope().reduce(4).polyhedron_patch(ax)
         patches.extend(patch)
@@ -123,7 +123,7 @@ print('Took', duration/num, 'seconds each loop for', num, 'loops')
 from torch.profiler import profile, record_function, ProfilerActivity
 with profile(activities=[ProfilerActivity.CPU,ProfilerActivity.CUDA], record_shapes=True) as prof:
     with record_function("create_jrs"):
-        JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd)
+        JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True)
 prof.export_chrome_trace("trace.json")
 
 print('pause')

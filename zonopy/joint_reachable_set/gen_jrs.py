@@ -78,7 +78,10 @@ class JrsGenerator:
                 gens = torch.ones(num_t) * self.tdiscretization/2
                 n_dep_gens = 1
             # Some tricks to make it into a batched poly zono
-            centers = torch.as_tensor(self.tdiscretization*i_s+self.tdiscretization/2)
+            centers = torch.as_tensor(
+                self.tdiscretization*i_s+self.tdiscretization/2, 
+                dtype=torch.get_default_dtype()
+                )
             z = torch.vstack([centers, gens]).unsqueeze(2).transpose(0,1)
             self.times = zp.batchPolyZonotope(z, n_dep_gens, expMat, ids)
             # Make sure to update the id map (fixes slicing bug)!
@@ -235,7 +238,12 @@ class JrsGenerator:
         cos_sin_q = cos_q.exactCartProd(sin_q)
         # Rotation Matrix
         e = rotation_axis/np.linalg.norm(rotation_axis)
-        U = torch.tensor([[0, -e[2], e[1]],[e[2], 0, -e[0]],[-e[1], e[0], 0]])
+        U = torch.tensor(
+            [[0, -e[2], e[1]],
+            [e[2], 0, -e[0]],
+            [-e[1], e[0], 0]], 
+            dtype=torch.get_default_dtype()
+            )
 
         # Create rotation matrices from cos and sin dimensions
         cq = cos_sin_q.c[...,0]

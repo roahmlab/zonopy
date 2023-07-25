@@ -100,7 +100,7 @@ for i in range(100):
         patches = []
         for occupancy in body_dict.values():
             if slice_zonos:
-                occupancy = occupancy.slice_all_dep(torch.as_tensor(k))
+                occupancy = occupancy.slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype()))
             else:
                 occupancy = occupancy.to_zonotope()
             patch = occupancy.reduce(4).polyhedron_patch(ax1)
@@ -130,8 +130,8 @@ for i in range(100):
             except:
                 occupancy = occupancy
             if slice_zonos:
-                occupancy = occupancy.slice_all_dep(torch.as_tensor(k))
-                # occupancy = occupancy.slice_all_dep(torch.as_tensor(k).view(1,7).repeat(100,1))
+                occupancy = occupancy.slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype()))
+                # occupancy = occupancy.slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype()).view(1,7).repeat(100,1))
             else:
                 occupancy = occupancy.to_zonotope()
             patch = occupancy.reduce(4).polyhedron_patch(ax2)

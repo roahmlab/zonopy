@@ -7,8 +7,8 @@ import torch
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
 
-ZERO_POS = polyZonotope(torch.zeros(3, dtype=torch.float64).unsqueeze(0),compress=0,copy_Z=False)
-ZERO_ROT = matPolyZonotope(torch.eye(3, dtype=torch.float64).unsqueeze(0),compress=0,copy_Z=False)
+ZERO_POS = polyZonotope(torch.zeros(3).unsqueeze(0),compress=0,copy_Z=False)
+ZERO_ROT = matPolyZonotope(torch.eye(3).unsqueeze(0),compress=0,copy_Z=False)
 
 
 # Helper function to create a config dictionary from the rotatotopes if a list is provided
@@ -73,7 +73,7 @@ def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batch
             elif joint.name in cfg_map:
                 rotato_cfg = cfg_map[joint.name]
             else:
-                rotato_cfg = torch.eye(3, dtype=torch.float64)
+                rotato_cfg = torch.eye(3)
             
             # Get the transform for the joint
             # joint_rot = torch.as_tensor(joint.origin[0:3,0:3], dtype=torch.float64)

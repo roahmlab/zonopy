@@ -19,7 +19,7 @@ class interval:
     Eq.
     I = { inf*(1-a)/2 + sup*(1+a)/2 | coef. a \in [-1,1] }
     '''
-    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR, dtype=float, device=None):
+    def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR, dtype=torch.get_default_dtype(), device=None):
         if isinstance(inf,list):
             inf = torch.tensor(inf)
         if isinstance(sup,list):

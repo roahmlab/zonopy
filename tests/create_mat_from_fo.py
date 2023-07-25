@@ -62,7 +62,7 @@ def process_out(in_dict):
     out_rec = np.recarray((1,), dtype=[(n,object) for n in in_dict.keys()])
     for link_name, occupancy in in_dict.items():
         try:
-            occupancy = occupancy.slice_all_dep(torch.as_tensor(k_slice).view(1,generator.num_q).repeat(generator.num_t,1))
+            occupancy = occupancy.slice_all_dep(torch.as_tensor(k_slice, dtype=torch.get_default_dtype()).view(1,generator.num_q).repeat(generator.num_t,1))
             ent = np.empty(generator.num_t, dtype=object)
             for i in range(generator.num_t):
                 if reduce:
@@ -70,7 +70,7 @@ def process_out(in_dict):
                 else:
                     ent[i] = (occupancy[i].Z).cpu().numpy().T
         except:
-            occupancy = occupancy.slice_all_dep(torch.as_tensor(k_slice))
+            occupancy = occupancy.slice_all_dep(torch.as_tensor(k_slice, dtype=torch.get_default_dtype()))
             if reduce:
                 ent = (occupancy.reduce(4).Z).cpu().numpy().T
             else:
