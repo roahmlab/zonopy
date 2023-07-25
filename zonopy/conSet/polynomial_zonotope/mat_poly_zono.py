@@ -136,6 +136,9 @@ class matPolyZonotope():
     @property 
     def n_cols(self):
         return self.Z.shape[2]
+    @property 
+    def shape(self):
+        return self.Z.shape[-2:]
     @property
     def T(self):        
         return matPolyZonotope(self.Z.transpose(1,2),self.n_dep_gens,self.expMat,self.id,compress=0,copy_Z=False)

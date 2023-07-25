@@ -291,3 +291,58 @@ class batchMatPolyZonotope():
             ZRed = torch.cat((ZRed[self.batch_idx_all+(0,)],ZRed[self.batch_idx_all+(slice(1,n_dg_red+1),)].sum(-3).unsqueeze(-3),ZRed[self.batch_idx_all+(slice(n_dg_red+1,None),)]),dim=-3)
             n_dg_red = 1
         return batchMatPolyZonotope(ZRed,n_dg_red,self.expMat,self.id,compress=0)
+    
+    @staticmethod
+    def from_mpzlist(mpzlist):
+        assert len(mpzlist) > 0, "Expected at least 1 element input!"
+        # Check type
+        assert np.all([isinstance(mpz, matPolyZonotope) for mpz in mpzlist]), "Expected all elements to be of type matPolyZonotope"
+        # Validate dimensions match
+        n_mpz = len(mpzlist)
+        shape = mpzlist[0].shape
+        [mpz.shape for mpz in mpzlist].count(shape) == n_mpz, "Expected all elements to have the same shape!"
+
+        # First loop to extract key parts
+        all_ids = [None]*n_mpz
+        dep_gens = [None]*n_mpz
+        all_c = [None]*n_mpz
+        n_grest = [None]*n_mpz
+        for i, mpz in enumerate(mpzlist):
+            all_ids[i] = mpz.id
+            dep_gens[i] = mpz.n_dep_gens
+            all_c[i] = mpz.C.unsqueeze(0)
+            n_grest[i] = mpz.n_indep_gens
+        
+        # Combine
+        all_ids = np.unique(np.concatenate(all_ids, axis=None))
+        all_dep_gens = np.sum(dep_gens)
+        dep_gens_idxs = np.cumsum([0]+dep_gens)
+        n_grest = np.max(n_grest)
+        all_c = torch.stack(all_c)
+
+        # Preallocate
+        all_G = torch.zeros((n_mpz, all_dep_gens) + shape)
+        all_grest = torch.zeros((n_mpz, n_grest) + shape)
+        all_expMat = torch.zeros((all_dep_gens, len(all_ids)), dtype=torch.int64)
+        last_expMat_idx = 0
+
+        # expand remaining values
+        for mpzid in range(n_mpz):
+            # Expand ExpMat
+            matches = np.any(np.expand_dims(mpzlist[mpzid].id,1) == all_ids,0)
+            end_idx = last_expMat_idx + mpzlist[mpzid].expMat.shape[0]
+            all_expMat[last_expMat_idx:end_idx,matches] = mpzlist[mpzid].expMat
+            last_expMat_idx = end_idx
+        
+            # expand out all G matrices
+            all_G[mpzid,dep_gens_idxs[mpzid]:dep_gens_idxs[mpzid+1]] = mpzlist[mpzid].G
+
+            # Expand out all grest
+            grest = mpzlist[mpzid].Grest
+            all_grest[mpzid,:grest.shape[0]] = grest
+        
+        # Combine, reduce, output.
+        Z = torch.concat((all_c, all_G, all_grest), dim=-3)
+        out = zp.batchMatPolyZonotope(Z, all_dep_gens, all_expMat, all_ids, compress=2)
+        return out
+    

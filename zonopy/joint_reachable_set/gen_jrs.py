@@ -57,6 +57,9 @@ class JrsGenerator:
 
         # Create base PZ's for time
         self.batched = batched
+        if batched and unique_tid:
+            import warnings
+            warnings.warn("Using batched online JRS generation with unique_tid isn't recommended and may be slower. Consider setting unique_tid=False.")
         batched = False
         # So time id's do not need to be unique
         if batched:
@@ -124,61 +127,40 @@ class JrsGenerator:
         print('Creating Reference Trajectory')
         q_ref, qd_ref, qdd_ref = gen.getReference(self.times)
 
-        # Start to merge
-        # a = q_ref.T
-        # q_ref = np.empty(self.num_q, dtype=object)
-        # for i in range(self.num_q):
-        #     n_t = len(a[i])
-        #     all_ids = [z.id for z in a[i]]
-        #     all_ids = np.unique(np.array(all_ids).flatten())
-        #     dep_gens = [z.n_dep_gens for z in a[i]]
-        #     all_dep_gens = np.sum(dep_gens)
-        #     dep_gens_idxs = np.cumsum([0]+[z.n_dep_gens for z in a[i]])
-        #     all_expMat = torch.zeros((all_dep_gens, len(all_ids)), dtype=torch.int64)
-        #     last_expMat_idx = 0
-        #     all_c = torch.stack([z.c.unsqueeze(0) for z in a[i]])
-        #     n_grest = np.max([z.Grest.shape[0] for z in a[i]])
-        #     # we can assume 1D for all Q's
-        #     all_grest = torch.zeros((n_t, n_grest, 1))
-        #     all_G = torch.zeros((n_t, all_dep_gens, 1))
-
-        #     # expand expmat to ids and save
-        #     for zid in range(len(a[i])):
-        #         matches = np.any(np.expand_dims(a[i,zid].id,1) == all_ids,0)
-        #         end_idx = last_expMat_idx + a[i,zid].expMat.shape[0]
-        #         all_expMat[last_expMat_idx:end_idx,matches] = a[i,zid].expMat
-        #         last_expMat_idx = end_idx
+        if self.batched:
+            # Merge into batches
+            q_ref_batch = np.empty(self.num_q, dtype=object)
+            qd_ref_batch = np.empty(self.num_q, dtype=object)
+            qdd_ref_batch = np.empty(self.num_q, dtype=object)
+            for i in range(self.num_q):
+                q_ref_batch[i] = zp.batchPolyZonotope.from_pzlist(q_ref.T[i])
+                qd_ref_batch[i] = zp.batchPolyZonotope.from_pzlist(qd_ref.T[i])
+                qdd_ref_batch[i] = zp.batchPolyZonotope.from_pzlist(qdd_ref.T[i])
             
-        #         # expand out all G matrices
-        #         all_G[zid,dep_gens_idxs[zid]:dep_gens_idxs[zid+1]] = a[i,zid].G
+            q_ref, qd_ref, qdd_ref = q_ref_batch, qd_ref_batch, qdd_ref_batch
 
-        #         # Expand out all grest
-        #         grest = a[i,zid].Grest
-        #         all_grest[zid,:grest.shape[0]] = grest
-        #     Z = torch.concat((all_c, all_G, all_grest), dim=1)
-        #     q_ref[i] = zp.batchPolyZonotope(Z, all_dep_gens, all_expMat, all_ids)
-            # print("here")
-
-
-        # Vectorize over q
-        rot_from_q = np.vectorize(JrsGenerator._get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
+            rot_from_q = JrsGenerator._get_pz_rotations_from_q
+        else:
+            # Vectorize over q
+            rot_from_q = np.vectorize(JrsGenerator._get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
+            q_ref, qd_ref, qdd_ref = q_ref.T, qd_ref.T, qdd_ref.T
 
         print('Creating Reference Rotatotopes')
         R_ref = np.empty_like(q_ref)
         for i in range(self.num_q):
-            R_ref[:,i] = rot_from_q(q_ref[:,i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
+            R_ref[i] = rot_from_q(q_ref[i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
 
         # Add tracking error if provided
         if self.ultimate is not None:
             print('Adding tracking error to make tracked trajectory')
-            q = q_ref + self.error_pos
-            qd = qd_ref + self.error_vel
-            qd_aux = qd_ref + self.ultimate[1] * self.error_pos
-            qdd_aux = qdd_ref + self.ultimate[1] * self.error_vel
+            q = (q_ref.T + self.error_pos).T
+            qd = (qd_ref.T + self.error_vel).T
+            qd_aux = (qd_ref.T + self.ultimate[1] * self.error_pos).T
+            qdd_aux = (qdd_ref.T + self.ultimate[1] * self.error_vel).T
             print('Creating Output Rotatotopes')
             R = np.empty_like(q)
             for i in range(self.num_q):
-                R[:,i] = rot_from_q(q[:,i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
+                R[i] = rot_from_q(q[i], self.robot.joint_axis[i], taylor_deg=taylor_degree)
 
         # Make independence if requested
         if make_gens_independent:
@@ -203,15 +185,15 @@ class JrsGenerator:
 
         # Return as dict
         return {
-            'q_ref': q_ref,
-            'qd_ref': qd_ref,
-            'qdd_ref': qdd_ref,
-            'R_ref': R_ref,
-            'q': q,
-            'qd': qd,
-            'qd_aux': qd_aux,
-            'qdd_aux': qdd_aux,
-            'R': R
+            'q_ref': q_ref.T,
+            'qd_ref': qd_ref.T,
+            'qdd_ref': qdd_ref.T,
+            'R_ref': R_ref.T,
+            'q': q.T,
+            'qd': qd.T,
+            'qd_aux': qd_aux.T,
+            'qdd_aux': qdd_aux.T,
+            'R': R.T
         }
     
     @staticmethod
@@ -224,26 +206,35 @@ class JrsGenerator:
         U = torch.tensor([[0, -e[2], e[1]],[e[2], 0, -e[0]],[-e[1], e[0], 0]])
 
         # Create rotation matrices from cos and sin dimensions
-        cq = cos_sin_q.c[0]
-        sq = cos_sin_q.c[1]
+        cq = cos_sin_q.c[...,0]
+        cq = cq.reshape(*cq.shape, 1, 1)
+        sq = cos_sin_q.c[...,1]
+        sq = sq.reshape(*sq.shape, 1, 1)
         C = torch.eye(3) + sq*U + (1-cq)*U@U
-        C = C.unsqueeze(0)
+        C = C.unsqueeze(-3)
 
         tmp_Grest = torch.empty(0)
-        if cos_sin_q.Grest.shape[0] > 0:
-            cq = cos_sin_q.Grest[:,0].reshape([-1,1,1])
-            sq = cos_sin_q.Grest[:,1].reshape([-1,1,1])
+        if cos_sin_q.n_indep_gens > 0:
+            cq = cos_sin_q.Grest[...,0]
+            cq = cq.reshape(*cq.shape, 1, 1)
+            sq = cos_sin_q.Grest[...,1]
+            sq = sq.reshape(*sq.shape, 1, 1)
             tmp_Grest = sq*U + -cq*U@U
 
         tmp_G = torch.empty(0)
-        if cos_sin_q.G.shape[0] > 0:
-            cq = cos_sin_q.G[:,0].reshape([-1,1,1])
-            sq = cos_sin_q.G[:,1].reshape([-1,1,1])
+        if cos_sin_q.n_dep_gens > 0:
+            cq = cos_sin_q.G[...,0]
+            cq = cq.reshape(*cq.shape, 1, 1)
+            sq = cos_sin_q.G[...,1]
+            sq = sq.reshape(*sq.shape, 1, 1)
             tmp_G = sq*U + -cq*U@U
         
-        Z = torch.concat((C, tmp_G, tmp_Grest), dim=0)
+        Z = torch.concat((C, tmp_G, tmp_Grest), dim=-3)
         # Z_t = Z.transpose(1,2)
-        out = zp.matPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0,copy_Z=False)
+        if len(Z.shape) == 3:
+            out = zp.matPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0,copy_Z=False)
+        else:
+            out = zp.batchMatPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=2)
         # out_t = zp.matPolyZonotope(Z_t, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0)
         # return (out, out_t)
         return out
@@ -298,9 +289,13 @@ class JrsGenerator:
         # Assumes a 1D pz
         c = out.c + remainder.center()
         G = out.G
-        Grest = torch.sum(out.Grest) + remainder.rad()
-        Z = torch.vstack([c, G, Grest])
-        out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
+        Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
+        Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
+        input_type = type(pz)
+        if input_type == zp.polyZonotope:
+            out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
+        else:
+            out = input_type(Z, out.n_dep_gens, out.expMat, out.id)
         return out
 
     # Put this here for now, but eventually find a better place to put this
@@ -353,9 +348,13 @@ class JrsGenerator:
         # Assumes a 1D pz
         c = out.c + remainder.center()
         G = out.G
-        Grest = torch.sum(out.Grest) + remainder.rad()
-        Z = torch.vstack([c, G, Grest])
-        out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
+        Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
+        Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
+        input_type = type(pz)
+        if input_type == zp.polyZonotope:
+            out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
+        else:
+            out = input_type(Z, out.n_dep_gens, out.expMat, out.id)
         return out
 
 

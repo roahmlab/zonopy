@@ -198,7 +198,7 @@ class interval:
             new_sup = torch.max(candidates,dim=0).values
             return interval(new_inf, new_sup)
 
-        elif isinstance(other, interval) and other.numel() == 1:
+        elif isinstance(other, interval) and (other.numel() == 1 or self.numel() == other.numel()):
             candidates = self.inf.repeat(4,1).reshape((4,) + self.shape)
             candidates[0] = self.__inf * other.__inf
             candidates[1] = self.__inf * other.__sup

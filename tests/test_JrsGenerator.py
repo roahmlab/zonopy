@@ -28,7 +28,7 @@ qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290
 print('Starting JRS Generation')
 # traj_class=zp.trajectories.BernsteinArmTrajectory
 traj_class=zp.trajectories.PiecewiseArmTrajectory
-a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True)
+a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
 # c = JrsGenerator._get_pz_rotations_from_q(b[0][0][0],a.joint_axis[0],taylor_deg=1)
@@ -62,29 +62,49 @@ plt.show()
 
 print('Testing batched kinematics')
 # Combine all the R for a joint into one batch mat poly zono
-joints = []
-for joint_Rs in b['R'].T:
-    # Assume these all have the same expMat and id's!
-    # This only true for a single given call to JrsGenerator
-    # Z = torch.stack([zono.Z for zono in joint_Rs])
-    n_mats = np.max([zono.Z.shape[0] for zono in joint_Rs])
-    n_t = len(joint_Rs)
-    # because all are rot mats, they are 3x3
-    Z = torch.zeros((n_t, n_mats, 3, 3), dtype=torch.float64)
-    for i in range(n_t):
-        Z[i][:joint_Rs[i].Z.shape[0]] = joint_Rs[i].Z
-    batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id, compress=0)
-    joints.append(batch_zono)
+# joints = []
+# for joint_Rs in b['R'].T:
+#     # Assume these all have the same expMat and id's!
+#     # This only true for a single given call to JrsGenerator
+#     # Z = torch.stack([zono.Z for zono in joint_Rs])
+#     n_mats = np.max([zono.Z.shape[0] for zono in joint_Rs])
+#     n_t = len(joint_Rs)
+#     # because all are rot mats, they are 3x3
+#     Z = torch.zeros((n_t, n_mats, 3, 3), dtype=torch.float64)
+#     for i in range(n_t):
+#         Z[i][:joint_Rs[i].Z.shape[0]] = joint_Rs[i].Z
+#     batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id)
+#     joints.append(batch_zono)
+
+joints = [zp.batchMatPolyZonotope.from_mpzlist(joint_Rs) for joint_Rs in b['R'].T]
 
 fk = kin.forward_kinematics(joints, rob.robot)
 fo = kin.forward_occupancy(joints, rob.robot)
 jo = kin.joint_occupancy(joints, rob.robot)
+
+print('Testing batched JRS Generation')
+# traj_class=zp.trajectories.BernsteinArmTrajectory
+traj_class=zp.trajectories.PiecewiseArmTrajectory
+c = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
+d = c.gen_JRS(q, qd, qdd)
+print('Finished batched JRS Generation')
+
+fk = kin.forward_kinematics(list(d['R']), rob.robot)
+fo = kin.forward_occupancy(list(d['R']), rob.robot)
+jo = kin.joint_occupancy(list(d['R']), rob.robot)
 
 # Timing
 num = 10
 print("Start Timing JRS", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd), number=num)
+print('Took', duration/num, 'seconds each loop for', num, 'loops')
+
+# Timing
+num = 10
+print("Start Timing Batch JRS", num, "Loops")
+import timeit
+duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing

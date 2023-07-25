@@ -39,7 +39,7 @@ rob = robots2.ArmRobot(os.path.join(basedirname, robot_file))
 
 print('Starting JRS Generation')
 traj_class=zp.trajectories.BernsteinArmTrajectory if use_bernstein else zp.trajectories.PiecewiseArmTrajectory
-generator = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10)
+generator = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
 jrs_out = generator.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
 

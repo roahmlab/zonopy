@@ -43,19 +43,11 @@ for Rs in b['R']:
 
 
 # Do batched forward operations
-joints = []
-for joint_Rs in b['R'].T:
-    # Assume these all have the same expMat and id's!
-    # This only true for a single given call to JrsGenerator
-    # Z = torch.stack([zono.Z for zono in joint_Rs])
-    n_mats = np.max([zono.Z.shape[0] for zono in joint_Rs])
-    n_t = len(joint_Rs)
-    # because all are rot mats, they are 3x3
-    Z = torch.zeros((n_t, n_mats, 3, 3), dtype=torch.float64)
-    for i in range(n_t):
-        Z[i][:joint_Rs[i].Z.shape[0]] = joint_Rs[i].Z
-    batch_zono = zp.batchMatPolyZonotope(Z, joint_Rs[0].n_dep_gens, joint_Rs[0].expMat, joint_Rs[0].id, compress=0)
-    joints.append(batch_zono)
+print('Testing batched JRS Generation')
+c = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
+d = c.gen_JRS(q, qd, qdd)
+print('Finished batched JRS Generation')
+joints = list(d['R'])
 
 fk = kin.forward_kinematics(joints, rob.robot)
 fo, _ = kin.forward_occupancy(joints, rob.robot)
@@ -71,7 +63,7 @@ import mpl_toolkits.mplot3d as a3
 # Get reference
 plot_arm = False
 plot_ref = True
-slice_zonos = False
+slice_zonos = True
 plot_seperate = True
 k = np.ones(7)*0.5
 if plot_arm and plot_ref:
