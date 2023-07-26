@@ -76,7 +76,7 @@ class batchMatZonotope():
         return batchMatZonotope(self.Z.transpose(-2,-1))
 
     def to(self,dtype=None,device=None):
-        Z = self.Z.to(dtype=dtype,device=device)
+        Z = self.Z.to(dtype=dtype,device=device, non_blocking=True)
         return batchMatZonotope(Z)
     def cpu(self):
         Z = self.Z.cpu()
@@ -137,7 +137,8 @@ class batchMatZonotope():
             g_red = self.generators[self.batch_idx_all+(non_zero_idxs,)]
         else: 
             zero_idxs = torch.sum(self.generators!=0,(-2,-1))==0     
-            ind = zero_idxs.to(dtype=torch.float).sort(-1)[1].reshape(self.batch_shape+(self.n_generators,1,1)).repeat((1,)*(self.batch_dim+1)+self.shape)
+            # ind = zero_idxs.to(dtype=torch.float).sort(-1)[1].reshape(self.batch_shape+(self.n_generators,1,1)).repeat((1,)*(self.batch_dim+1)+self.shape)
+            ind = zero_idxs.sort(-1)[1].reshape(self.batch_shape+(self.n_generators,1,1)).repeat((1,)*(self.batch_dim+1)+self.shape)
             max_non_zero_len = (~zero_idxs).sum(-1).max()
             g_red = self.generators.gather(-3,ind)[self.batch_idx_all+(slice(None,max_non_zero_len),)]
         Z = torch.cat((self.center.unsqueeze(self.batch_dim),g_red),self.batch_dim)

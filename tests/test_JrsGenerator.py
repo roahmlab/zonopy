@@ -35,30 +35,30 @@ print('Finished JRS Generation')
 
 print('Testing kinematics')
 import zonopy.kinematics as kin
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import mpl_toolkits.mplot3d as a3
-fig = plt.figure()
-# ax = fig.gca()
-ax = a3.Axes3D(fig)
+# import matplotlib.pyplot as plt
+# from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+# import mpl_toolkits.mplot3d as a3
+# fig = plt.figure()
+# # ax = fig.gca()
+# ax = a3.Axes3D(fig)
 for i in range (0,100,10):
     patches = []
     print('t', i)
     fk = kin.forward_kinematics(list(b['R'][i]), rob.robot)
-    print('updating plot')
-    for name, (pos, rot) in fk.items():
-        if name in ['base_link']:#,'shoulder_link','half_arm_1_link']:
-            continue
-        bounds = torch.as_tensor(rob.robot.link_parent_joint[name].radius, dtype=torch.get_default_dtype())
-        pos = pos + rot@zp.polyZonotope(torch.vstack([torch.zeros(3), torch.diag(bounds)]))
-        patch = pos.to_zonotope().reduce(4).polyhedron_patch(ax)
-        patches.extend(patch)
-    patches = Poly3DCollection(patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.5)
-    ax.add_collection3d(patches)  
-    # plt.autoscale()
-    plt.draw()
-    plt.pause(0.001)
-plt.show()
+#     print('updating plot')
+#     for name, (pos, rot) in fk.items():
+#         if name in ['base_link']:#,'shoulder_link','half_arm_1_link']:
+#             continue
+#         bounds = torch.as_tensor(rob.robot.link_parent_joint[name].radius, dtype=torch.get_default_dtype())
+#         pos = pos + rot@zp.polyZonotope(torch.vstack([torch.zeros(3), torch.diag(bounds)]))
+#         patch = pos.to_zonotope().reduce(4).polyhedron_patch(ax)
+#         patches.extend(patch)
+#     patches = Poly3DCollection(patches,alpha=0.03,edgecolor='green',facecolor='green',linewidths=0.5)
+#     ax.add_collection3d(patches)  
+#     # plt.autoscale()
+#     plt.draw()
+#     plt.pause(0.001)
+# plt.show()
 
 print('Testing batched kinematics')
 # Combine all the R for a joint into one batch mat poly zono
@@ -92,28 +92,28 @@ fo = kin.forward_occupancy(d['R'], rob.robot)
 jo = kin.joint_occupancy(d['R'], rob.robot)
 
 # Timing
-num = 10
+num = 1
 print("Start Timing JRS", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd, only_R=True), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
-num = 10
+num = 1
 print("Start Timing Batch JRS", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
-num = 10
+num = 1
 print("Start Timing Serial FK", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: [kin.forward_kinematics(list(R), rob.robot) for R in b['R']], number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
-num = 10
+num = 1
 print("Start Timing Batch FK", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: kin.forward_kinematics(joints, rob.robot), number=num)
@@ -125,6 +125,19 @@ with profile(activities=[ProfilerActivity.CPU,ProfilerActivity.CUDA], record_sha
     with record_function("create_jrs"):
         JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True)
 prof.export_chrome_trace("trace.json")
+
+print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
+
+import cProfile as profile
+import pstats
+prof = profile.Profile()
+prof.enable()
+JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True)
+prof.disable()
+prof.dump_stats('pyprof.out')
+# pyprof2calltree -i pyprof.out -k
+stats = pstats.Stats(prof).strip_dirs().sort_stats("cumtime")
+stats.print_stats(10) # top 10 rows
 
 print('pause')
 

@@ -32,8 +32,8 @@ class interval:
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
         assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
-        self.__inf = inf.to(dtype=dtype, device=device)
-        self.__sup = sup.to(dtype=dtype, device=device)
+        self.__inf = inf.to(dtype=dtype, device=device, non_blocking=True)
+        self.__sup = sup.to(dtype=dtype, device=device, non_blocking=True)
     @property
     def dtype(self):
         '''
@@ -91,8 +91,8 @@ class interval:
         dtype: torch.float or torch.double
         device: 'cpu', 'gpu', 'cuda:0', ...
         '''
-        inf = self.__inf.to(dtype=dtype, device=device)
-        sup = self.__sup.to(dtype=dtype, device=device)
+        inf = self.__inf.to(dtype=dtype, device=device, non_blocking=True)
+        sup = self.__sup.to(dtype=dtype, device=device, non_blocking=True)
         return interval(inf,sup)
     def cpu(self):    
         '''
@@ -188,7 +188,8 @@ class interval:
                 return interval(other * self.__sup, other * self.__inf)
 
         if self.numel() == 1 and isinstance(other, interval):
-            candidates = other.inf.repeat(4,1).reshape((4,) + other.shape)
+            # candidates = other.inf.repeat(4,1).reshape((4,) + other.shape)
+            candidates = torch.empty((4,) + other.shape, dtype=other.inf.dtype, device=other.inf.device)
             candidates[0] = self.__inf * other.__inf
             candidates[1] = self.__inf * other.__sup
             candidates[2] = self.__sup * other.__inf
@@ -199,7 +200,8 @@ class interval:
             return interval(new_inf, new_sup)
 
         elif isinstance(other, interval) and (other.numel() == 1 or self.numel() == other.numel()):
-            candidates = self.inf.repeat(4,1).reshape((4,) + self.shape)
+            # candidates = self.inf.repeat(4,1).reshape((4,) + self.shape)
+            candidates = torch.empty((4,) + self.shape, dtype=self.inf.dtype, device=self.inf.device)
             candidates[0] = self.__inf * other.__inf
             candidates[1] = self.__inf * other.__sup
             candidates[2] = self.__sup * other.__inf

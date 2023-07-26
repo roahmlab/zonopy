@@ -36,7 +36,7 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
             ExpMat = ExpMat[idxD]
     # add hash value of the exponent vector to the exponent matrix
     temp = torch.arange(ExpMat.shape[1],device=G.device).reshape(-1,1) + 1
-    rankMat = torch.hstack((ExpMat.to(dtype=torch.float)@temp.to(dtype=torch.float),ExpMat))
+    rankMat = torch.hstack((ExpMat.to(dtype=torch.bfloat16, non_blocking=True)@temp.to(dtype=torch.bfloat16, non_blocking=True),ExpMat))
     # sort the exponents vectors according to the hash value
     ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
 
@@ -50,12 +50,28 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
 
     n_rem = ind_red.max()+1
     ind = torch.arange(n_rem,device=G.device).unsqueeze(1) == ind_red 
-    num_rep = ind.sum(1)
-    Gtemp2 = Gtemp.repeat((1,)*len(batch_shape)+(n_rem,)+(1,)*(dim_N-1))[batch_idx_all + (ind.reshape(-1),)].cumsum(-dim_N)    
-    Gtemp2 = torch.cat((torch.zeros(batch_shape+(1,)+Gtemp2.shape[1-dim_N:],device=G.device),Gtemp2),-dim_N)
+    num_rep = ind.sum(1).cumsum(0)-1
+    # num_rep = ind.sum(1)
+
+    # assert torch.allclose(Gtemp.unsqueeze(len(batch_shape)).expand((-1,)*len(batch_shape)+(n_rem,)+(-1,)*(dim_N)).reshape(batch_shape+(n_rem*Gtemp.shape[len(batch_shape)],)+Gtemp.shape[len(batch_shape)+1:]), Gtemp.repeat((1,)*len(batch_shape)+(n_rem,)+(1,)*(dim_N-1)))
     
-    num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long,device=G.device),num_rep.cumsum(0)))
-    Gnew = (Gtemp2[batch_idx_all +(num_rep2[1:],)] - Gtemp2[batch_idx_all +(num_rep2[:-1],)])
+    # Gtemp2 = Gtemp.repeat((1,)*len(batch_shape)+(n_rem,)+(1,)*(dim_N-1))[batch_idx_all + (ind.reshape(-1),)].cumsum(-dim_N)    
+    # Gtemp2 = torch.cat((torch.zeros(batch_shape+(1,)+Gtemp2.shape[1-dim_N:],device=G.device),Gtemp2),-dim_N)
+    # Gtemp3 = torch.cat((torch.zeros(batch_shape+(1,)+Gtemp2.shape[1-dim_N:],device=G.device),Gtemp2),-dim_N)
+    
+    # num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long,device=G.device),num_rep.cumsum(0)))
+    # Gnew = (Gtemp3[batch_idx_all +(num_rep2[1:],)] - Gtemp3[batch_idx_all +(num_rep2[:-1],)])
+    # assert torch.allclose(Gnew, Gnew2)
+    
+    # Rewrite to use views
+    rep_G = Gtemp.unsqueeze(len(batch_shape)).expand((-1,)*len(batch_shape)+(n_rem,)+(-1,)*(dim_N)).reshape(batch_shape+(n_rem*Gtemp.shape[len(batch_shape)],)+Gtemp.shape[len(batch_shape)+1:])
+    Gtemp2 = rep_G[batch_idx_all + (ind.reshape(-1),)].cumsum(-dim_N)
+
+    Gtemp2[batch_idx_all + (num_rep[1:],)] -= Gtemp2[batch_idx_all + (num_rep[:-1],)]
+    Gnew = Gtemp2[batch_idx_all + (num_rep,)]
+    # Gnew = Gtemp2[batch_idx_all + (num_rep,)].clone()
+    # Gnew[batch_idx_all + (slice(1,None),)] -= Gtemp2[batch_idx_all + (num_rep[:-1],)]
+
     return ExpMatNew, Gnew
 
 
@@ -100,7 +116,7 @@ def removeRedundantExponents(ExpMat,G):
     '''
     # add hash value of the exponent vector to the exponent matrix
     temp = torch.arange(ExpMat.shape[1],device=G.device).reshape(-1,1) + 1
-    rankMat = torch.hstack((ExpMat.to(dtype=torch.float)@temp.to(dtype=torch.float),ExpMat))
+    rankMat = torch.hstack((ExpMat.to(dtype=torch.bfloat16, non_blocking=True)@temp.to(dtype=torch.bfloat16, non_blocking=True),ExpMat))
     # sort the exponents vectors according to the hash value
     ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
 
@@ -114,13 +130,24 @@ def removeRedundantExponents(ExpMat,G):
 
     n_rem = ind_red.max()+1
     ind = torch.arange(n_rem,device=G.device).unsqueeze(1) == ind_red 
-    num_rep = ind.sum(1)
+    num_rep = ind.sum(1).cumsum(0)-1
 
-    Gtemp2 = Gtemp.repeat((n_rem,)+(1,)*(dim_G-1))[ind.reshape(-1)].cumsum(0)
-    Gtemp2 = torch.cat((torch.zeros((1,)+Gtemp2.shape[1:],dtype=G.dtype,device=G.device),Gtemp2),0)
+    # num_rep = ind.sum(1)
+
+    # Gtemp2 = Gtemp.repeat((n_rem,)+(1,)*(dim_G-1))[ind.reshape(-1)].cumsum(0)
+    # Gtemp2 = torch.cat((torch.zeros((1,)+Gtemp2.shape[1:],dtype=G.dtype,device=G.device),Gtemp2),0)
     
-    num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long,device=G.device),num_rep.cumsum(0)))
-    Gnew = (Gtemp2[num_rep2[1:]] - Gtemp2[num_rep2[:-1]])
+    # num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long,device=G.device),num_rep.cumsum(0)))
+    # Gnew = (Gtemp2[num_rep2[1:]] - Gtemp2[num_rep2[:-1]])
+
+    # Rewrite to use views
+    rep_G = Gtemp.expand((n_rem,)+Gtemp.shape).reshape((n_rem*Gtemp.shape[0],)+Gtemp.shape[1:])
+    Gtemp2 = rep_G[ind.reshape(-1)].cumsum(0)
+
+    # Gnew = Gtemp2[num_rep].clone()
+    # Gnew[1:] -= Gtemp2[num_rep[:-1]]
+    Gtemp2[num_rep[1:]] -= Gtemp2[num_rep[:-1]]
+    Gnew = Gtemp2[num_rep]
     return ExpMatNew, Gnew
 
 def mergeExpMatrix(id1, id2, expMat1, expMat2):

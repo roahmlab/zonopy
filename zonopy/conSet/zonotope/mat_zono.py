@@ -65,7 +65,7 @@ class matZonotope():
         return matZonotope(self.Z.transpose(1,2))
 
     def to(self,dtype=None,device=None):
-        Z = self.Z.to(dtype=dtype,device=device)
+        Z = self.Z.to(dtype=dtype,device=device, non_blocking=True)
         return matZonotope(Z)
     def cpu(self):
         Z = self.Z.cpu()

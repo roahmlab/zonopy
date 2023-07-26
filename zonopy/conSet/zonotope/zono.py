@@ -105,7 +105,7 @@ class zonotope:
         dtype: torch.float or torch.double
         device: 'cpu', 'gpu', 'cuda:0', ...
         '''
-        Z = self.Z.to(dtype=dtype, device=device)
+        Z = self.Z.to(dtype=dtype, device=device, non_blocking=True)
         return zonotope(Z)
     def cpu(self):
         '''

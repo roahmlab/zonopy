@@ -52,7 +52,7 @@ class batchPolyZonotope:
 
         G_ind = np.arange(1, 1+n_dep_gens)
         Grest_ind = np.arange(1+n_dep_gens, Z.shape[-2])
-        G = Z[self.batch_idx_all+(G_ind,)]
+        G = Z[self.batch_idx_all+(slice(1, 1+n_dep_gens),)]
         
         if compress == 1:
             nonzero_g = (torch.sum(G!=0,tuple(range(self.batch_dim))+(-1,))!=0).cpu().numpy() # non-zero generator index
@@ -165,8 +165,8 @@ class batchPolyZonotope:
         return self.Z, self.n_dep_gens, expMat_sorted, id_sorted
 
     def to(self,dtype=None,itype=None,device=None):
-        Z = self.Z.to(dtype=dtype,device=device)
-        expMat = self.expMat.to(dtype=itype,device=device)
+        Z = self.Z.to(dtype=dtype,device=device, non_blocking=True)
+        expMat = self.expMat.to(dtype=itype,device=device, non_blocking=True)
         # id = self.id.to(device=device)
         return batchPolyZonotope(Z,self.n_dep_gens,expMat,self.id,compress=0,copy_Z=False)
 
