@@ -588,3 +588,17 @@ class batchPolyZonotope:
         for i,locations in enumerate(idxs):
             out_list[locations] = [bpzlist[i][j] for j in range(len(locations))]
         return zp.batchPolyZonotope.from_pzlist(out_list)
+    
+    @staticmethod
+    def zeros(batch_size, dims):
+        Z = torch.zeros((batch_size, 1, dims))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.batchPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
+    
+    @staticmethod
+    def ones(batch_size, dims):
+        Z = torch.ones((batch_size, 1, dims))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.batchPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)

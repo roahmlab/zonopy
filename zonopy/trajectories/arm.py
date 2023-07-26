@@ -4,9 +4,6 @@ import numpy as np
 import math
 import zonopy as zp
 
-ZERO_PZ = zp.polyZonotope([[0]])
-ONE_PZ = zp.polyZonotope([[0]])
-
 # Rewrite it in a more basic way to start split
 class BaseArmTrajectory:
     def __init__(self,
@@ -79,7 +76,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
         stopped_idxs = np.nonzero((times.c >= self.tfinal).flatten().cpu().numpy())[0]
         # num_t = len(times.c)
         
-        zero = [ZERO_PZ]*len(stopped_idxs)
+        zero = [zp.polyZonotope.zeros(1)]*len(stopped_idxs)
         q_stopped = [[el] * len(stopped_idxs) for el in self._final_q]
         qd_stopped = [zero] * self.num_q
         qdd_stopped = [zero] * self.num_q
@@ -298,11 +295,11 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
             t_mask = times[mask] * scale
             # Precompute all the t powers
             tpow = np.empty(len(self._alphas), dtype=object)
-            tpow[0] = zp.batchPolyZonotope.from_pzlist([ONE_PZ]*len(mask))
+            tpow[0] = zp.batchPolyZonotope.ones(len(mask), 1)
             for i in range(1,len(self._alphas)):
                 tpow[i] = tpow[i-1]*t_mask
             # Set all q initial conditions
-            zero = zp.batchPolyZonotope.from_pzlist([ZERO_PZ]*len(mask))
+            zero = zp.batchPolyZonotope.zeros(len(mask), 1)
             q_plan[:] = zero
             qd_plan[:] = zero
             qdd_plan[:] = zero
@@ -318,7 +315,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
 
         if len(stopped_idxs) > 0:
             # End condition
-            zero = [ZERO_PZ]*len(stopped_idxs)
+            zero = [zp.polyZonotope.zeros(1)]*len(stopped_idxs)
             q_stopped = [[el] * len(stopped_idxs) for el in self._final_q]
             qd_stopped = [zero] * self.num_q
             qdd_stopped = [zero] * self.num_q

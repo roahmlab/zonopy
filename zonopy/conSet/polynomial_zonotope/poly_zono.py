@@ -585,6 +585,20 @@ class polyZonotope:
     def plot(self,dim=[0,1]):
         pz = self.project(dim)
     '''
+    
+    @staticmethod
+    def zeros(dims):
+        Z = torch.zeros((1, dims))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.polyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
+    
+    @staticmethod
+    def ones(dims):
+        Z = torch.ones((1, dims))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.polyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
 
 if __name__ == '__main__':
     #pz = polyZonotope(torch.tensor([1.212,24142.42]),torch.eye(2),torch.eye(2),dtype=float,itype=int)

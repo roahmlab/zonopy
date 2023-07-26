@@ -1,0 +1,6 @@
+# Ignore everything
+**
+
+# Allow the zonopy file
+!/zonopy.yml
+

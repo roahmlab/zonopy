@@ -36,7 +36,7 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
             ExpMat = ExpMat[idxD]
     # add hash value of the exponent vector to the exponent matrix
     temp = torch.arange(ExpMat.shape[1],device=G.device).reshape(-1,1) + 1
-    rankMat = torch.hstack((ExpMat.to(dtype=torch.bfloat16, non_blocking=True)@temp.to(dtype=torch.bfloat16, non_blocking=True),ExpMat))
+    rankMat = torch.hstack((ExpMat.to(dtype=torch.float32, non_blocking=True)@temp.to(dtype=torch.float32, non_blocking=True),ExpMat))
     # sort the exponents vectors according to the hash value
     ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
 
@@ -116,7 +116,7 @@ def removeRedundantExponents(ExpMat,G):
     '''
     # add hash value of the exponent vector to the exponent matrix
     temp = torch.arange(ExpMat.shape[1],device=G.device).reshape(-1,1) + 1
-    rankMat = torch.hstack((ExpMat.to(dtype=torch.bfloat16, non_blocking=True)@temp.to(dtype=torch.bfloat16, non_blocking=True),ExpMat))
+    rankMat = torch.hstack((ExpMat.to(dtype=torch.float32, non_blocking=True)@temp.to(dtype=torch.float32, non_blocking=True),ExpMat))
     # sort the exponents vectors according to the hash value
     ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
 

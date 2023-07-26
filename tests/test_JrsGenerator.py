@@ -99,7 +99,7 @@ duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultima
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
-num = 1
+num = 10
 print("Start Timing Batch JRS", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), number=num)
@@ -127,6 +127,7 @@ with profile(activities=[ProfilerActivity.CPU,ProfilerActivity.CUDA], record_sha
 prof.export_chrome_trace("trace.json")
 
 print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
+print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
 
 import cProfile as profile
 import pstats
