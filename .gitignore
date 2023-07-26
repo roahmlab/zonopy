@@ -4,3 +4,4 @@ test/training/results/
 video_test/
 .vscode/
 trace.json
+pyprof.out

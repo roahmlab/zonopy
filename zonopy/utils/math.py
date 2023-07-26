@@ -146,9 +146,9 @@ def sin(Set,order=6):
             inf = Set.inf%(2*torch.pi)
             sup = Set.sup%(2*torch.pi)
             
-            a1 = Set.sup-Set.inf>= 2*torch.pi
+            a1 = Set.sup-Set.inf >= 2*torch.pi
             a2 = ~a1
-            b1 = inf<=torch.pi/2
+            b1 = inf <= torch.pi/2
             b2 = ~b1
             B = inf<=3/2*torch.pi
             b3 = b2*B

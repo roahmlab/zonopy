@@ -288,7 +288,7 @@ class JrsGenerator:
 
         out = pz_c
 
-        cs_cf = torch.cos(pz.c)
+        cs_cf = pz_c
         sn_cf = torch.sin(pz.c)
 
         def sgn_cs(n):
@@ -315,9 +315,11 @@ class JrsGenerator:
 
         # NOTE zp cos and sin working for interval but not pz
         if order % 2 == 0:
-            J0 = zp.sin(pz.c + zp.interval([0], [1]) * rem)
+            # J0 = zp.sin(pz.c + zp.interval([0], [1]) * rem)
+            J0 = JrsGenerator._int_sin(pz.c + zp.interval([0], [1]) * rem)
         else:
-            J0 = zp.cos(pz.c + zp.interval([0], [1]) * rem)
+            # J0 = zp.cos(pz.c + zp.interval([0], [1]) * rem)
+            J0 = JrsGenerator._int_cos(pz.c + zp.interval([0], [1]) * rem)
         
         if order % 4 == 0 or order % 4 == 1:
             J = -J0
@@ -348,7 +350,7 @@ class JrsGenerator:
         out = pz_c
 
         cs_cf = torch.cos(pz.c)
-        sn_cf = torch.sin(pz.c)
+        sn_cf = pz_c
 
         def sgn_cs(n):
             if n%4 == 0 or n%4 == 1:
@@ -374,9 +376,11 @@ class JrsGenerator:
 
         # TODO make interval sine and cosine
         if order % 2 == 1:
-            J0 = zp.sin(pz.c + zp.interval([0], [1]) * rem)
+            # J0 = zp.sin(pz.c + zp.interval([0], [1]) * rem)
+            J0 = JrsGenerator._int_sin(pz.c + zp.interval([0], [1]) * rem)
         else:
-            J0 = zp.cos(pz.c + zp.interval([0], [1]) * rem)
+            # J0 = zp.cos(pz.c + zp.interval([0], [1]) * rem)
+            J0 = JrsGenerator._int_cos(pz.c + zp.interval([0], [1]) * rem)
         
         if order % 4 == 1 or order % 4 == 2:
             J = -J0
@@ -396,6 +400,91 @@ class JrsGenerator:
         else:
             out = input_type(Z, out.n_dep_gens, out.expMat, out.id)
         return out
+                           
+    @staticmethod
+    @torch.jit.script
+    def _int_cos_script(inf, sup):
+        # Expand out the interval cos function then jit it.
+        pi_twice = torch.pi * 2
+        n = torch.floor(inf / pi_twice)
+        lower = inf - n * pi_twice
+        upper = sup - n * pi_twice
+
+        # Allocate for full check
+        # out_low = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
+        # out_high = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
+        out_low = torch.zeros_like(inf)
+        out_high = torch.zeros_like(sup)
+
+        # full period
+        not_full_period = upper - lower < pi_twice
+        # out_high[0] = (~not_full_period).long()
+        # out_low[0] = -out_high[0]
+        out_high += (~not_full_period).long()
+        out_low += -out_high
+
+        # 180 rotated
+        rot_180 = lower > torch.pi
+        nom = torch.logical_and(not_full_period, ~rot_180)
+        nom_180 = torch.logical_and(not_full_period, rot_180)
+        shifted_lower = lower - torch.pi
+        shifted_upper = upper - torch.pi
+
+        # Region 1, upper < 180
+        reg1 = upper < torch.pi
+        reg1_nom = torch.logical_and(reg1, nom)
+        reg1_nom_num = reg1_nom.long()
+        # out_low[1] = reg1_nom_num * torch.cos(upper)
+        # out_high[1] = reg1_nom_num * torch.cos(lower)
+        out_low += reg1_nom_num * torch.cos(upper)
+        out_high += reg1_nom_num * torch.cos(lower)
+
+        # Flip the 180 (flip upper&lower and negate)
+        reg1_180 = torch.logical_and(reg1, nom_180)
+        reg1_180_num = -reg1_180.long()
+        # out_low[2] = reg1_180_num * torch.cos(shifted_lower)
+        # out_high[2] = reg1_180_num * torch.cos(shifted_upper)
+        out_low += reg1_180_num * torch.cos(shifted_lower)
+        out_high += reg1_180_num * torch.cos(shifted_upper)
+
+        # Region 2, 180 <= upper < 360
+        reg2 = torch.logical_and(upper < pi_twice, ~reg1)
+        reg2_nom = torch.logical_and(reg2, nom)
+        reg2_nom_num = reg2_nom.long()
+        # out_low[3] = -reg2_nom_num
+        # out_high[3] = reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+        out_low += -reg2_nom_num
+        out_high += reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+        
+        # Flip the 180 (flip upper&lower and negate)
+        reg2_180 = torch.logical_and(reg2, nom_180)
+        reg2_180_num = reg2_180.long()
+        # out_low[4] = -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+        # out_high[4] = reg2_180_num
+        out_low += -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+        out_high += reg2_180_num
+        
+        # Region 3, 360 < upper
+        reg3 = ~torch.logical_or(reg1, reg2)
+        reg3_num = reg3.long()
+        # out_low[5] = -reg3_num
+        # out_high[5] = reg3_num
+        out_low += -reg3_num
+        out_high += reg3_num
+        
+        # Reduce and return
+        return out_low, out_high
+    
+    @staticmethod
+    def _int_cos(interval):
+        low, high = JrsGenerator._int_cos_script(interval.inf, interval.sup)
+        return zp.interval(inf=low, sup=high)
+    
+    @staticmethod
+    def _int_sin(interval):
+        half_pi = torch.pi / 2
+        low, high = JrsGenerator._int_cos_script(interval.inf - half_pi, interval.sup - half_pi)
+        return zp.interval(inf=low, sup=high)
 
 
 if __name__ == '__main__':
