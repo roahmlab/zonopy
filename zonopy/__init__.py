@@ -37,3 +37,4 @@ def setup_cuda():
    else:
       print('WARNING: No CUDA GPUs are available.')
 
+__debug_extra__ = True

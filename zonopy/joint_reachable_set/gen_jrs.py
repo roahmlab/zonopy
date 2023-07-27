@@ -233,9 +233,7 @@ class JrsGenerator:
     
     @staticmethod
     def _get_pz_rotations_from_q(q, rotation_axis, taylor_deg=6):
-        cos_q = JrsGenerator._cos(q, taylor_deg)
-        sin_q = JrsGenerator._sin(q, taylor_deg)
-        cos_sin_q = cos_q.exactCartProd(sin_q)
+        cos_sin_q = JrsGenerator._cos_sin(q, order=taylor_deg)
         # Rotation Matrix
         e = rotation_axis/np.linalg.norm(rotation_axis)
         U = torch.tensor(
@@ -281,6 +279,36 @@ class JrsGenerator:
 
     # Put this here for now, but eventually find a better place to put this
     @staticmethod
+    def _cos_sin(pz, order=6):
+        # Do both cos and sin at the same time
+        cos_q = JrsGenerator._cos(pz, order=order)
+        sin_q = JrsGenerator._sin(pz, order=order)
+
+        
+        # cs_cf = torch.cos(pz.c)
+        # sn_cf = torch.sin(pz.c)
+
+        # out_cos = cs_cf
+        # out_sin = sn_cf
+
+        # def sgn_cs(n):
+        #     if n%4 == 0 or n%4 == 3:
+        #         return 1
+        #     else:
+        #         return -1
+
+        # def sgn_sn(n):
+        #     if n%4 == 0 or n%4 == 1:
+        #         return 1
+        #     else:
+        #         return -1
+
+        # factor = 1
+        # T_factor = 1
+        # pz_neighbor = pz - pz.c
+        
+        return cos_q.exactCartProd(sin_q)
+
     def _cos(pz, order=6):
         # Make sure we're only using 1D pz's
         assert pz.dimension == 1, "Operation only valid for a 1D PZ"
@@ -337,7 +365,7 @@ class JrsGenerator:
         if input_type == zp.polyZonotope:
             out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
         else:
-            out = input_type(Z, out.n_dep_gens, out.expMat, out.id)
+            out = zp.batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
         return out
 
     # Put this here for now, but eventually find a better place to put this
@@ -352,7 +380,7 @@ class JrsGenerator:
         cs_cf = torch.cos(pz.c)
         sn_cf = pz_c
 
-        def sgn_cs(n):
+        def sgn_sn(n):
             if n%4 == 0 or n%4 == 1:
                 return 1
             else:
@@ -366,9 +394,9 @@ class JrsGenerator:
             factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
             if i % 2 == 0:
-                out = out + (sgn_cs(i+1) * cs_cf / factor) * T_factor
+                out = out + (sgn_sn(i+1) * cs_cf / factor) * T_factor
             else:
-                out = out + (sgn_cs(i+1) * sn_cf / factor) * T_factor
+                out = out + (sgn_sn(i+1) * sn_cf / factor) * T_factor
 
         # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()
@@ -398,7 +426,7 @@ class JrsGenerator:
         if input_type == zp.polyZonotope:
             out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
         else:
-            out = input_type(Z, out.n_dep_gens, out.expMat, out.id)
+            out = zp.batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
         return out
     
     @staticmethod

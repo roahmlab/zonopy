@@ -1,6 +1,7 @@
 import torch
 from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 import numpy as np
+import zonopy as zp
 
 def remove_dependence_and_compress(Set,id):
     # id_idx = Set.id == id
@@ -16,7 +17,7 @@ def remove_dependence_and_compress(Set,id):
     #print(Set.expMat[id_idx])
     #print(Set.expMat[~id_idx])
     #print(ful_slc_idx)
-    assert torch.count_nonzero(ful_slc_idx) <= np.count_nonzero(id_idx)
+    if zp.__debug_extra__: assert torch.count_nonzero(ful_slc_idx) <= np.count_nonzero(id_idx)
     # assert Set.expMat.shape[1] ==0 or sum(ful_slc_idx) >= 1
     
     if isinstance(Set,(polyZonotope,batchPolyZonotope)):

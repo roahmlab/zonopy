@@ -74,7 +74,8 @@ class batchPolyZonotope:
                 expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
             # assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
             # assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
-            assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
+            assert expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.'
+            if zp.__debug_extra__: assert torch.all(expMat >= 0), 'Invalid exponent matrix.' 
             if compress == 2: 
                 self.expMat,G = removeRedundantExponentsBatch(expMat,G,self.batch_idx_all)
                 copy_Z = True

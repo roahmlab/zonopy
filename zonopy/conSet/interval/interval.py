@@ -5,6 +5,7 @@ Reference: CORA
 '''
 
 import torch
+import zonopy as zp
 
 EMPTY_TENSOR = torch.tensor([])
 class interval:
@@ -20,17 +21,17 @@ class interval:
     I = { inf*(1-a)/2 + sup*(1+a)/2 | coef. a \in [-1,1] }
     '''
     def __init__(self, inf=EMPTY_TENSOR, sup=EMPTY_TENSOR, dtype=torch.get_default_dtype(), device=None):
-        if isinstance(inf,list):
-            inf = torch.tensor(inf)
-        if isinstance(sup,list):
-            sup = torch.tensor(sup)
+        if not isinstance(inf, torch.Tensor):
+            inf = torch.as_tensor(inf, dtype=dtype, device=device)
+        if not isinstance(sup, torch.Tensor):
+            sup = torch.as_tensor(sup, dtype=dtype, device=device)
         if inf.numel()==0 and sup.numel()!=0:
             inf = sup
         if inf.numel()!=0 and sup.numel()==0:
             sup = inf
-        assert isinstance(inf, torch.Tensor) and isinstance(sup, torch.Tensor), "The inputs should be either torch tensor or list."
+        # assert isinstance(inf, torch.Tensor) and isinstance(sup, torch.Tensor), "The inputs should be either torch tensor or list."
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
-        assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
+        if zp.__debug_extra__: assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
         self.__inf = inf.to(dtype=dtype, device=device, non_blocking=True)
         self.__sup = sup.to(dtype=dtype, device=device, non_blocking=True)
