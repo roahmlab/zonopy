@@ -44,16 +44,15 @@ class polyZonotope:
         # If compress=2, it will always copy.
         # copy_Z=True
 
-        if isinstance(Z,list):
-            Z = torch.tensor(Z,dtype=torch.float)
+        if not isinstance(Z, torch.Tensor):
+            Z = torch.as_tensor(Z,dtype=torch.float)
         # assert isinstance(prop,str), 'Property should be string.'
-        assert isinstance(Z, torch.Tensor), 'The input matrix should be either torch tensor or list.'
+        # assert isinstance(Z, torch.Tensor), 'The input matrix should be either torch tensor or list.'
         
         # c = Z[0]
         # G = Z[1:1+n_dep_gens]
         # Grest = Z[1+n_dep_gens:]
         G_ind = np.arange(1, 1+n_dep_gens)
-        Grest_ind = np.arange(1+n_dep_gens, Z.shape[0])
         G = Z[slice(1, 1+n_dep_gens)]
         if compress == 1:
             nonzero_g = (torch.sum(G!=0,-1)!=0).cpu().numpy() # non-zero generator index
@@ -69,10 +68,10 @@ class polyZonotope:
             # self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
         elif expMat is not None:
             #check correctness of user input 
-            if isinstance(expMat, list):
-                expMat = torch.tensor(expMat,dtype=torch.long,device=Z.device)
-            assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
-            assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
+            if not isinstance(expMat, torch.Tensor):
+                expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
+            # assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
+            # assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
             assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.'
             if compress == 2: 
                 self.expMat,G = removeRedundantExponents(expMat,G)
@@ -106,8 +105,9 @@ class polyZonotope:
             self.expMat = torch.eye(G_ind.shape[0],dtype=torch.long,device=Z.device)
 
         if copy_Z:
-            self.Z = torch.vstack((Z[0], G, Z[Grest_ind]))
+            self.Z = torch.vstack((Z[0], G, Z[1+n_dep_gens:]))
         elif compress == 1:
+            Grest_ind = np.arange(1+n_dep_gens, Z.shape[0])
             ind = np.concatenate([[0], G_ind, Grest_ind])
             self.Z = Z[ind]
         else:

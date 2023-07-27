@@ -40,8 +40,11 @@ class batchPolyZonotope:
     # NOTE: property for mat pz
     def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,prop='None',compress=2,copy_Z=True):
         # If compress=2, it will always copy.
-        assert isinstance(prop,str), 'Property should be string.'
-        assert isinstance(Z, torch.Tensor), 'The input matrix should be either torch tensor or list.'
+
+        if not isinstance(Z, torch.Tensor):
+            Z = torch.as_tensor(Z,dtype=torch.float)
+        # assert isinstance(prop,str), 'Property should be string.'
+        # assert isinstance(Z, torch.Tensor), 'The input matrix should be either torch tensor or list.'
         assert len(Z.shape) > 2, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
         self.batch_dim = len(Z.shape) - 2
         self.batch_idx_all = tuple([slice(None) for _ in range(self.batch_dim)])        
@@ -51,7 +54,6 @@ class batchPolyZonotope:
         # Grest = Z[self.batch_idx_all+(slice(1+n_dep_gens,None),)]
 
         G_ind = np.arange(1, 1+n_dep_gens)
-        Grest_ind = np.arange(1+n_dep_gens, Z.shape[-2])
         G = Z[self.batch_idx_all+(slice(1, 1+n_dep_gens),)]
         
         if compress == 1:
@@ -59,19 +61,19 @@ class batchPolyZonotope:
             G_ind = G_ind[nonzero_g]
             G = Z[self.batch_idx_all+(G_ind,)]
 
-        if expMat == None and id == None:
+        if expMat is None and id is None:
             # nonzero_g = torch.sum(G!=0,tuple(range(self.batch_dim))+(-1,))!=0 # non-zero generator index
             # G = G[self.batch_idx_all+(nonzero_g,)]
             # self.expMat = torch.eye(G.shape[self.batch_dim],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
             self.expMat = torch.eye(G_ind.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)
             self.id = np.arange(self.expMat.shape[1],dtype=int)
             # self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
-        elif expMat != None:
+        elif expMat is not None:
             #check correctness of user input 
-            if isinstance(expMat, list):
-                expMat = torch.tensor(expMat,dtype=torch.long,device=Z.device)
-            assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
-            assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
+            if not isinstance(expMat, torch.Tensor):
+                expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
+            # assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
+            # assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
             assert torch.all(expMat >= 0) and expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
             if compress == 2: 
                 self.expMat,G = removeRedundantExponentsBatch(expMat,G,self.batch_idx_all)
@@ -110,8 +112,9 @@ class batchPolyZonotope:
         # self.Z = torch.cat((c.unsqueeze(-2),G,Grest),dim=-2)
 
         if copy_Z:
-            self.Z = torch.cat((Z[self.batch_idx_all+(0,)].unsqueeze(-2), G, Z[self.batch_idx_all+(Grest_ind,)]), dim=-2)
+            self.Z = torch.cat([Z[self.batch_idx_all+(0,)].unsqueeze(-2), G, Z[self.batch_idx_all+(slice(1+n_dep_gens,None),)]], dim=-2)
         elif compress == 1:
+            Grest_ind = np.arange(1+n_dep_gens, Z.shape[-2])
             ind = np.concatenate([[0], G_ind, Grest_ind])
             self.Z = Z[self.batch_idx_all+(ind,)]
         else:

@@ -92,14 +92,14 @@ fo = kin.forward_occupancy(d['R'], rob.robot)
 jo = kin.joint_occupancy(d['R'], rob.robot)
 
 # Timing
-num = 1
-print("Start Timing JRS", num, "Loops")
-import timeit
-duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd, only_R=True), number=num)
-print('Took', duration/num, 'seconds each loop for', num, 'loops')
+# num = 1
+# print("Start Timing JRS", num, "Loops")
+# import timeit
+# duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10).gen_JRS(q, qd, qdd, only_R=True), number=num)
+# print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
-num = 10
+num = 200
 print("Start Timing Batch JRS", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), number=num)

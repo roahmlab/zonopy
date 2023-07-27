@@ -400,28 +400,25 @@ class JrsGenerator:
         else:
             out = input_type(Z, out.n_dep_gens, out.expMat, out.id)
         return out
-                           
+    
     @staticmethod
     @torch.jit.script
     def _int_cos_script(inf, sup):
         # Expand out the interval cos function then jit it.
+        # End reduction seems to be slightly faster than inline reduction
         pi_twice = torch.pi * 2
         n = torch.floor(inf / pi_twice)
         lower = inf - n * pi_twice
         upper = sup - n * pi_twice
 
         # Allocate for full check
-        # out_low = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
-        # out_high = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
-        out_low = torch.zeros_like(inf)
-        out_high = torch.zeros_like(sup)
+        out_low = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
+        out_high = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
 
         # full period
         not_full_period = upper - lower < pi_twice
-        # out_high[0] = (~not_full_period).long()
-        # out_low[0] = -out_high[0]
-        out_high += (~not_full_period).long()
-        out_low += -out_high
+        out_high[0] = (~not_full_period).long()
+        out_low[0] = -out_high[0]
 
         # 180 rotated
         rot_180 = lower > torch.pi
@@ -434,46 +431,36 @@ class JrsGenerator:
         reg1 = upper < torch.pi
         reg1_nom = torch.logical_and(reg1, nom)
         reg1_nom_num = reg1_nom.long()
-        # out_low[1] = reg1_nom_num * torch.cos(upper)
-        # out_high[1] = reg1_nom_num * torch.cos(lower)
-        out_low += reg1_nom_num * torch.cos(upper)
-        out_high += reg1_nom_num * torch.cos(lower)
+        out_low[1] = reg1_nom_num * torch.cos(upper)
+        out_high[1] = reg1_nom_num * torch.cos(lower)
 
         # Flip the 180 (flip upper&lower and negate)
         reg1_180 = torch.logical_and(reg1, nom_180)
         reg1_180_num = -reg1_180.long()
-        # out_low[2] = reg1_180_num * torch.cos(shifted_lower)
-        # out_high[2] = reg1_180_num * torch.cos(shifted_upper)
-        out_low += reg1_180_num * torch.cos(shifted_lower)
-        out_high += reg1_180_num * torch.cos(shifted_upper)
+        out_low[2] = reg1_180_num * torch.cos(shifted_lower)
+        out_high[2] = reg1_180_num * torch.cos(shifted_upper)
 
         # Region 2, 180 <= upper < 360
         reg2 = torch.logical_and(upper < pi_twice, ~reg1)
         reg2_nom = torch.logical_and(reg2, nom)
         reg2_nom_num = reg2_nom.long()
-        # out_low[3] = -reg2_nom_num
-        # out_high[3] = reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
-        out_low += -reg2_nom_num
-        out_high += reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+        out_low[3] = -reg2_nom_num
+        out_high[3] = reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
         
         # Flip the 180 (flip upper&lower and negate)
         reg2_180 = torch.logical_and(reg2, nom_180)
         reg2_180_num = reg2_180.long()
-        # out_low[4] = -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
-        # out_high[4] = reg2_180_num
-        out_low += -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
-        out_high += reg2_180_num
+        out_low[4] = -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+        out_high[4] = reg2_180_num
         
         # Region 3, 360 < upper
         reg3 = ~torch.logical_or(reg1, reg2)
         reg3_num = reg3.long()
-        # out_low[5] = -reg3_num
-        # out_high[5] = reg3_num
-        out_low += -reg3_num
-        out_high += reg3_num
+        out_low[5] = -reg3_num
+        out_high[5] = reg3_num
         
         # Reduce and return
-        return out_low, out_high
+        return out_low.sum(0), out_high.sum(0)
     
     @staticmethod
     def _int_cos(interval):
