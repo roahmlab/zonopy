@@ -25,10 +25,6 @@ def _add_genpz_impl(
     expMat = torch.vstack((expMat1,expMat2))
     n_dep_gens = pz1.n_dep_gens + pz2.n_dep_gens
 
-    if zpi.__debug_extra__:
-        assert isinstance(pz1, zp.batchPolyZonotope) or isinstance(pz2, zp.polyZonotope), \
-            '_add_genpz_impl requires either bpz for arg1, or pz for arg1 and arg2!'
-
     expand_shape = batch_shape+(-1, -1)
     Zlist = (
         (pz1.c+pz2.c).unsqueeze(-2),

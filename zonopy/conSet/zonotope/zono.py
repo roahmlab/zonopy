@@ -10,6 +10,10 @@ from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
 from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
 from scipy.spatial import ConvexHull
+from .gen_ops import (
+    _add_genzono_impl,
+    _add_genzono_num_impl,
+    )
 
 
 class zonotope:
@@ -29,10 +33,10 @@ class zonotope:
     '''
     def __init__(self,Z):
         ################ may not need these for speed ################ 
-        if isinstance(Z,list):
-            Z = torch.tensor(Z,dtype=torch.float)
-        assert isinstance(Z,torch.Tensor), f'The input matrix should be either torch tensor or list, not {type(Z)}.'
-        assert Z.dtype == torch.float or Z.dtype == torch.double, f'dtype should be either torch.float (torch.float32) or torch.double (torch.float64), but {Z.dtype}.'
+        # Make sure Z is a tensor
+        if not isinstance(Z, torch.Tensor):
+            Z = torch.as_tensor(Z, dtype=torch.float)
+        
         assert len(Z.shape) == 2, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
         ############################################################## 
         self.Z = Z
@@ -128,16 +132,16 @@ class zonotope:
         other: <torch.Tensor> OR <zonotope>
         return <zonotope>
         '''   
-        if isinstance(other, torch.Tensor):
-            Z = torch.clone(self.Z)
-            assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
-            Z[0] += other
+        if isinstance(other, (torch.Tensor, float, int)):
+            Z = _add_genzono_num_impl(self, other)
+            return zonotope(Z)
+        
         elif isinstance(other, zonotope): 
-            assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.vstack((self.center + other.center,self.generators,other.generators))
+            Z = _add_genzono_impl(self, other)
+            return zonotope(Z)
+        
         else:
-            assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
-        return zonotope(Z)
+            return NotImplemented
 
     __radd__ = __add__ # '+' operator is commutative.
 
@@ -196,8 +200,8 @@ class zonotope:
         self: <zonotope>
         return <zonotope>
         '''   
-        Z = -self.Z
-        Z[1:] = self.Z[1:]
+        Z = torch.copy(self.Z)
+        Z[0] *= -1
         return zonotope(Z)    
     
     def __rmatmul__(self,other):

@@ -7,6 +7,9 @@ from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.zonotope.zono import zonotope
 from zonopy.conSet.zonotope.utils import pickedGenerators
 import torch
+from .gen_ops import (
+    _matmul_genmzono_impl,
+    )
 
 class matZonotope():
     '''
@@ -25,10 +28,10 @@ class matZonotope():
     zono = C + a1*G1 + a2*G2 + ... + aN*GN
     '''
     def __init__(self,Z):
-        if isinstance(Z,list):
-            Z = torch.tensor(Z)
-        assert isinstance(Z,torch.Tensor), f'The input matrix should be torch tensor, but {type(Z)}.'
-        assert len(Z.shape) == 3, f'The dimension of Z input should be either 2 or 3, but {len(Z.shape)}.'
+        # Make sure Z is a tensor
+        if not isinstance(Z, torch.Tensor):
+            Z = torch.as_tensor(Z, dtype=torch.float)
+        assert len(Z.shape) == 3, f'The dimension of Z input should be 3, not {len(Z.shape)}.'
         self.Z = Z
     @property
     def dtype(self):
@@ -85,17 +88,20 @@ class matZonotope():
             assert len(other.shape) == 1, 'The other object should be 1-D tensor.'  
             assert other.shape[0] == self.n_cols
             z = self.Z@other
-            return zonotope(z) 
+            return zonotope(z)
+        
         elif isinstance(other,zonotope):
-            assert self.n_cols == other.dimension
-            z = self.Z.unsqueeze(1)@other.Z.unsqueeze(-1)
-            return zonotope(z.reshape(-1,self.n_rows))
+            # Shim to matZonotope
+            shim_other = matZonotope(other.Z.unsqueeze(-1))
+            Z = _matmul_genmzono_impl(self, shim_other)
+            return zonotope(Z.squeeze(-1))
+        
         elif isinstance(other,matZonotope):
-            assert self.n_cols == other.n_rows
-            Z = self.Z.unsqueeze(1)@other.Z
-            return matZonotope(Z.reshape(-1,self.n_rows,other.n_cols))
+            Z = _matmul_genmzono_impl(self, other)
+            return matZonotope(Z)
+        
         else:
-            assert False, 'Invalid object for matrix multiplication with matrix zonotope.'
+            return NotImplemented
 
     def __rmatmul__(self,other):
         '''

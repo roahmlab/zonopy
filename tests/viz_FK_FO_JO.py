@@ -20,8 +20,8 @@ print('Loading Robot')
 # This is hardcoded for now
 rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
 q = np.array([0.624819195837238,-1.17185521197975,-2.04687142485692,1.69686054456768,-2.28521956398477,0.151194251967712,1.54233217035569])
-qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])
-qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290896919579042,-0.133005741757336,0.133000561712863,0.0608503609673116])
+qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])*2
+qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290896919579042,-0.133005741757336,0.133000561712863,0.0608503609673116])*2
 
 print('Starting JRS Generation')
 traj_class=zp.trajectories.BernsteinArmTrajectory
@@ -61,10 +61,10 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d as a3
 
 # Get reference
-plot_arm = False
+plot_arm = True
 plot_ref = True
 slice_zonos = True
-plot_seperate = True
+plot_seperate = False
 k = np.ones(7)*0.5
 if plot_arm and plot_ref:
     reference, _, _ = traj_class(q, qd, qdd, k, a.param_range).getReference(np.arange(0, 1, 0.01))
@@ -87,7 +87,8 @@ else:
 if plot_arm and not plot_ref:
     ref_fk = rob.robot.visual_trimesh_fk(cfg=q)
     for mesh, transform in ref_fk.items():
-        mesh = mesh.copy().apply_transform(transform)
+        mesh = mesh.bounding_box.copy()
+        mesh.apply_transform(transform)
         if plot_seperate:
             ax3.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange')
         else:
@@ -159,7 +160,8 @@ for i in range(100):
     if plot_arm and plot_ref:
         ref_fk = rob.robot.visual_trimesh_fk(cfg=reference[i])
         for mesh, transform in ref_fk.items():
-            mesh = mesh.copy().apply_transform(transform)
+            mesh = mesh.bounding_box.copy()
+            mesh.apply_transform(transform)
             if plot_seperate:
                 ref3.append(ax3.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange'))
             else:

@@ -114,7 +114,7 @@ duration = timeit.timeit(lambda: [kin.forward_kinematics(list(R), rob.robot) for
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
-num = 1
+num = 100
 print("Start Timing Batch FK", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: kin.forward_kinematics(joints, rob.robot), number=num)
@@ -134,7 +134,8 @@ import cProfile as profile
 import pstats
 prof = profile.Profile()
 prof.enable()
-JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True)
+R = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True)
+kin.forward_kinematics(R, rob.robot)
 prof.disable()
 prof.dump_stats('pyprof.out')
 # pyprof2calltree -i pyprof.out -k

@@ -237,22 +237,6 @@ class batchPolyZonotope:
         else:
             return NotImplemented
 
-    def __pow__(self, other):
-        '''
-        Simple overloaded power operator for 1-D pZ's.
-        Repeatedly multiply by self n times.
-        '''
-        if not isinstance(other, int):
-            raise TypeError
-        
-        if self.dimension != 1:
-            raise ValueError
-        
-        out = 1.
-        for _ in range(other):
-            out = self * out
-        return out
-
     __rmul__ = __mul__
 
     def __rmatmul__(self,other):

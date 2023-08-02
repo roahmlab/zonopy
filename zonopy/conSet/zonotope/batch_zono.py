@@ -10,6 +10,11 @@ from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedBatchGenerators
 from zonopy.conSet.zonotope.zono import zonotope
 import time
+from .gen_ops import (
+    _add_genzono_impl,
+    _add_genzono_num_impl,
+    )
+
 class batchZonotope:
     '''
     b-zono: <batchZonotope>
@@ -27,10 +32,10 @@ class batchZonotope:
     '''
     def __init__(self,Z):
         ################ may not need these for speed ################ 
-        if isinstance(Z,list):
-            Z = torch.tensor(Z,dtype=torch.float)
-        assert isinstance(Z,torch.Tensor), f'The input matrix should be either torch tensor or list, not {type(Z)}.'
-        assert Z.dtype == torch.float or Z.dtype == torch.double, f'dtype should be either torch.float (torch.float32) or torch.double (torch.float64), but {Z.dtype}.'
+        # Make sure Z is a tensor
+        if not isinstance(Z, torch.Tensor):
+            Z = torch.as_tensor(Z, dtype=torch.float)
+
         assert len(Z.shape) > 2, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
         ############################################################## 
         self.Z = Z
@@ -137,19 +142,16 @@ class batchZonotope:
         other: <torch.Tensor> OR <zonotope> or <batchZonotope>
         return <batchZonotope>
         '''   
-        if isinstance(other, torch.Tensor):
-            #assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
-            Z = torch.clone(self.Z)
-            Z[self.batch_idx_all+(0,)] += other
-        elif isinstance(other, zonotope): 
-            assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.cat(((self.center + other.center).unsqueeze(-2),self.generators,other.generators.repeat(self.batch_shape+(1,1,))),-2)
-        elif isinstance(other, batchZonotope): 
-            assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.cat(((self.center + other.center).unsqueeze(-2),self.generators,other.generators),-2)
+        if isinstance(other, (torch.Tensor, float, int)):
+            Z = _add_genzono_num_impl(self, other)
+            return batchZonotope(Z)
+        
+        elif isinstance(other, (zonotope, batchZonotope)): 
+            Z = _add_genzono_impl(self, other)
+            return batchZonotope(Z)
+        
         else:
-            assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
-        return batchZonotope(Z)
+            return NotImplemented
 
     __radd__ = __add__ # '+' operator is commutative.
 
@@ -212,8 +214,8 @@ class batchZonotope:
         self: <batchZonotope>
         return <batchZonotope>
         '''   
-        Z = -self.Z
-        Z[self.batch_idx_all+(slice(1,None),)] = self.Z[self.batch_idx_all+(slice(1,None),)]
+        Z = torch.copy(self.Z)
+        Z[...,0,:] *= -1
         return batchZonotope(Z)    
     
     def __rmatmul__(self,other):

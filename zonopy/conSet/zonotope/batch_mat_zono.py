@@ -3,10 +3,14 @@ Define class for matrix zonotope
 Author: Yongseok Kwon
 Reference:
 """
+from zonopy.conSet.zonotope.zono import zonotope
 from zonopy.conSet.zonotope.mat_zono import matZonotope
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
 from zonopy.conSet.zonotope.utils import pickedBatchGenerators
 import torch
+from .gen_ops import (
+    _matmul_genmzono_impl,
+    )
 
 class batchMatZonotope():
     '''
@@ -25,10 +29,10 @@ class batchMatZonotope():
     zono = C + a1*G1 + a2*G2 + ... + aN*GN
     '''
     def __init__(self,Z):
-        if isinstance(Z,list):
-            Z = torch.tensor(Z)
-        assert isinstance(Z,torch.Tensor), f'The input matrix should be torch tensor, but {type(Z)}.'
-        assert len(Z.shape) > 3, f'The dimension of Z input should be either 2 or 3, but {len(Z.shape)}.'
+        # Make sure Z is a tensor
+        if not isinstance(Z, torch.Tensor):
+            Z = torch.as_tensor(Z, dtype=torch.float)
+        assert len(Z.shape) > 3, f'The dimension of Z input should be > 3, not {len(Z.shape)}.'
         self.Z = Z
         self.batch_dim = len(Z.shape) - 3
         self.batch_idx_all = tuple([slice(None) for _ in range(self.batch_dim)])
@@ -94,17 +98,20 @@ class batchMatZonotope():
         '''
         if isinstance(other, torch.Tensor):
             z = self.Z@other
-            return batchZonotope(z) 
-        elif isinstance(other,batchZonotope):
-            assert self.n_cols == other.dimension
-            z = self.Z.unsqueeze(-3)@other.Z.unsqueeze(-1).unsqueeze(-4)
-            return batchZonotope(z.reshape(z.shape[:-4]+(-1,self.n_rows)))
-        elif isinstance(other,batchMatZonotope):
-            assert self.n_cols == other.n_rows
-            Z = self.Z.unsqueeze(-3)@other.Z.unsqueeze(-4)
-            return batchMatZonotope(Z.reshape(Z.shape[:-4]+(-1,self.n_rows,other.n_cols)))
+            return batchZonotope(z)
+        
+        elif isinstance(other,(zonotope,batchZonotope)):
+            # Shim other to a batchMatPolyZonotope (and add an arbitrary batch dim to remove)
+            shim_other = batchMatZonotope(other.Z.unsqueeze(-1).unsqueeze(0))
+            Z = _matmul_genmzono_impl(self, shim_other)
+            return batchZonotope(Z.squeeze(-1).squeeze(0))
+        
+        elif isinstance(other,(matZonotope,batchMatZonotope)):
+            Z = _matmul_genmzono_impl(self, other)
+            return batchMatZonotope(Z)
+        
         else:
-            assert False, 'Invalid object for matrix multiplication with matrix zonotope.'
+            return NotImplemented
 
     def __rmatmul__(self,other):
         '''
@@ -121,6 +128,11 @@ class batchMatZonotope():
             assert len(other.shape) > 2
             Z = other @ self.Z
             return batchMatZonotope(Z)
+        
+        elif isinstance(other,matZonotope):
+            Z = _matmul_genmzono_impl(other, self)
+            return batchMatZonotope(Z)
+        
         else:
             assert False, 'Invalid object for reversed matrix multiplication with matrix zonotope.'
 
