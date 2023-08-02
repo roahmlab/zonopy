@@ -7,7 +7,7 @@ import zonopy as zp
 import zonopy.kinematics as kin
 
 # Set cuda if desired and available
-use_cuda = False
+use_cuda = True
 if use_cuda:
     zp.setup_cuda()
 

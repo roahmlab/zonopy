@@ -328,6 +328,29 @@ class matPolyZonotope():
             ZRed = torch.vstack((ZRed[:1],ZRed[1:n_dg_red+1].sum(0).unsqueeze(0),ZRed[n_dg_red+1:]))
             n_dg_red = 1
         return matPolyZonotope(ZRed,n_dg_red,self.expMat,self.id,compress=1,copy_Z=False)
+    
+    @staticmethod
+    def zeros(dim1, dim2 = None):
+        dim2 = dim1 if dim2 is not None else dim2
+        Z = torch.zeros((1, dim1, dim2))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.matPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
+    
+    @staticmethod
+    def ones(dim1, dim2 = None):
+        dim2 = dim1 if dim2 is not None else dim2
+        Z = torch.zeros((1, dim1, dim2))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.matPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
+    
+    @staticmethod
+    def eye(dim):
+        Z = torch.eye(dim).unsqueeze(0)
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.matPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
 
 if __name__ == '__main__':
     

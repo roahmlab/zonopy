@@ -5,7 +5,44 @@ Reference: CORA
 """
 import torch
 from zonopy.conSet import DEFAULT_OPTS
+from typing import Tuple
 
+@torch.jit.script
+def _removeRedundantExponentsScript(ExpMat: torch.Tensor, G: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    '''
+    add up all generators that belong to terms with identical exponents
+    
+    ExpMat: <torch.tensor> matrix containing the exponent vectors
+    G: <torch.tensor> generator matrix
+    
+    return,
+    ExpMat: <torch.tensor> modified exponent matrix
+    G: <torch.tensor> modified generator matrix
+    '''
+    # True for non-zero generators
+    # NOTE: need to fix or maybe G should be zero tensor for empty
+
+    # non-zero generator index
+    idxD = torch.sum(G!=0,dim=(0,2))!=0
+
+    if G.shape[1] == 0 or not idxD.any():
+        Gnew = torch.empty(0,dtype=G.dtype,device=G.device).reshape(G.shape[0], 0, G.shape[2])
+        ExpMatNew = torch.empty(0,dtype=ExpMat.dtype,device=G.device).reshape(0, ExpMat.shape[1])
+        return ExpMatNew, Gnew
+    elif not idxD.all():
+        G = G[:,idxD,:]
+        ExpMat = ExpMat[idxD]
+
+    ExpMatNew, ind = torch.unique(ExpMat,dim=0,return_inverse=True,sorted=True)
+    if ind.max()+1 == ind.numel():
+        return ExpMatNew, G[:,ind.argsort(),:]
+
+    # THIS NEEDS TO BE IN A TORCHSCRIPTED FN TO BE FAST
+    Gnew = torch.zeros_like(G[:, :ExpMatNew.shape[0], :])
+    for in_idx, out_idx in enumerate(ind):
+        Gnew[:, out_idx, :] += G[:, in_idx, :]
+
+    return ExpMatNew, Gnew
 
 def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
     '''
@@ -20,118 +57,11 @@ def removeRedundantExponentsBatch(ExpMat,G,batch_idx_all,dim_N=2):
     '''
     # True for non-zero generators
     # NOTE: need to fix or maybe G should be zero tensor for empty
-    # batch_shape = G.shape[:-dim_N]
-    # N_shape = G.shape[-dim_N+1:]
-    # ExpMatNew, Gnew = removeRedundantExponentsBatchScript(ExpMat, G.flatten(-dim_N+1, -1).flatten(0,-3))
-    # return ExpMatNew, Gnew.reshape(batch_shape+(-1,)+N_shape)
-
     batch_shape = G.shape[:-dim_N]
-    idxD = torch.sum(G!=0,tuple(range(len(batch_shape)))+tuple(range(-1,-dim_N,-1)))!=0 # non-zero generator index
-    # skip if all non-zero OR G is non-empty 
-    if not idxD.all() or G.shape[-dim_N] == 0:
-        # if all generators are zero
-        if (~idxD).all():
-            Gnew = torch.tensor([],dtype=G.dtype,device=G.device).reshape(batch_shape+(0,)+G.shape[1-dim_N:])
-            ExpMatNew = torch.tensor([],dtype=ExpMat.dtype,device=G.device).reshape((0,)+ExpMat.shape[1:])
-            return ExpMatNew, Gnew
-        else:
-            # keep non-zero genertors
-            G = G[batch_idx_all+(idxD,)]
-            ExpMat = ExpMat[idxD]
-    # add hash value of the exponent vector to the exponent matrix
-    temp = torch.arange(ExpMat.shape[1],device=G.device).reshape(-1,1) + 1
-    rankMat = torch.hstack((ExpMat.to(dtype=torch.float32, non_blocking=True)@temp.to(dtype=torch.float32, non_blocking=True),ExpMat))
-    # sort the exponents vectors according to the hash value
-    ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
+    N_shape = G.shape[-dim_N+1:]
+    ExpMatNew, Gnew = _removeRedundantExponentsScript(ExpMat, G.flatten(-dim_N+1, -1).flatten(0,-3))
+    return ExpMatNew, Gnew.reshape(batch_shape+(-1,)+N_shape)
 
-    ExpMatTemp = ExpMat[ind]
-    Gtemp = G[batch_idx_all+(ind,)]
-    
-    # vectorized 
-    ExpMatNew, ind_red = torch.unique_consecutive(ExpMatTemp,dim=0,return_inverse=True)
-    if ind_red.max()+1 == ind_red.numel():
-        return ExpMatTemp,Gtemp
-
-    n_rem = ind_red.max()+1
-    ind = torch.arange(n_rem,device=G.device).unsqueeze(1) == ind_red 
-    num_rep = ind.sum(1).cumsum(0)-1
-    # num_rep = ind.sum(1)
-
-    # assert torch.allclose(Gtemp.unsqueeze(len(batch_shape)).expand((-1,)*len(batch_shape)+(n_rem,)+(-1,)*(dim_N)).reshape(batch_shape+(n_rem*Gtemp.shape[len(batch_shape)],)+Gtemp.shape[len(batch_shape)+1:]), Gtemp.repeat((1,)*len(batch_shape)+(n_rem,)+(1,)*(dim_N-1)))
-    
-    # Gtemp2 = Gtemp.repeat((1,)*len(batch_shape)+(n_rem,)+(1,)*(dim_N-1))[batch_idx_all + (ind.reshape(-1),)].cumsum(-dim_N)    
-    # Gtemp2 = torch.cat((torch.zeros(batch_shape+(1,)+Gtemp2.shape[1-dim_N:],device=G.device),Gtemp2),-dim_N)
-    # Gtemp3 = torch.cat((torch.zeros(batch_shape+(1,)+Gtemp2.shape[1-dim_N:],device=G.device),Gtemp2),-dim_N)
-    
-    # num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long,device=G.device),num_rep.cumsum(0)))
-    # Gnew = (Gtemp3[batch_idx_all +(num_rep2[1:],)] - Gtemp3[batch_idx_all +(num_rep2[:-1],)])
-    # assert torch.allclose(Gnew, Gnew2)
-    
-    # Rewrite to use views
-    # rep_G = Gtemp.unsqueeze(len(batch_shape)).expand((-1,)*len(batch_shape)+(n_rem,)+(-1,)*(dim_N)).reshape(batch_shape+(n_rem*Gtemp.shape[len(batch_shape)],)+Gtemp.shape[len(batch_shape)+1:])
-    rep_G = Gtemp.repeat((1,)*len(batch_shape)+(n_rem,)+(1,)*(dim_N-1))
-    Gtemp2 = rep_G[batch_idx_all + (ind.reshape(-1),)].cumsum(-dim_N)
-
-    Gtemp2[batch_idx_all + (num_rep[1:],)] -= Gtemp2[batch_idx_all + (num_rep[:-1],)]
-    Gnew = Gtemp2[batch_idx_all + (num_rep,)]
-    # Gnew = Gtemp2[batch_idx_all + (num_rep,)].clone()
-    # Gnew[batch_idx_all + (slice(1,None),)] -= Gtemp2[batch_idx_all + (num_rep[:-1],)]
-
-    return ExpMatNew, Gnew
-
-@torch.jit.script
-def removeRedundantExponentsBatchScript(ExpMat,G):
-    '''
-    add up all generators that belong to terms with identical exponents
-    
-    ExpMat: <torch.tensor> matrix containing the exponent vectors
-    G: <torch.tensor> generator matrix
-    
-    return,
-    ExpMat: <torch.tensor> modified exponent matrix
-    G: <torch.tensor> modified generator matrix
-    '''
-    # True for non-zero generators
-    # NOTE: need to fix or maybe G should be zero tensor for empty
-
-    idxD = torch.sum(G!=0,dim=(0,2))!=0 # non-zero generator index
-    # skip if all non-zero OR G is non-empty 
-    if not idxD.all() or G.shape[1] == 0:
-        # if all generators are zero
-        if (~idxD).all():
-            Gnew = torch.empty(0,dtype=G.dtype,device=G.device).reshape(G.shape[0], 0, G.shape[2])
-            ExpMatNew = torch.empty(0,dtype=ExpMat.dtype,device=G.device).reshape(0, ExpMat.shape[1])
-            return ExpMatNew, Gnew
-        else:
-            # keep non-zero genertors
-            G = G[:,idxD,:]
-            ExpMat = ExpMat[idxD]
-    # add hash value of the exponent vector to the exponent matrix
-    # temp = torch.arange(ExpMat.shape[1],device=G.device).reshape(-1,1) + 1
-    # rankMat = torch.hstack((ExpMat.to(dtype=torch.float32, non_blocking=True)@temp.to(dtype=torch.float32, non_blocking=True),ExpMat))
-    # # sort the exponents vectors according to the hash value
-    # ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
-
-    # ExpMatTemp = ExpMat[ind]
-    # Gtemp = G[:,ind,:]
-    
-    # # vectorized 
-    # ExpMatNew, ind_red = torch.unique_consecutive(ExpMatTemp,dim=0,return_inverse=True)
-    # if ind_red.max()+1 == ind_red.numel():
-    #     return ExpMatTemp,Gtemp
-    ExpMatNew, ind = torch.unique(ExpMat,dim=0,return_inverse=True,sorted=True)
-    if ind.max()+1 == ind.numel():
-        return ExpMatNew, G[:,ind.argsort(),:]
-
-    # THIS NEEDS TO BE IN A TORCHSCRIPTED FN TO BE FAST (?)
-    Gnew = torch.zeros_like(G[:, :ExpMatNew.shape[0], :])
-    for in_idx, out_idx in enumerate(ind):
-        Gnew[:, out_idx, :] += G[:, in_idx, :]
-
-    return ExpMatNew, Gnew
-
-
-@torch.jit.script
 def removeRedundantExponents(ExpMat,G):
     '''
     add up all generators that belong to terms with identical exponents
@@ -145,70 +75,9 @@ def removeRedundantExponents(ExpMat,G):
     '''
     # True for non-zero generators
     # NOTE: need to fix or maybe G should be zero tensor for empty
-
-    dim_G = len(G.shape)
-    idxD = torch.sum(G!=0,list(range(-1,-dim_G,-1)))!=0 # non-zero generator index
-
-    '''
-    idxD = torch.any(abs(G)>eps,)
-    for _ in range(dim_G-2):
-        idxD = torch.any(idxD,-1)
-    '''
-    # skip if all non-zero OR G is non-empty 
-    if not all(idxD) or G.shape[0] == 0:
-        # if all generators are zero
-        if all(~idxD):
-            Gnew = torch.empty(0,dtype=G.dtype,device=G.device).reshape((0,)+G.shape[1:])
-            ExpMatNew = torch.empty(0,dtype=ExpMat.dtype,device=G.device).reshape((0,)+ExpMat.shape[1:])
-            return ExpMatNew, Gnew
-        else:
-            # keep non-zero genertors
-            G = G[idxD]
-            ExpMat = ExpMat[idxD]
-    '''
-    hash = torch.hstack((torch.tensor(1),(ExpMat.max(0).values+1).cumprod(0)))[:-1]*ExpMat
-    hash = hash.sum(1)
-    ind = torch.unique(hash,dim=0,sorted=True,return_inverse=True)[1].argsort()
-
-    '''
-    # add hash value of the exponent vector to the exponent matrix
-    temp = torch.arange(ExpMat.shape[1],device=G.device).reshape(-1,1) + 1
-    rankMat = torch.hstack((ExpMat.to(dtype=torch.float32, non_blocking=True)@temp.to(dtype=torch.float32, non_blocking=True),ExpMat))
-    # sort the exponents vectors according to the hash value
-    ind = torch.unique(rankMat,dim=0,sorted=True,return_inverse=True)[1].argsort()
-
-    ExpMatTemp = ExpMat[ind]
-    Gtemp = G[ind]
-    
-    # vectorized 
-    ExpMatNew, ind_red = torch.unique_consecutive(ExpMatTemp,dim=0,return_inverse=True)
-    if ind_red.max()+1 == ind_red.numel():
-        return ExpMatTemp,Gtemp
-
-    n_rem = ind_red.max()+1
-    ind = torch.arange(n_rem,device=G.device).unsqueeze(1) == ind_red 
-    num_rep = ind.sum(1).cumsum(0)-1
-
-    # num_rep = ind.sum(1)
-
-    # Gtemp2 = Gtemp.repeat((n_rem,)+(1,)*(dim_G-1))[ind.reshape(-1)].cumsum(0)
-    # Gtemp2 = torch.cat((torch.zeros((1,)+Gtemp2.shape[1:],dtype=G.dtype,device=G.device),Gtemp2),0)
-    
-    # num_rep2 = torch.hstack((torch.zeros(1,dtype=torch.long,device=G.device),num_rep.cumsum(0)))
-    # Gnew = (Gtemp2[num_rep2[1:]] - Gtemp2[num_rep2[:-1]])
-
-    # Rewrite to use views
-    # rep_G = Gtemp.expand((n_rem,)+(-1,)*len(Gtemp.shape)).reshape((n_rem*Gtemp.shape[0],)+Gtemp.shape[1:])
-    shape = [1,]*(dim_G)
-    shape[0] = n_rem.item()
-    rep_G = Gtemp.repeat(shape)
-    Gtemp2 = rep_G[ind.reshape(-1)].cumsum(0)
-
-    # Gnew = Gtemp2[num_rep].clone()
-    # Gnew[1:] -= Gtemp2[num_rep[:-1]]
-    Gtemp2[num_rep[1:]] -= Gtemp2[num_rep[:-1]]
-    Gnew = Gtemp2[num_rep]
-    return ExpMatNew, Gnew
+    N_shape = G.shape[1:]
+    ExpMatNew, Gnew = _removeRedundantExponentsScript(ExpMat, G.flatten(1, -1).unsqueeze(0))
+    return ExpMatNew, Gnew.reshape((-1,)+N_shape)
 
 def mergeExpMatrix(id1, id2, expMat1, expMat2):
     '''

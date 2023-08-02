@@ -7,10 +7,6 @@ import torch
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
 
-ZERO_POS = polyZonotope(torch.zeros(3).unsqueeze(0),compress=0,copy_Z=False)
-ZERO_ROT = matPolyZonotope(torch.eye(3).unsqueeze(0),compress=0,copy_Z=False)
-
-
 # Helper function to create a config dictionary from the rotatotopes if a list is provided
 def make_rotato_cfg(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
                                        List[Union[matPolyZonotope, batchMatPolyZonotope]]],
@@ -57,8 +53,8 @@ def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batch
             continue
         # Get the path back to the base and build with that
         path = robot._paths_to_base[lnk]
-        pos = ZERO_POS
-        rot = ZERO_ROT
+        pos = polyZonotope.zeros(3)
+        rot = matPolyZonotope.eye(3)
         for i in range(len(path) - 1):
             child = path[i]
             parent = path[i + 1]

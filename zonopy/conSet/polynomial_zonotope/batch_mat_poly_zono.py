@@ -340,3 +340,27 @@ class batchMatPolyZonotope():
         for i,locations in enumerate(idxs):
             out_list[locations] = [bmpzlist[i][j] for j in range(len(locations))]
         return zp.batchMatPolyZonotope.from_pzlist(out_list)
+    
+    @staticmethod
+    def zeros(batch_size, dim1, dim2=None):
+        dim2 = dim1 if dim2 is not None else dim2
+        Z = torch.zeros((batch_size, 1, dim1, dim2))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
+    
+    @staticmethod
+    def ones(batch_size, dim1, dim2=None):
+        dim2 = dim1 if dim2 is not None else dim2
+        Z = torch.zeros((batch_size, 1, dim1, dim2))
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
+    
+    @staticmethod
+    def eye(batch_size, dim):
+        Z = torch.eye(dim).unsqueeze(0).expand(batch_size, -1, -1, -1)
+        expMat = torch.empty((0,0),dtype=torch.int64)
+        id = np.empty(0,dtype=np.int64)
+        return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, compress=0, copy_Z=False)
+    

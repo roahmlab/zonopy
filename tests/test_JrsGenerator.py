@@ -120,6 +120,13 @@ import timeit
 duration = timeit.timeit(lambda: kin.forward_kinematics(joints, rob.robot), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
+# Timing
+num = 100
+print("Start Timing Full Batch FO", num, "Loops")
+import timeit
+duration = timeit.timeit(lambda: kin.forward_occupancy(JrsGenerator(rob, traj_class=traj_class, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), rob.robot), number=num)
+print('Took', duration/num, 'seconds each loop for', num, 'loops')
+
 # Profiling
 from torch.profiler import profile, record_function, ProfilerActivity
 with profile(activities=[ProfilerActivity.CPU,ProfilerActivity.CUDA], record_shapes=True) as prof:
