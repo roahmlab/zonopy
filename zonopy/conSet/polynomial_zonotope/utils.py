@@ -37,10 +37,10 @@ def _removeRedundantExponentsScript(ExpMat: torch.Tensor, G: torch.Tensor) -> Tu
     if ind.max()+1 == ind.numel():
         return ExpMatNew, G[:,ind.argsort(),:]
 
-    # THIS NEEDS TO BE IN A TORCHSCRIPTED FN TO BE FAST
+    # This uses atomicAdd which is nondeterministic, but for integers should
+    # have deterministic outputs.
     Gnew = torch.zeros_like(G[:, :ExpMatNew.shape[0], :])
-    for in_idx, out_idx in enumerate(ind):
-        Gnew[:, out_idx, :] += G[:, in_idx, :]
+    Gnew.index_add_(1, ind, G)
 
     return ExpMatNew, Gnew
 
