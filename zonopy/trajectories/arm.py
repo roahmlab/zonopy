@@ -363,7 +363,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
             t_mask = times[mask] * scale
             # Precompute all the t powers
             tpow = np.empty(len(self._alphas), dtype=object)
-            tpow[0] = t_mask**0
+            tpow[0] = t_mask*0+1
             for i in range(1,len(self._alphas)):
                 tpow[i] = tpow[i-1]*t_mask
             q_out[mask,:] = q_out[mask,:] * 0

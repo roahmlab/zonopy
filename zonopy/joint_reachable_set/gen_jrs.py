@@ -2,7 +2,8 @@ import torch
 from zonopy.transformations.rotation import gen_rotatotope_from_jrs
 from zonopy.joint_reachable_set.utils import remove_dependence_and_compress
 import zonopy as zp
-PI = torch.tensor(torch.pi)
+SIGN_COS = (-1, -1, 1, 1)
+SIGN_SIN = (1, -1, -1, 1)
 
 
 from zonopy.trajectories import BernsteinArmTrajectory
@@ -277,229 +278,65 @@ class JrsGenerator:
         # return (out, out_t)
         return out
 
-    # Put this here for now, but eventually find a better place to put this
+    # Bad Combo
     @staticmethod
     def _cos_sin(pz, order=6):
         # Do both cos and sin at the same time
-        cos_q = JrsGenerator._cos(pz, order=order)
-        sin_q = JrsGenerator._sin(pz, order=order)
+        # cos_q = zp.cos(pz, order=order)
+        # sin_q = zp.sin(pz, order=order)
+        # return cos_q.exactCartProd(sin_q)
 
-        
-        # cs_cf = torch.cos(pz.c)
-        # sn_cf = torch.sin(pz.c)
-
-        # out_cos = cs_cf
-        # out_sin = sn_cf
-
-        # def sgn_cs(n):
-        #     if n%4 == 0 or n%4 == 3:
-        #         return 1
-        #     else:
-        #         return -1
-
-        # def sgn_sn(n):
-        #     if n%4 == 0 or n%4 == 1:
-        #         return 1
-        #     else:
-        #         return -1
-
-        # factor = 1
-        # T_factor = 1
-        # pz_neighbor = pz - pz.c
-        
-        return cos_q.exactCartProd(sin_q)
-
-    def _cos(pz, order=6):
-        # Make sure we're only using 1D pz's
-        assert pz.dimension == 1, "Operation only valid for a 1D PZ"
-        pz_c = torch.cos(pz.c)
-
-        out = pz_c
-
-        cs_cf = pz_c
+        cs_cf = torch.cos(pz.c)
         sn_cf = torch.sin(pz.c)
+        out_cos = cs_cf
+        out_sin = sn_cf
 
-        def sgn_cs(n):
-            if n%4 == 0 or n%4 == 3:
-                return 1
-            else:
-                return -1
-            
         factor = 1
         T_factor = 1
         pz_neighbor = pz - pz.c
-
         for i in range(order):
             factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
             if i % 2:
-                out = out + (sgn_cs(i+1) * cs_cf / factor) * T_factor
+                out_cos = out_cos + (SIGN_COS[i%4] * cs_cf / factor) * T_factor
+                out_sin = out_sin + (SIGN_SIN[i%4] * sn_cf / factor) * T_factor
             else:
-                out = out + (sgn_cs(i+1) * sn_cf / factor) * T_factor
-
+                out_cos = out_cos + (SIGN_COS[i%4] * sn_cf / factor) * T_factor
+                out_sin = out_sin + (SIGN_SIN[i%4] * cs_cf / factor) * T_factor
+        
         # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()
         rem_pow = (T_factor * pz_neighbor).to_interval()
-
-        # NOTE zp cos and sin working for interval but not pz
-        if order % 2 == 0:
-            # J0 = zp.sin(pz.c + zp.interval([0], [1]) * rem)
-            J0 = JrsGenerator._int_sin(pz.c + zp.interval([0], [1]) * rem)
+        if order % 2:
+            Jcos = zp.cos(pz.c + zp.interval([0], [1]) * rem)
+            Jsin = zp.sin(pz.c + zp.interval([0], [1]) * rem)
         else:
-            # J0 = zp.cos(pz.c + zp.interval([0], [1]) * rem)
-            J0 = JrsGenerator._int_cos(pz.c + zp.interval([0], [1]) * rem)
-        
+            Jcos = zp.sin(pz.c + zp.interval([0], [1]) * rem)
+            Jsin = zp.cos(pz.c + zp.interval([0], [1]) * rem)
         if order % 4 == 0 or order % 4 == 1:
-            J = -J0
-        else:
-            J = J0
-
-        remainder = 1. / (factor * (order + 1)) * rem_pow * J
-
-        # Assumes a 1D pz
-        c = out.c + remainder.center()
-        G = out.G
-        Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
-        Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
-        input_type = type(pz)
-        if input_type == zp.polyZonotope:
-            out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
-        else:
-            out = zp.batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
-        return out
-
-    # Put this here for now, but eventually find a better place to put this
-    @staticmethod
-    def _sin(pz, order=6):
-        # Make sure we're only using 1D pz's
-        assert pz.dimension == 1, "Operation only valid for a 1D PZ"
-        pz_c = torch.sin(pz.c)
-
-        out = pz_c
-
-        cs_cf = torch.cos(pz.c)
-        sn_cf = pz_c
-
-        def sgn_sn(n):
-            if n%4 == 0 or n%4 == 1:
-                return 1
-            else:
-                return -1
-            
-        factor = 1
-        T_factor = 1
-        pz_neighbor = pz - pz.c
-
-        for i in range(order):
-            factor = factor * (i + 1)
-            T_factor = T_factor * pz_neighbor
-            if i % 2 == 0:
-                out = out + (sgn_sn(i+1) * cs_cf / factor) * T_factor
-            else:
-                out = out + (sgn_sn(i+1) * sn_cf / factor) * T_factor
-
-        # add lagrange remainder interval to Grest
-        rem = pz_neighbor.to_interval()
-        rem_pow = (T_factor * pz_neighbor).to_interval()
-
-        # TODO make interval sine and cosine
-        if order % 2 == 1:
-            # J0 = zp.sin(pz.c + zp.interval([0], [1]) * rem)
-            J0 = JrsGenerator._int_sin(pz.c + zp.interval([0], [1]) * rem)
-        else:
-            # J0 = zp.cos(pz.c + zp.interval([0], [1]) * rem)
-            J0 = JrsGenerator._int_cos(pz.c + zp.interval([0], [1]) * rem)
-        
+            Jcos = -Jcos
         if order % 4 == 1 or order % 4 == 2:
-            J = -J0
-        else:
-            J = J0
-
-        remainder = 1. / (factor * (order + 1)) * rem_pow * J
+            Jsin = -Jsin
+        remainder_sin = 1. / (factor * (order + 1)) * rem_pow * Jsin
+        remainder_cos = 1. / (factor * (order + 1)) * rem_pow * Jcos
 
         # Assumes a 1D pz
-        c = out.c + remainder.center()
-        G = out.G
-        Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
-        Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
-        input_type = type(pz)
-        if input_type == zp.polyZonotope:
-            out = zp.polyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
+        c = out_cos.c + remainder_cos.center()
+        G = out_cos.G
+        Grest = torch.sum(out_cos.Grest, dim=-2) + remainder_cos.rad()
+        Zcos = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
+        c = out_sin.c + remainder_sin.center()
+        G = out_sin.G
+        Grest = torch.sum(out_sin.Grest, dim=-2) + remainder_sin.rad()
+        Zsin = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
+        if isinstance(pz, zp.polyZonotope):
+            out_cos = zp.polyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, compress=0, copy_Z=False)
+            out_sin = zp.polyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, compress=0, copy_Z=False)
         else:
-            out = zp.batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id, compress=0, copy_Z=False)
-        return out
-    
-    @staticmethod
-    @torch.jit.script
-    def _int_cos_script(inf, sup):
-        # Expand out the interval cos function then jit it.
-        # End reduction seems to be slightly faster than inline reduction
-        pi_twice = torch.pi * 2
-        n = torch.floor(inf / pi_twice)
-        lower = inf - n * pi_twice
-        upper = sup - n * pi_twice
+            out_cos = zp.batchPolyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, compress=0, copy_Z=False)
+            out_sin = zp.batchPolyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, compress=0, copy_Z=False)
 
-        # Allocate for full check
-        out_low = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
-        out_high = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
-
-        # full period
-        not_full_period = upper - lower < pi_twice
-        out_high[0] = (~not_full_period).long()
-        out_low[0] = -out_high[0]
-
-        # 180 rotated
-        rot_180 = lower > torch.pi
-        nom = torch.logical_and(not_full_period, ~rot_180)
-        nom_180 = torch.logical_and(not_full_period, rot_180)
-        shifted_lower = lower - torch.pi
-        shifted_upper = upper - torch.pi
-
-        # Region 1, upper < 180
-        reg1 = upper < torch.pi
-        reg1_nom = torch.logical_and(reg1, nom)
-        reg1_nom_num = reg1_nom.long()
-        out_low[1] = reg1_nom_num * torch.cos(upper)
-        out_high[1] = reg1_nom_num * torch.cos(lower)
-
-        # Flip the 180 (flip upper&lower and negate)
-        reg1_180 = torch.logical_and(reg1, nom_180)
-        reg1_180_num = -reg1_180.long()
-        out_low[2] = reg1_180_num * torch.cos(shifted_lower)
-        out_high[2] = reg1_180_num * torch.cos(shifted_upper)
-
-        # Region 2, 180 <= upper < 360
-        reg2 = torch.logical_and(upper < pi_twice, ~reg1)
-        reg2_nom = torch.logical_and(reg2, nom)
-        reg2_nom_num = reg2_nom.long()
-        out_low[3] = -reg2_nom_num
-        out_high[3] = reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
-        
-        # Flip the 180 (flip upper&lower and negate)
-        reg2_180 = torch.logical_and(reg2, nom_180)
-        reg2_180_num = reg2_180.long()
-        out_low[4] = -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
-        out_high[4] = reg2_180_num
-        
-        # Region 3, 360 < upper
-        reg3 = ~torch.logical_or(reg1, reg2)
-        reg3_num = reg3.long()
-        out_low[5] = -reg3_num
-        out_high[5] = reg3_num
-        
-        # Reduce and return
-        return out_low.sum(0), out_high.sum(0)
-    
-    @staticmethod
-    def _int_cos(interval):
-        low, high = JrsGenerator._int_cos_script(interval.inf, interval.sup)
-        return zp.interval(inf=low, sup=high)
-    
-    @staticmethod
-    def _int_sin(interval):
-        half_pi = torch.pi / 2
-        low, high = JrsGenerator._int_cos_script(interval.inf - half_pi, interval.sup - half_pi)
-        return zp.interval(inf=low, sup=high)
+        return out_cos.exactCartProd(out_sin)
 
 
 if __name__ == '__main__':

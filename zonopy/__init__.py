@@ -7,6 +7,7 @@ from zonopy.conSet.zonotope.batch_zono import batchZonotope
 from zonopy.conSet.zonotope.batch_mat_zono import batchMatZonotope
 from zonopy.conSet.polynomial_zonotope.batch_poly_zono import batchPolyZonotope
 from zonopy.conSet.polynomial_zonotope.batch_mat_poly_zono import batchMatPolyZonotope
+# from zonopy.conSet.polynomial_zonotope import *
 
 from zonopy.conSet.interval.interval import interval
 
@@ -16,6 +17,7 @@ from zonopy.joint_reachable_set.gen_jrs import JrsGenerator
 
 from zonopy.utils import *
 from zonopy.robots.load_robot import *
+import zonopy.internal as internal
 
 __version__ = "0.0.1"
 __logo__ = """
@@ -36,5 +38,3 @@ def setup_cuda():
       DEFAULT_OPTS.set(device='cuda')
    else:
       print('WARNING: No CUDA GPUs are available.')
-
-__debug_extra__ = True

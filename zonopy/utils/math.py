@@ -1,5 +1,13 @@
 import torch
-from zonopy import interval, zonotope, matZonotope, polyZonotope, matPolyZonotope
+from zonopy import (
+    interval,
+    zonotope,
+    matZonotope,
+    polyZonotope,
+    matPolyZonotope,
+    batchPolyZonotope,
+    batchMatZonotope,
+)
 from zonopy.utils.utils import compare_permuted_gen, compare_permuted_dep_gen, sign_cs, sign_sn
 
 
@@ -104,249 +112,205 @@ def dot(zono1,zono2):
             return polyZonotope(c,G,Grest,zono2.expMat,zono2.id,zono2.dtype,zono2.itype,zono2.device)
 
 
+@torch.jit.script
+def _int_cos_script(inf, sup):
+    # Expand out the interval cos function then jit it.
+    # End reduction seems to be slightly faster than inline reduction
+    pi_twice = torch.pi * 2
+    n = torch.floor(inf / pi_twice)
+    lower = inf - n * pi_twice
+    upper = sup - n * pi_twice
+
+    # Allocate for full check
+    out_low = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
+    out_high = torch.zeros(((6,) + inf.shape), dtype=inf.dtype, device=inf.device)
+
+    # full period
+    not_full_period = upper - lower < pi_twice
+    out_high[0] = (~not_full_period).long()
+    out_low[0] = -out_high[0]
+
+    # 180 rotated
+    rot_180 = lower > torch.pi
+    nom = torch.logical_and(not_full_period, ~rot_180)
+    nom_180 = torch.logical_and(not_full_period, rot_180)
+    shifted_lower = lower - torch.pi
+    shifted_upper = upper - torch.pi
+
+    # Region 1, upper < 180
+    reg1 = upper < torch.pi
+    reg1_nom = torch.logical_and(reg1, nom)
+    reg1_nom_num = reg1_nom.long()
+    out_low[1] = reg1_nom_num * torch.cos(upper)
+    out_high[1] = reg1_nom_num * torch.cos(lower)
+
+    # Flip the 180 (flip upper&lower and negate)
+    reg1_180 = torch.logical_and(reg1, nom_180)
+    reg1_180_num = -reg1_180.long()
+    out_low[2] = reg1_180_num * torch.cos(shifted_lower)
+    out_high[2] = reg1_180_num * torch.cos(shifted_upper)
+
+    # Region 2, 180 <= upper < 360
+    reg2 = torch.logical_and(upper < pi_twice, ~reg1)
+    reg2_nom = torch.logical_and(reg2, nom)
+    reg2_nom_num = reg2_nom.long()
+    out_low[3] = -reg2_nom_num
+    out_high[3] = reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+    
+    # Flip the 180 (flip upper&lower and negate)
+    reg2_180 = torch.logical_and(reg2, nom_180)
+    reg2_180_num = reg2_180.long()
+    out_low[4] = -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+    out_high[4] = reg2_180_num
+    
+    # Region 3, 360 < upper
+    reg3 = ~torch.logical_or(reg1, reg2)
+    reg3_num = reg3.long()
+    out_low[5] = -reg3_num
+    out_high[5] = reg3_num
+    
+    # Reduce and return
+    return out_low.sum(0), out_high.sum(0)
+
 
 def sin(Set,order=6):
     if isinstance(Set,interval):
-        if Set.numel() == 1:
-            if Set.sup-Set.inf >= 2*torch.pi:
-                res_inf, res_sup = [-1], [1]
-            else:
-                inf = (Set.inf% (2*torch.pi))[0]
-                sup = (Set.sup% (2*torch.pi))[0]
-                if inf <= torch.pi/2:
-                    if sup < inf:
-                        res_inf, res_sup = [-1], [1]
-                    elif sup <= torch.pi/2:
-                        res_inf, res_sup = [torch.sin(inf)], [torch.sin(sup)]
-                    elif sup < 3/2*torch.pi:
-                        res_inf, res_sup = [torch.min(torch.sin(inf),torch.sin(sup))], [1]
-                    else:
-                        res_inf, res_sup = [-1], [1]
-                elif inf <= 3/2*torch.pi:
-                    if sup <= torch.pi/2:
-                        res_inf, res_sup = [-1], [torch.max(torch.sin(inf),torch.sin(sup))]
-                    elif sup < inf:
-                        res_inf, res_sup = [-1], [1]
-                    elif sup <= 3/2*torch.pi:
-                        res_inf, res_sup = [torch.sin(sup)], [torch.sin(inf)]
-                    else:
-                        res_inf, res_sup =  [-1], [torch.max(torch.sin(inf),torch.sin(sup))]
-                else: # inf in [pi, 2*pi]
-                    if sup <= torch.pi/2:
-                        res_inf, res_sup = [torch.sin(inf)], [torch.sin(sup)]
-                    elif sup <= 3*torch.pi/2:
-                        res_inf, res_sup = [torch.min(torch.sin(inf),torch.sin(sup))], [1]
-                    elif sup < inf:
-                        res_inf, res_sup = [-1], [1]
-                    else:
-                        res_inf, res_sup = [torch.sin(inf)], [torch.sin(sup)]
-        else:
-            res_inf, res_sup = torch.zeros_like(Set.inf), torch.zeros_like(Set.inf)
-
-            inf = Set.inf%(2*torch.pi)
-            sup = Set.sup%(2*torch.pi)
-            
-            a1 = Set.sup-Set.inf >= 2*torch.pi
-            a2 = ~a1
-            b1 = inf <= torch.pi/2
-            b2 = ~b1
-            B = inf<=3/2*torch.pi
-            b3 = b2*B
-            b4 = (~B)*(inf<=2*torch.pi)
-            c1 = sup<=torch.pi/2
-            c4 = ~c1
-            c3 = sup>3/2*torch.pi
-            c2 = c4*(~c3)            
-            d1 = sup<inf 
-            d2 = ~d1
-
-            ind1 = tuple(torch.nonzero(a1).T)
-            res_inf[ind1] = -1
-            res_sup[ind1] = 1
-
-            ind2 = tuple(torch.nonzero(a2*b1*d1).T)
-            res_inf[ind2] = -1
-            res_sup[ind2] = 1
-
-            ind3 = tuple(torch.nonzero(a2*b1*c1*d2).T)
-            res_inf[ind3] = torch.sin(inf[ind3])
-            res_sup[ind3] = torch.sin(sup[ind3])
-            
-            ind4 = tuple(torch.nonzero(a2*b1*c2).T)
-            res_inf[ind4] = torch.min(torch.sin(inf[ind4]),torch.sin(sup[ind4]))
-            res_sup[ind4] = 1
-
-            ind5 = tuple(torch.nonzero(a2*b1*c3).T)
-            res_inf[ind5] = -1
-            res_sup[ind5] = 1
-
-            ind6 = tuple(torch.nonzero(a2*b3*c4*d1).T)
-            res_inf[ind6] = -1
-            res_sup[ind6] = 1
-
-            ind7 = tuple(torch.nonzero(a2*b3*c1).T)
-            res_inf[ind7] = -1
-            res_sup[ind7] = torch.max(torch.sin(inf[ind7]),torch.sin(sup[ind7]))
-
-            ind8 = tuple(torch.nonzero(a2*b3*c2*d2).T)
-            res_inf[ind8] = torch.sin(sup[ind8])
-            res_sup[ind8] = torch.sin(inf[ind8])
-
-            ind9 = tuple(torch.nonzero(a2*b3*c3*d2).T)
-            res_inf[ind9] = -1
-            res_sup[ind9] = torch.max(torch.sin(inf[ind9]),torch.sin(sup[ind9]))
-
-            ind10 = tuple(torch.nonzero(a2*b4*c3*d1).T)
-            res_inf[ind10] = -1
-            res_sup[ind10] = 1
-
-            ind11 = tuple(torch.nonzero(a2*b4*c1).T)
-            res_inf[ind11] = torch.sin(inf[ind11])
-            res_sup[ind11] = torch.sin(sup[ind11])
-
-            ind12 = tuple(torch.nonzero(a2*b4*c2).T)
-            res_inf[ind12] = torch.min(torch.sin(inf[ind12]),torch.sin(sup[ind12]))
-            res_sup[ind12] = 1
-
-            ind13 = tuple(torch.nonzero(a2*b4*c3*d2).T)
-            res_inf[ind13] = torch.sin(inf[ind13])
-            res_sup[ind13] = torch.sin(sup[ind13])
+        half_pi = torch.pi / 2
+        res_inf, res_sup = _int_cos_script(Set.inf - half_pi, Set.sup - half_pi)
         return interval(res_inf,res_sup,Set.dtype,Set.device)
-    elif isinstance(Set,polyZonotope):
-        assert Set.dimension == 1
-        pz = torch.sin(Set.c)
-        cos_c = torch.cos(Set.c)
-        sin_c = torch.sin(Set.c)
+
+    elif isinstance(Set,(polyZonotope,batchPolyZonotope)):
+        pz = Set
+        # Make sure we're only using 1D pz's
+        assert pz.dimension == 1, "Operation only valid for a 1D PZ"
+        pz_c = torch.sin(pz.c)
+
+        out = pz_c
+
+        cs_cf = torch.cos(pz.c)
+        sn_cf = pz_c
 
         factor = 1
         T_factor = 1
-        pz_neighbor = Set - Set.c
+        pz_neighbor = pz - pz.c
 
         for i in range(order):
-            factor = factor * (i+1) 
+            factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
-            if i%2 == 1:
-                pz += sign_sn(i)*sin_c/factor*T_factor
+            if i % 2 == 0:
+                out = out + (sign_sn(i) * cs_cf / factor) * T_factor
             else:
-                pz += sign_sn(i)*cos_c/factor*T_factor
+                out = out + (sign_sn(i) * sn_cf / factor) * T_factor
 
+        # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()
-        remPow = (T_factor*pz_neighbor).to_interval()
+        rem_pow = (T_factor * pz_neighbor).to_interval()
 
-        #import pdb; pdb.set_trace()
-        if order%2 == 1:
-            J = sin(Set.c + interval([0],[1],Set.dtype,Set.device)*rem)
+        if order % 2 == 1:
+            J = sin(pz.c + interval([0], [1]) * rem)
         else:
-            J = cos(Set.c + interval([0],[1],Set.dtype,Set.device)*rem)
-        if order%4==1 or order%4==2:
+            J = cos(pz.c + interval([0], [1]) * rem)
+        
+        if order % 4 == 1 or order % 4 == 2:
             J = -J
 
+        remainder = 1. / (factor * (order + 1)) * rem_pow * J
 
-        remainder = 1/(factor*(order+1))*remPow*J
-        pz.c += remainder.center()
-        pz.Grest = torch.hstack((pz.Grest,remainder.rad().reshape(1,1)))
-        pz.Grest = torch.sum(abs(pz.Grest),dim=1).reshape(1,1)
-        return pz
+        # Assumes a 1D pz
+        c = out.c + remainder.center()
+        G = out.G
+        Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
+        Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
+        if isinstance(pz, polyZonotope):
+            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+        else:
+            out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+        return out
+
+    return NotImplementedError
+    
+        # Not validated, but something like this
+        # c_shape = pz_c.shape[:-1]
+        # rounded_order = (order + 1) % 2
+        # factors = torch.empty(order + rounded_order + 1)
+        # factors[0] = 0
+        # factors[1:] = torch.arange(1,order+rounded_order+1).cumprod(0)
+        # factors = factors.reshape((-1,2,)+(1,)*len(c_shape)).expand((-1,-1,)+c_shape)
+        # factors[1::2] *= -1
+        # factors[1:,0] = sn_cf/factors[1:,0]
+        # factors[:factors.shape[0]-round_order,1] = cs_cf/factors[:,1]
+        # factors = factors.flatten(0,1)[1:]
+        # for i in range(order):
+        #     T_factor = T_factor * pz_neighbor
+        #     out += factors[i] * T_factor
 
 def cos(Set,order = 6):
     if isinstance(Set,interval):
-        if Set.numel() == 1:
-            if Set.sup-Set.inf >= 2*torch.pi:
-                res_inf, res_sup = [-1], [1]
-            else:
-                inf = (Set.inf% (2*torch.pi))[0]
-                sup = (Set.sup% (2*torch.pi))[0]
-
-                if inf <= torch.pi:
-                    if sup < inf:
-                        res_inf, res_sup = [-1], [1]
-                    elif sup <= torch.pi:
-                        res_inf, res_sup = [torch.cos(sup)], [torch.cos(inf)]
-                    else:
-                        res_inf, res_sup = [-1], [torch.max(torch.cos(inf),torch.cos(sup))]
-                else: # inf in [pi, 2*pi]
-                    if sup <= torch.pi:
-                        res_inf, res_sup = [torch.min(torch.cos(inf),torch.cos(sup))], [1]
-                    elif sup < inf:
-                        res_inf, res_sup = [-1], [1]
-                    else:
-                        res_inf, res_sup = [torch.cos(inf)], [torch.cos(sup)]
-        else:
-            res_inf, res_sup = torch.zeros_like(Set.inf), torch.zeros_like(Set.inf)
-            
-            inf = Set.inf%(2*torch.pi)
-            sup = Set.sup%(2*torch.pi)
-
-            a1 = Set.sup-Set.inf>= 2*torch.pi
-            a2 = ~a1
-            b1 = inf<=torch.pi
-            b2 = ~b1
-            c1 = sup<=torch.pi
-            c2 = ~c1
-            d1 = sup<inf
-            d2 = ~d1
-
-            ind1 = tuple(torch.nonzero(a1).T)
-            res_inf[ind1] = -1
-            res_sup[ind1] = 1
-
-            ind2 = tuple(torch.nonzero(a2*b1*d1).T)
-            res_inf[ind2] = -1
-            res_sup[ind2] = 1
-            
-            ind3 = tuple(torch.nonzero(a2*b1*c1*d2).T)
-            res_inf[ind3] = torch.cos(sup[ind3])
-            res_sup[ind3] = torch.cos(inf[ind3])
-
-            ind4 = tuple(torch.nonzero(a2*b1*c2).T)
-            res_inf[ind4] = -1    
-            res_sup[ind4] = torch.max(torch.cos(inf[ind4]),torch.cos(sup[ind4]))
-
-            ind5 = tuple(torch.nonzero(a2*b2*c2*d1).T)
-            res_inf[ind5] = -1    
-            res_sup[ind5] = 1
-
-            ind6 = tuple(torch.nonzero(a2*b2*d2).T)
-            res_inf[ind6] = torch.min(torch.cos(inf[ind6]),torch.cos(sup[ind6])) 
-            res_sup[ind6] = 1
-
-            ind7 = tuple(torch.nonzero(a2*b2*c2*d2).T)
-            res_inf[ind7] = torch.cos(inf[ind7])
-            res_sup[ind7] = torch.cos(sup[ind7])
+        res_inf, res_sup = _int_cos_script(Set.inf, Set.sup)
         return interval(res_inf,res_sup,Set.dtype,Set.device)
 
-    elif isinstance(Set,polyZonotope):
-        assert Set.dimension == 1
-        pz = torch.cos(Set.c)
-        cos_c = torch.cos(Set.c)
-        sin_c = torch.sin(Set.c)
+    elif isinstance(Set,(polyZonotope,batchPolyZonotope)):
+        pz = Set
+        # Make sure we're only using 1D pz's
+        assert pz.dimension == 1, "Operation only valid for a 1D PZ"
+        pz_c = torch.cos(pz.c)
 
+        out = pz_c
+
+        cs_cf = pz_c
+        sn_cf = torch.sin(pz.c)
+            
         factor = 1
         T_factor = 1
-        pz_neighbor = Set - Set.c
+        pz_neighbor = pz - pz.c
 
         for i in range(order):
-            factor = factor * (i+1) 
+            factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
-            if i%2 == 1:
-                pz += sign_cs(i)*cos_c/factor*T_factor
+            if i % 2:
+                out = out + (sign_cs(i) * cs_cf / factor) * T_factor
             else:
-                pz += sign_cs(i)*sin_c/factor*T_factor
+                out = out + (sign_cs(i) * sn_cf / factor) * T_factor
 
+        # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()
-        remPow = (T_factor*pz_neighbor).to_interval()
+        rem_pow = (T_factor * pz_neighbor).to_interval()
 
-        #import pdb; pdb.set_trace()
-        if order%2 == 0:
-            J = sin(Set.c + interval([0],[1],Set.dtype,Set.device)*rem)
+        if order % 2 == 0:
+            J = sin(pz.c + interval([0], [1]) * rem)
         else:
-            J = cos(Set.c + interval([0],[1],Set.dtype,Set.device)*rem)
-        if order%4==0 or order%4==1:
+            J = cos(pz.c + interval([0], [1]) * rem)
+        
+        if order % 4 == 0 or order % 4 == 1:
             J = -J
-        remainder = 1/(factor*(order+1))*remPow*J
-        pz.c += remainder.center()
-        pz.Grest = torch.hstack((pz.Grest,remainder.rad().reshape(1,1)))
-        pz.Grest = torch.sum(abs(pz.Grest),dim=1).reshape(1,1)
-        return pz
+
+        remainder = 1. / (factor * (order + 1)) * rem_pow * J
+
+        # Assumes a 1D pz
+        c = out.c + remainder.center()
+        G = out.G
+        Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
+        Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
+        if isinstance(pz, polyZonotope):
+            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+        else:
+            out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+        return out
+    
+    return NotImplementedError
+
+        # Not validated, but something like this
+        # c_shape = pz_c.shape[:-1]
+        # round_order = order % 2
+        # factors = torch.arange(1,order+round_order+1).cumprod(0)
+        # factors = factors.reshape((-1,2,)+(1,)*len(c_shape)).expand((-1,-1,)+c_shape)
+        # factors[0::2] *= -1
+        # factors[:,0] = sn_cf/factors[:,0]
+        # factors[:factors.shape[0]-round_order,1] = cs_cf/factors[:,1]
+        # factors = factors.flatten(0,1)[:order]
+        # for i in range(order):
+        #     T_factor = T_factor * pz_neighbor
+        #     out += factors[i] * T_factor
+        
 
 

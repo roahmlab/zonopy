@@ -5,7 +5,7 @@ Reference: CORA
 '''
 
 import torch
-import zonopy as zp
+import zonopy.internal as zpi
 
 EMPTY_TENSOR = torch.tensor([])
 class interval:
@@ -31,7 +31,7 @@ class interval:
             sup = inf
         # assert isinstance(inf, torch.Tensor) and isinstance(sup, torch.Tensor), "The inputs should be either torch tensor or list."
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
-        if zp.__debug_extra__: assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
+        if zpi.__debug_extra__: assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
         self.__inf = inf.to(dtype=dtype, device=device, non_blocking=True)
         self.__sup = sup.to(dtype=dtype, device=device, non_blocking=True)

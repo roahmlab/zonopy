@@ -11,7 +11,7 @@ use_cuda = True
 if use_cuda:
     zp.setup_cuda()
 # Disable extra debug checks
-zp.__debug_extra__ = False
+zp.internal.__debug_extra__ = False
 
 # Load robot
 import os

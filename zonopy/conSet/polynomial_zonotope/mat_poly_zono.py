@@ -9,6 +9,10 @@ from zonopy import polyZonotope
 import zonopy as zp
 import torch
 import numpy as np
+import zonopy.internal as zpi
+from .gen_ops import (
+    _matmul_genmpz_impl,
+    )
 
 class matPolyZonotope():
     '''
@@ -40,75 +44,73 @@ class matPolyZonotope():
     def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,prop='None',compress=2,copy_Z=True):
         # If compress=2, it will always copy.
 
+        # Make sure Z is a tensor
         if not isinstance(Z, torch.Tensor):
             Z = torch.as_tensor(Z,dtype=torch.float)
-        # assert isinstance(prop,str), 'Property should be string.'
-        # assert isinstance(Z, torch.Tensor), 'The input matrix should be either torch tensor or list.'
-        # C = Z[0]
-        # G = Z[1:1+n_dep_gens]
-        # Grest = Z[1+n_dep_gens:]
+        
+        # Isolate G and the indices
         G_ind = np.arange(1, 1+n_dep_gens)
         G = Z[slice(1, 1+n_dep_gens)]
+
+        # Remove zero generators
         if compress == 1:
             nonzero_g = (torch.sum(G!=0,(-1,-2))!=0).cpu().numpy() # non-zero generator index
             G_ind = G_ind[nonzero_g]
             G = Z[G_ind]
 
+        # Make an expMat and id if not given
         if expMat is None and id is None:
-            # nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
-            # G = G[nonzero_g]
-            # self.expMat = torch.eye(G.shape[0],dtype=torch.long,device=Z.device) # if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)   
             self.expMat = torch.eye(G_ind.shape[0],dtype=torch.long,device=Z.device)
             self.id = np.arange(self.expMat.shape[1],dtype=int)
-            # self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device) # if G is EMPTY_TENSOR, if will be EMPTY_TENSOR
+
+        # Otherwise make sure expMat is right
         elif expMat is not None:
-            #check correctness of user input 
             if not isinstance(expMat, torch.Tensor):
                 expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
-            # assert isinstance(expMat,torch.Tensor), 'The exponent matrix should be either torch tensor or list.'
-            # assert expMat.dtype in (torch.int, torch.long,torch.short), 'Exponent should have integer elements.'
             assert expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
-            if zp.__debug_extra__: assert torch.all(expMat >= 0), 'Invalid exponent matrix.'
+            if zpi.__debug_extra__: assert torch.all(expMat >= 0), 'Invalid exponent matrix.'
+            
+            # Remove generators related to redundant exponents
             if compress == 2: 
                 self.expMat,G = removeRedundantExponents(expMat,G)
                 copy_Z = True
+                
+            # Remove relevant zero generator indices
             elif compress == 1:
-                # nonzero_g = torch.sum(G!=0,(-1,-2))!=0 # non-zero generator index
-                # G = G[nonzero_g]    
-                self.expMat =expMat[nonzero_g]
+                self.expMat = expMat[nonzero_g]
+                
+            # Everything is fine
             else:
-                self.expMat =expMat
+                self.expMat = expMat
+                
+            # Make sure ID is right
             if id is not None:
-                self.id = np.asarray(id, dtype=int)
+                self.id = np.asarray(id, dtype=int).flatten()
             else:
                 self.id = np.arange(self.expMat.shape[1],dtype=int)
-            # if id != None:
-            #     if isinstance(id, list):
-            #         id = torch.tensor(id,dtype=torch.long,device=Z.device)
-            #     if id.numel() !=0:
-            #         assert prop == 'None', 'Either ID or property should not be defined.'
-            #         assert max(id) < PROPERTY_ID.offset, 'Non existing ID is defined'
-            #     assert isinstance(id, torch.Tensor), 'The identifier vector should be either torch tensor or list.'
-            #     assert id.shape[0] == expMat.shape[1], f'Invalid vector of identifiers. The number of exponents is {expMat.shape[1]}, but the number of identifiers is {id.shape[0]}.'
-            #     self.id = id
-            # else:
-            #     self.id = PROPERTY_ID.update(self.expMat.shape[1],prop).to(device=Z.device)  
+                
+        # Otherwise ID is given, but not the expMat, so make identity
         else:
-            # assert False, 'Identifiers can only be defined as long as the exponent matrix is defined.'
-            # Assume if an id is given, that the expmat is the identity
-            self.id = np.array(id, dtype=int).flatten()
+            self.id = np.asarray(id, dtype=int).flatten()
             assert len(self.id) == n_dep_gens, 'Number of dependent generators must match number of id\'s!'
             self.expMat = torch.eye(G_ind.shape[0],dtype=torch.long,device=Z.device)
         
+
+        # Copy the Z if requested
         if copy_Z:
             self.Z = torch.vstack((Z[0].unsqueeze(0), G, Z[1+n_dep_gens:]))
+        # Otherwise save view if needed
         elif compress == 1:
             Grest_ind = np.arange(1+n_dep_gens, Z.shape[0])
             ind = np.concatenate([[0], G_ind, Grest_ind])
             self.Z = Z[ind]
+        # Or save it itself
         else:
             self.Z = Z
+
+        # Update n_dep_gens
         self.n_dep_gens = G.shape[0]
+
     @property
     def dtype(self):
         return self.Z.dtype
@@ -198,47 +200,17 @@ class matPolyZonotope():
         #               G_Grest, Grest_G (partially-k-sliceable)
         
         elif isinstance(other,polyZonotope):
-           
-            assert self.n_cols == other.dimension
-            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            _Z = (self.Z.unsqueeze(1) @ other.Z.unsqueeze(-1)).squeeze(-1)
-            z1 = _Z[:self.n_dep_gens+1,0]
-            z2 = _Z[:self.n_dep_gens+1,1:other.n_dep_gens+1].reshape(-1,self.n_rows)
-            z3 = _Z[self.n_dep_gens+1:].reshape(-1,self.n_rows)
-            z4 = _Z[:self.n_dep_gens+1,other.n_dep_gens+1:].reshape(-1,self.n_rows)
-            Z = torch.vstack((z1,z2,z3,z4))
-            # expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
-            # Rewrite to use views
-            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(self.n_dep_gens*expMat2.shape[0],expMat2.shape[1])
-            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(other.n_dep_gens*expMat1.shape[0],expMat1.shape[1])
-            expMat = torch.vstack((expMat1,expMat2,first + second))
-            n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
-            return polyZonotope(Z,n_dep_gens,expMat,id)
+            # Shim other to a matPolyZonotope
+            shim_other = matPolyZonotope(other.Z.unsqueeze(-1), other.n_dep_gens, other.expMat, other.id, compress=0, copy_Z=False)
+            Z, n_dep_gens, expMat, id = _matmul_genmpz_impl(self, shim_other)
+            return polyZonotope(Z.squeeze(-1), n_dep_gens, expMat, id)
 
         elif isinstance(other,matPolyZonotope):
-            assert self.n_cols == other.n_rows
-            id, expMat1, expMat2 = mergeExpMatrix(self.id,other.id,self.expMat,other.expMat)
-            _Z = (self.Z.unsqueeze(1) @ other.Z)
-            z1 = _Z[:self.n_dep_gens+1,0]
-            z2 = _Z[:self.n_dep_gens+1,1:other.n_dep_gens+1].reshape(-1,self.n_rows,other.n_cols)
-            z3 = _Z[self.n_dep_gens+1:].reshape(-1,self.n_rows,other.n_cols)
-            z4 = _Z[:self.n_dep_gens+1,other.n_dep_gens+1:].reshape(-1,self.n_rows,other.n_cols)
-            Z = torch.vstack((z1,z2,z3,z4))
-            # expMat = torch.vstack((expMat1,expMat2,expMat2.repeat(self.n_dep_gens,1)+expMat1.repeat_interleave(other.n_dep_gens,dim=0)))
-            # Rewrite to use views
-            first = expMat2.expand((self.n_dep_gens,)+expMat2.shape).reshape(self.n_dep_gens*expMat2.shape[0],expMat2.shape[1])
-            second = expMat1.expand((other.n_dep_gens,)+expMat1.shape).transpose(0,1).reshape(other.n_dep_gens*expMat1.shape[0],expMat1.shape[1])
-            expMat = torch.vstack((expMat1,expMat2,first + second))
-            n_dep_gens = (self.n_dep_gens+1) * (other.n_dep_gens+1)-1 
-            return matPolyZonotope(Z,n_dep_gens,expMat,id)
-        elif isinstance(other,zp.batchMatPolyZonotope):
-            return other.__rmatmul__(self)
-        elif isinstance(other,zp.batchPolyZonotope):
-            # Shim self to batchMatPolyZono and return that matmul
-            tmp_self = zp.batchMatPolyZonotope(self.Z.unsqueeze(0), self.n_dep_gens, self.expMat, self.id, compress=0)
-            return tmp_self.__matmul__(other)
+            args = _matmul_genmpz_impl(self, other)
+            return matPolyZonotope(*args)
+        
         else:
-            raise ValueError('the other object should be torch tensor or polynomial zonotope.')
+            return NotImplemented
 
     def __rmatmul__(self,other):
         '''
@@ -255,12 +227,15 @@ class matPolyZonotope():
             assert other.shape[1] == self.n_rows
             Z = other @ self.Z
             return matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,compress=1,copy_Z=False)
+        
         elif isinstance(other,polyZonotope):
-            tmp_other = zp.matPolyZonotope(other.Z.unsqueeze(1),other.n_dep_gens,other.expMat,other.id,compress=0,copy_Z=False)
-            res = tmp_other.__matmul__(self)
-            return zp.polyZonotope(res.Z.squeeze(-2),res.n_dep_gens,res.expMat,res.id)
+            # Shim other to a matPolyZonotope
+            shim_other = zp.matPolyZonotope(other.Z.unsqueeze(-2),other.n_dep_gens,other.expMat,other.id,compress=0,copy_Z=False)
+            Z, n_dep_gens, expMat, id = _matmul_genmpz_impl(shim_other, self)
+            return zp.polyZonotope(Z.squeeze(-2), n_dep_gens, expMat, id)
+        
         else:
-            return other.__matmul__(self)
+            return NotImplemented
 
     def to_matZonotope(self):
         if self.n_dep_gens != 0:
