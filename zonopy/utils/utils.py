@@ -35,16 +35,4 @@ def compare_permuted_dep_gen(expMat1, expMat2, G1, G2,eps = 1e-6):
             import pdb;pdb.set_trace()
     return True
 
-def sign_cs(order):
-    if order%4 == 2 or order%4 == 3:
-        return 1
-    else:
-        return -1
-
-def sign_sn(order):
-    if order%4 == 0 or order%4 == 3:
-        return 1
-    else:
-        return -1
-
 

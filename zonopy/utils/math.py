@@ -8,8 +8,10 @@ from zonopy import (
     batchPolyZonotope,
     batchMatZonotope,
 )
-from zonopy.utils.utils import compare_permuted_gen, compare_permuted_dep_gen, sign_cs, sign_sn
+from zonopy.utils.utils import compare_permuted_gen, compare_permuted_dep_gen
 
+SIGN_COS = (-1, -1, 1, 1)
+SIGN_SIN = (1, -1, -1, 1)
 
 def close(zono1,zono2,eps = 1e-6,match_id=False):
     assert isinstance(zono1, type(zono2)) 
@@ -198,9 +200,9 @@ def sin(Set,order=6):
             factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
             if i % 2 == 0:
-                out = out + (sign_sn(i) * cs_cf / factor) * T_factor
+                out = out + (SIGN_SIN(i%4) * cs_cf / factor) * T_factor
             else:
-                out = out + (sign_sn(i) * sn_cf / factor) * T_factor
+                out = out + (SIGN_SIN(i%4) * sn_cf / factor) * T_factor
 
         # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()
@@ -268,9 +270,9 @@ def cos(Set,order = 6):
             factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
             if i % 2:
-                out = out + (sign_cs(i) * cs_cf / factor) * T_factor
+                out = out + (SIGN_COS(i%4) * cs_cf / factor) * T_factor
             else:
-                out = out + (sign_cs(i) * sn_cf / factor) * T_factor
+                out = out + (SIGN_COS(i%4) * sn_cf / factor) * T_factor
 
         # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()

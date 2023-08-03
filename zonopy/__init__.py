@@ -17,7 +17,9 @@ from zonopy.joint_reachable_set.gen_jrs import JrsGenerator
 
 from zonopy.utils import *
 from zonopy.robots.load_robot import *
+
 import zonopy.internal as internal
+import zonopy.trajectories as trajectories
 
 __version__ = "0.0.1"
 __logo__ = """

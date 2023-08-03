@@ -1,4 +1,4 @@
-from zonopy.kinematics.FK import forward_kinematics
-from zonopy.kinematics.FO import forward_occupancy
-from zonopy.kinematics.JO import joint_occupancy
+from .FK import forward_kinematics
+from .FO import forward_occupancy
+from .JO import joint_occupancy
 

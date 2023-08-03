@@ -1,9 +1,22 @@
+from __future__ import annotations
 import torch
 from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 import numpy as np
 import zonopy.internal as zpi
+from typing import TYPE_CHECKING
 
-def remove_dependence_and_compress(Set,id):
+if TYPE_CHECKING:
+    from typing import Union
+    from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope as PZType
+    from zonopy.conSet.polynomial_zonotope.batch_poly_zono import batchPolyZonotope as BPZType
+    from zonopy.conSet.polynomial_zonotope.mat_poly_zono import matPolyZonotope as MPZType
+    from zonopy.conSet.polynomial_zonotope.batch_mat_poly_zono import batchMatPolyZonotope as BMPZType
+
+def remove_dependence_and_compress(
+        Set: Union[PZType, BPZType, MPZType, BMPZType],
+        id: np.ndarray
+        ) -> Union[PZType, BPZType, MPZType, BMPZType]:
+    
     id_idx = np.any(np.expand_dims(Set.id,1) == id, axis=1)
 
     has_val = torch.any(Set.expMat[:,id_idx] != 0, dim=1)

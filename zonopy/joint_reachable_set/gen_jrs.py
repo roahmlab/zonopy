@@ -1,10 +1,7 @@
 import torch
-from zonopy.transformations.rotation import gen_rotatotope_from_jrs
+from zonopy.transformations.rotation import get_pz_rotations_from_q
 from zonopy.joint_reachable_set.utils import remove_dependence_and_compress
 import zonopy as zp
-SIGN_COS = (-1, -1, 1, 1)
-SIGN_SIN = (1, -1, -1, 1)
-
 
 from zonopy.trajectories import BernsteinArmTrajectory
 import numpy as np
@@ -143,10 +140,10 @@ class JrsGenerator:
 
         if self.batched:
             # Chose the right function
-            rot_from_q = JrsGenerator._get_pz_rotations_from_q
+            rot_from_q = get_pz_rotations_from_q
         else:
             # Vectorize over q
-            rot_from_q = np.vectorize(JrsGenerator._get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
+            rot_from_q = np.vectorize(get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
             q_ref, qd_ref, qdd_ref = q_ref.T, qd_ref.T, qdd_ref.T
 
         if self.verbose: print('Creating Reference Rotatotopes')
@@ -206,10 +203,10 @@ class JrsGenerator:
 
         if self.batched:
             # Chose the right function
-            rot_from_q = JrsGenerator._get_pz_rotations_from_q
+            rot_from_q = get_pz_rotations_from_q
         else:
             # Vectorize over q
-            rot_from_q = np.vectorize(JrsGenerator._get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
+            rot_from_q = np.vectorize(get_pz_rotations_from_q, excluded=[1,'taylor_deg'])
             q_ref = q_ref.T
         
         # Add tracking error if provided
@@ -230,113 +227,7 @@ class JrsGenerator:
             if self.verbose: print("Making non-k generators independent")
             rem_dep = np.vectorize(remove_dependence_and_compress, excluded=[1])
             R = rem_dep(R, self.k_ids)
-        return R
-    
-    @staticmethod
-    def _get_pz_rotations_from_q(q, rotation_axis, taylor_deg=6):
-        cos_sin_q = JrsGenerator._cos_sin(q, order=taylor_deg)
-        # Rotation Matrix
-        e = rotation_axis/np.linalg.norm(rotation_axis)
-        U = torch.tensor(
-            [[0, -e[2], e[1]],
-            [e[2], 0, -e[0]],
-            [-e[1], e[0], 0]], 
-            dtype=torch.get_default_dtype()
-            )
-
-        # Create rotation matrices from cos and sin dimensions
-        cq = cos_sin_q.c[...,0]
-        cq = cq.reshape(*cq.shape, 1, 1)
-        sq = cos_sin_q.c[...,1]
-        sq = sq.reshape(*sq.shape, 1, 1)
-        C = torch.eye(3) + sq*U + (1-cq)*U@U
-        C = C.unsqueeze(-3)
-
-        tmp_Grest = torch.empty(0)
-        if cos_sin_q.n_indep_gens > 0:
-            cq = cos_sin_q.Grest[...,0]
-            cq = cq.reshape(*cq.shape, 1, 1)
-            sq = cos_sin_q.Grest[...,1]
-            sq = sq.reshape(*sq.shape, 1, 1)
-            tmp_Grest = sq*U + -cq*U@U
-
-        tmp_G = torch.empty(0)
-        if cos_sin_q.n_dep_gens > 0:
-            cq = cos_sin_q.G[...,0]
-            cq = cq.reshape(*cq.shape, 1, 1)
-            sq = cos_sin_q.G[...,1]
-            sq = sq.reshape(*sq.shape, 1, 1)
-            tmp_G = sq*U + -cq*U@U
-        
-        Z = torch.concat((C, tmp_G, tmp_Grest), dim=-3)
-        # Z_t = Z.transpose(1,2)
-        if len(Z.shape) == 3:
-            out = zp.matPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0,copy_Z=False)
-        else:
-            out = zp.batchMatPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=2)
-        # out_t = zp.matPolyZonotope(Z_t, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0)
-        # return (out, out_t)
-        return out
-
-    # Bad Combo
-    @staticmethod
-    def _cos_sin(pz, order=6):
-        # Do both cos and sin at the same time
-        # cos_q = zp.cos(pz, order=order)
-        # sin_q = zp.sin(pz, order=order)
-        # return cos_q.exactCartProd(sin_q)
-
-        cs_cf = torch.cos(pz.c)
-        sn_cf = torch.sin(pz.c)
-        out_cos = cs_cf
-        out_sin = sn_cf
-
-        factor = 1
-        T_factor = 1
-        pz_neighbor = pz - pz.c
-        for i in range(order):
-            factor = factor * (i + 1)
-            T_factor = T_factor * pz_neighbor
-            if i % 2:
-                out_cos = out_cos + (SIGN_COS[i%4] * cs_cf / factor) * T_factor
-                out_sin = out_sin + (SIGN_SIN[i%4] * sn_cf / factor) * T_factor
-            else:
-                out_cos = out_cos + (SIGN_COS[i%4] * sn_cf / factor) * T_factor
-                out_sin = out_sin + (SIGN_SIN[i%4] * cs_cf / factor) * T_factor
-        
-        # add lagrange remainder interval to Grest
-        rem = pz_neighbor.to_interval()
-        rem_pow = (T_factor * pz_neighbor).to_interval()
-        if order % 2:
-            Jcos = zp.cos(pz.c + zp.interval([0], [1]) * rem)
-            Jsin = zp.sin(pz.c + zp.interval([0], [1]) * rem)
-        else:
-            Jcos = zp.sin(pz.c + zp.interval([0], [1]) * rem)
-            Jsin = zp.cos(pz.c + zp.interval([0], [1]) * rem)
-        if order % 4 == 0 or order % 4 == 1:
-            Jcos = -Jcos
-        if order % 4 == 1 or order % 4 == 2:
-            Jsin = -Jsin
-        remainder_sin = 1. / (factor * (order + 1)) * rem_pow * Jsin
-        remainder_cos = 1. / (factor * (order + 1)) * rem_pow * Jcos
-
-        # Assumes a 1D pz
-        c = out_cos.c + remainder_cos.center()
-        G = out_cos.G
-        Grest = torch.sum(out_cos.Grest, dim=-2) + remainder_cos.rad()
-        Zcos = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
-        c = out_sin.c + remainder_sin.center()
-        G = out_sin.G
-        Grest = torch.sum(out_sin.Grest, dim=-2) + remainder_sin.rad()
-        Zsin = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
-        if isinstance(pz, zp.polyZonotope):
-            out_cos = zp.polyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, compress=0, copy_Z=False)
-            out_sin = zp.polyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, compress=0, copy_Z=False)
-        else:
-            out_cos = zp.batchPolyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, compress=0, copy_Z=False)
-            out_sin = zp.batchPolyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, compress=0, copy_Z=False)
-
-        return out_cos.exactCartProd(out_sin)
+        return R.T
 
 
 if __name__ == '__main__':
