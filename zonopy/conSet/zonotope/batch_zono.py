@@ -10,9 +10,10 @@ from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedBatchGenerators
 from zonopy.conSet.zonotope.zono import zonotope
 import time
-from .gen_ops import (
+from ..gen_ops import (
     _add_genzono_impl,
     _add_genzono_num_impl,
+    _mul_genzono_num_impl,
     )
 
 class batchZonotope:
@@ -162,19 +163,12 @@ class batchZonotope:
         other: <torch.Tensor> OR <zonotope> or <batchZonotope>
         return <batchZonotope>
         '''   
-        if isinstance(other, torch.Tensor):
-            Z = torch.clone(self.Z)
-            #assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
-            Z[self.batch_idx_all+(0,)] -= other
-        elif isinstance(other, zonotope): 
-            assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.cat(((self.center - other.center).unsqueeze(self.batch_dim),self.generators,other.generators.repeat(self.batch_shape+(1,1,))),self.batch_dim)
-        elif isinstance(other, batchZonotope): 
-            assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.cat(((self.center - other.center).unsqueeze(self.batch_dim),self.generators,other.generators),self.batch_dim)
-        else:
-            assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
-        return batchZonotope(Z)
+        import warnings
+        warnings.warn(
+            "PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!",
+            DeprecationWarning)
+        return self.__add__(-other)
+        
     def __rsub__(self,other):
         '''
         Overloaded reverted '-' operator for substraction or Minkowski difference
@@ -182,23 +176,11 @@ class batchZonotope:
         other: <torch.Tensor> OR <zonotope> or <batchZonotope>
         return <batchZonotope>
         '''   
+        import warnings
+        warnings.warn(
+            "PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!",
+            DeprecationWarning)
         return -self.__sub__(other)
-    def __iadd__(self,other):
-        '''
-        Overloaded '+=' operator for addition or Minkowski sum
-        self: <batchZonotope>
-        other: <torch.Tensor> OR <zonotope> or <batchZonotope>
-        return <batchZonotope>
-        '''   
-        return self+other
-    def __isub__(self,other):
-        '''
-        Overloaded '-=' operator for substraction or Minkowski difference
-        self: <batchZonotope>
-        other: <torch.Tensor> OR <zonotope> or <batchZonotope>
-        return <batchZonotope>
-        '''   
-        return self-other
 
     def __pos__(self):
         '''
@@ -237,9 +219,12 @@ class batchZonotope:
         other: <int> or <float>
         return <batchZonotope>
         '''   
-        if isinstance(other,(float,int)):
-            Z = other*self.Z
-        return batchZonotope(Z)
+        if isinstance(other,(torch.Tensor,int,float)):
+            Z = _mul_genzono_num_impl(self, other)
+            return batchZonotope(Z)
+        
+        else:
+            return NotImplemented
 
     __rmul__ = __mul__ # '*' operator is commutative.
 

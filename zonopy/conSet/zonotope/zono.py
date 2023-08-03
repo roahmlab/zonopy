@@ -10,9 +10,10 @@ from zonopy.conSet.polynomial_zonotope.poly_zono import polyZonotope
 from zonopy.conSet.interval.interval import interval
 from zonopy.conSet.zonotope.utils import pickedGenerators, ndimCross
 from scipy.spatial import ConvexHull
-from .gen_ops import (
+from ..gen_ops import (
     _add_genzono_impl,
     _add_genzono_num_impl,
+    _mul_genzono_num_impl,
     )
 
 
@@ -152,16 +153,11 @@ class zonotope:
         other: <torch.Tensor> OR <zonotope>
         return <zonotope>        
         '''
-        if isinstance(other, torch.Tensor):
-            Z = torch.clone(self.Z)
-            assert other.shape == self.shape, f'array dimension does not match: should be {self.shape}, not {other.shape}.'
-            Z[0] -= other
-        elif isinstance(other, zonotope): 
-            assert self.dimension == other.dimension, f'zonotope dimension does not match: {self.dimension} and {other.dimension}.'
-            Z = torch.vstack((self.center - other.center,self.generators,other.generators))
-        else:
-            assert False, f'the other object is neither a zonotope nor a torch tensor, not {type(other)}.'
-        return zonotope(Z)
+        import warnings
+        warnings.warn(
+            "PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!",
+            DeprecationWarning)
+        return self.__add__(-other)
     def __rsub__(self,other): 
         '''
         Overloaded reverted '-' operator for substraction or Minkowski difference
@@ -169,23 +165,11 @@ class zonotope:
         other: <torch.Tensor> OR <zonotope>
         return <zonotope>                
         '''
+        import warnings
+        warnings.warn(
+            "PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!",
+            DeprecationWarning)
         return -self.__sub__(other)
-    def __iadd__(self,other):
-        '''
-        Overloaded '+=' operator for addition or Minkowski sum
-        self: <zonotope>
-        other: <torch.Tensor> OR <zonotope>
-        return <zonotope>        
-        '''
-        return self+other
-    def __isub__(self,other):
-        '''
-        Overloaded '-=' operator for substraction or Minkowski difference
-        self: <zonotope>
-        other: <torch.Tensor> OR <zonotope>
-        return <zonotope>        
-        '''
-        return self-other
     def __pos__(self):
         '''
         Overloaded unary '+' operator for a zonotope ifself
@@ -221,9 +205,12 @@ class zonotope:
         other: <int> or <float>
         return <zonotope>
         '''   
-        if isinstance(other,(float,int)):
-            Z = other*self.Z
-        return zonotope(Z)
+        if isinstance(other,(torch.Tensor,int,float)):
+            Z = _mul_genzono_num_impl(self, other)
+            return zonotope(Z)
+        
+        else:
+            return NotImplemented
 
     __rmul__ = __mul__ # '*' operator is commutative.
 

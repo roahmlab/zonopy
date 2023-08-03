@@ -7,7 +7,7 @@ from zonopy.conSet import DEFAULT_OPTS
 from zonopy.conSet.zonotope.zono import zonotope
 from zonopy.conSet.zonotope.utils import pickedGenerators
 import torch
-from .gen_ops import (
+from ..gen_ops import (
     _matmul_genmzono_impl,
     )
 

@@ -8,7 +8,7 @@ from zonopy.conSet.zonotope.mat_zono import matZonotope
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
 from zonopy.conSet.zonotope.utils import pickedBatchGenerators
 import torch
-from .gen_ops import (
+from ..gen_ops import (
     _matmul_genmzono_impl,
     )
 

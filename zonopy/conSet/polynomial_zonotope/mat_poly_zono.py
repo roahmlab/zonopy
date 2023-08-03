@@ -10,7 +10,7 @@ import zonopy as zp
 import torch
 import numpy as np
 import zonopy.internal as zpi
-from .gen_ops import (
+from ..gen_ops import (
     _matmul_genmpz_impl,
     )
 

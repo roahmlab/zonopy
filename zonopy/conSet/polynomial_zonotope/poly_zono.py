@@ -8,7 +8,7 @@ from zonopy.conSet.polynomial_zonotope.utils import removeRedundantExponents, me
 import zonopy as zp
 import torch
 import numpy as np
-from .gen_ops import (
+from ..gen_ops import (
     _add_genpz_impl,
     _add_genpz_num_impl,
     _add_genpz_zono_impl,
@@ -239,9 +239,17 @@ class polyZonotope:
     __radd__ = __add__
 
     def __sub__(self,other):
+        import warnings
+        warnings.warn(
+            "PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!",
+            DeprecationWarning)
         return self.__add__(-other)
     
     def __rsub__(self,other):
+        import warnings
+        warnings.warn(
+            "PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!",
+            DeprecationWarning)
         return -self.__sub__(other)
     
     def __pos__(self):
