@@ -70,12 +70,12 @@ def traj_safety_check(qpos,qvel,ka,robot_params,obs_zonos,R0=None, P0=None):
     R = robot_params['R']
     link_zonos = robot_params['link_zonos']
     joint_axes = robot_params['joint_axes']
-    zp.reset()
     JRS,rotatos = zp.load_JRS_trig(qpos,qvel,joint_axes)
     #import pdb; pdb.set_trace()
     n_time_steps = len(rotatos)
     n_time_steps = 50
-    K_ID = zp.conSet.PROPERTY_ID['k_trig']
+    # K_ID = zp.conSet.PROPERTY_ID['k_trig']
+    # TODO FIX
 
 
     if isinstance(R0,list):

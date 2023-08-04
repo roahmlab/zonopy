@@ -97,7 +97,7 @@ def cross(zono1,zono2):
                 z = Z[:,j]
                 Z_skew[:,:,j] = torch.tensor([[0,-z[2],z[1]],[z[2],0,-z[1]],[-z[1],z[0],0]])
             
-            zono1_skew_sym = matPolyZonotope(Z_skew[:,:,0],Z_skew[:,:,1:num_c_G],Z_skew[:,:,num_c_G:],zono1.expMat,zono1.id)
+            zono1_skew_sym = matPolyZonotope(Z_skew[:,:,0],Z_skew[:,:,1:num_c_G],Z_skew[:,:,num_c_G:],zono1.expMat,zono1.id).compress(2)
 
         return zono1_skew_sym@zono2    
     
@@ -111,7 +111,7 @@ def dot(zono1,zono2):
             c = (zono1@zono2.c).reshape(1)
             G = (zono1@zono2.G).reshape(1,-1)
             Grest = (zono1@zono2.Grest).reshape(1,-1)
-            return polyZonotope(c,G,Grest,zono2.expMat,zono2.id,zono2.dtype,zono2.itype,zono2.device)
+            return polyZonotope(c,G,Grest,zono2.expMat,zono2.id,zono2.dtype,zono2.itype,zono2.device).compress(2)
 
 
 @torch.jit.script
@@ -224,9 +224,9 @@ def sin(Set,order=6):
         Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
         Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
         if isinstance(pz, polyZonotope):
-            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
         else:
-            out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+            out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
         return out
 
     return NotImplementedError
@@ -294,9 +294,9 @@ def cos(Set,order = 6):
         Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
         Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
         if isinstance(pz, polyZonotope):
-            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
         else:
-            out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id)
+            out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
         return out
     
     return NotImplementedError

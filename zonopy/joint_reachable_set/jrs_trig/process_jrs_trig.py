@@ -29,7 +29,7 @@ def process_batch_JRS_trig(jrs_tensor, q_0,qd_0,joint_axes):
         Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=dtype,device=device)
         A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
         JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i:i+1])
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
         '''
         delta_k = PZ_JRS.G[0,0,ka_dim]
         c_breaking = - qd_0[i]/T_fail_safe
@@ -61,7 +61,7 @@ def process_batch_JRS_trig_ic(jrs_tensor,q_0,qd_0,joint_axes):
             + torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]],dtype=dtype,device=device))
         
         JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
         R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
         PZ_JRS_batch.append(PZ_JRS)
         R_batch.append(R_temp)

@@ -6,8 +6,6 @@ import matplotlib.patches as patches
 import os
 import numpy as np
 
-from zonopy.conSet import PROPERTY_ID
-
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
@@ -548,9 +546,7 @@ class Parallel_Arm_2D:
                 FO_link_polygons = []
                 for j in range(self.n_links):
                     FO_patch = []
-                    PROPERTY_ID.update(self.n_links)
                     FO_link_slc = FO_link[j][FO_render_idx].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka[FO_render_idx]/g_ka).unsqueeze(1).repeat(1,100,1))
-                    zp.reset()
                     FO_link_polygons.append(FO_link_slc.polygon().detach())
             
                 for idx, b in enumerate(FO_render_idx.tolist()):

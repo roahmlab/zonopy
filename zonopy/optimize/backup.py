@@ -168,7 +168,6 @@ class ARMTD_2D_planner():
         return k_opt, self.info['status']
         
     def plan(self,env,ka_0):
-        zp.reset()
         self.prepare_constraints(env.qpos,env.qvel,env.obs_zonos)
         k_opt, flag = self.trajopt(env.qgoal,ka_0)
         return k_opt, flag

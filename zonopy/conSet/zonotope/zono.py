@@ -442,7 +442,7 @@ class zonotope:
         else:
             assert False, 'Invalid reduction option'
 
-    def to_polyZonotope(self,dim=None,prop='None'):
+    def to_polyZonotope(self,dim=None,id=None):
         '''
         Convert zonotope to polynomial zonotope
         self: <zonotope>
@@ -455,7 +455,7 @@ class zonotope:
         idx = self.generators[:,dim] == 0
         assert sum(~idx) == 1, 'sliceable generator should be one for the dimension.'
         Z = torch.vstack((self.center,self.generators[~idx],self.generators[idx]))
-        return polyZonotope(Z,1,prop=prop)
+        return polyZonotope(Z,1,id=id)
 
     def to_interval(self):
         '''

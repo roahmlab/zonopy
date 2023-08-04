@@ -17,6 +17,10 @@ def remove_dependence_and_compress(
         id: np.ndarray
         ) -> Union[PZType, BPZType, MPZType, BMPZType]:
     
+    # # First compress (We can address this!)
+    # Set.compress(2)
+
+    # Proceed
     id_idx = np.any(np.expand_dims(Set.id,1) == id, axis=1)
 
     has_val = torch.any(Set.expMat[:,id_idx] != 0, dim=1)
@@ -31,6 +35,7 @@ def remove_dependence_and_compress(
         # Instead of reducing Grest now, just leave it
         Z = torch.concat([c.unsqueeze(-2), G, Set.G[...,~ful_slc_idx,:], Set.Grest], dim=-2)
         return type(Set)(Z, G.shape[-2], ExpMat, Set.id[id_idx])
+        
     elif isinstance(Set,(matPolyZonotope,batchMatPolyZonotope)):
         # TODO WHY NO ASSERT HERE
         C = Set.C

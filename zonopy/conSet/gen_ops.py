@@ -131,7 +131,8 @@ def _add_genpz_zono_impl(
 
 @torch.jit.script
 def __mul_Z_tensormerge(Z1: torch.Tensor, Z2: torch.Tensor, z1_ndep: int, z2_ndep: int) -> torch.Tensor:
-    _Z = Z1.unsqueeze(-2)*Z2.unsqueeze(-3)
+    # _Z = Z1.unsqueeze(-2)*Z2.unsqueeze(-3)
+    _Z = torch.einsum("...id, ...jd->...ijd",Z1,Z2)
     z1 = _Z[..., :z1_ndep+1, 0, :]
     z2 = _Z[..., :z1_ndep+1, 1:z2_ndep+1, :].flatten(-3,-2) # COPIES
     z3 = _Z[..., z1_ndep+1:, :, :].flatten(-3,-2) # COPIES

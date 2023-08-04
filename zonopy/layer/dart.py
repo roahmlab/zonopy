@@ -4,7 +4,6 @@ from zonopy.kinematics.FO import forward_occupancy
 from zonopy.joint_reachable_set.jrs_trig.process_jrs_trig import process_batch_JRS_trig_ic
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import preload_batch_JRS_trig
 from zonopy.conSet.zonotope.batch_zono import batchZonotope
-from zonopy.conSet import PROPERTY_ID
 import zonopy as zp
 import cyipopt
 
@@ -73,7 +72,6 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
     class DART_2D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx, lambd, observation, batch_FO_link):
-            zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             ctx.lambd_shape = lambd.shape
             ctx.lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
@@ -107,7 +105,7 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                 _, R_trig = process_batch_JRS_trig_ic(jrs_tensor, qpos, qvel, joint_axes)
                 batch_FO_link, _, _ = forward_occupancy(R_trig, link_zonos, params)
             else:
-                zp.reset(n_links)
+                # zp.reset(n_links)
 
             As = np.zeros((n_batches,n_links),dtype=object)
             bs = np.zeros((n_batches,n_links),dtype=object)
@@ -217,7 +215,6 @@ def gen_DART_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, num_proces
                     ctx.flags[rtd_pass_indices] = torch.tensor(rtd_flags, dtype=ctx.flags.dtype, device=device)
 
 
-            zp.reset()
             return ctx.lambd, FO_links, ctx.flags, ctx.infos
 
         @staticmethod

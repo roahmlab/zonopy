@@ -144,7 +144,6 @@ def gen_RTS_star_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
     class RTS_star_Locked_3D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx, lambd, observation):
-            zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
 
             ctx.lambd_shape = lambd.shape
@@ -340,7 +339,6 @@ def gen_RTS_star_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim
                         rtd_flags.append(rtd_flag)
                     lambd[rtd_pass_indices] = torch.tensor(rtd_lambd_opts,dtype=dtype,device=device)
                     flags[rtd_pass_indices] = torch.tensor(rtd_flags, dtype=flags.dtype, device=device)
-            zp.reset()
             return lambd, FO_links, flags, infos
 
         @staticmethod

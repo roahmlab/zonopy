@@ -66,7 +66,7 @@ def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cp
             + s_qpos*torch.tensor([[0,-1]+[0]*4,[1]+[0]*5]+[[0]*6]*4,dtype=dtype,device=device)
             + torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]],dtype=dtype,device=device))
         JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
 
         '''
         delta_k = PZ_JRS.G[:,0,0,ka_dim]
@@ -102,7 +102,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu')
         Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=dtype,device=device)
         A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
         JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i])
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim,prop='k_trig')
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
         '''
         delta_k = PZ_JRS.G[0,0,ka_dim]
         c_breaking = - qd_0[i]/T_fail_safe
@@ -172,7 +172,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
             A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
             JRS_zono_i = zonotope(torch.tensor(jrs_mats_load[t,0],dtype=dtype,device=device).squeeze(0))
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qd_0[i])
-            PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim,prop='k_trig'))
+            PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim))
             '''
             # fail safe
             if t == 0:
@@ -223,13 +223,13 @@ def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None,dtype=tor
             acc_G = acc_G[:,torch.any(acc_G,axis=0)]
 
             # actual traj.
-            q[t].append(polyZonotope(C,G[:,0],torch.hstack((G[:,1:],G_pos_err))))
-            qd[t].append(polyZonotope(vel_C,torch.hstack((vel_G,G_vel_err))))
+            q[t].append(polyZonotope(C,G[:,0],torch.hstack((G[:,1:],G_pos_err))).compress(2))
+            qd[t].append(polyZonotope(vel_C,torch.hstack((vel_G,G_vel_err))).compress(2))
             
             # modified trajectories
-            qd_a[t].append(polyZonotope(vel_C, torch.hstack((vel_G,gain*e))))
-            qdd_a[t].append(polyZonotope(acc_C, torch.hstack((acc_G,gain*d))))
-            r[t].append(polyZonotope(torch.zeros(1,dtype=torch.float),torch.hstack((d,gain*e))))
+            qd_a[t].append(polyZonotope(vel_C, torch.hstack((vel_G,gain*e))).compress(2))
+            qdd_a[t].append(polyZonotope(acc_C, torch.hstack((acc_G,gain*d))).compress(2))
+            r[t].append(polyZonotope(torch.zeros(1,dtype=torch.float),torch.hstack((d,gain*e))).compress(2))
             
             R_t[t].append(R[t][i].T)
     # return q_des, qd_des, qdd_des, q, qd, qd_a, qdd_a, r, c_k, delta_k, id, id_names

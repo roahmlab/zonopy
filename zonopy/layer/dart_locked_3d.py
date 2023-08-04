@@ -163,7 +163,6 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
             #T0 = time.time()
             t_slc, t_Ab, t_safety, t_cpu = 0, 0, 0, 0 
 
-            zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
 
             ctx.lambd_shape = lambd.shape
@@ -296,7 +295,6 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                 #t_cpu += (t7-t6)
             else:
                 receive_aux = True
-                zp.reset(n_links)
                 FO_links_cpu, A_cpu, b_cpu, obs_in_reach_idx  = aux_inputs
 
                 As = np.zeros((n_batches+1,n_links),dtype=object)
@@ -425,7 +423,6 @@ def gen_DART_Locked_3D_Layer(link_zonos, joint_axes, n_links, n_obs, pos_lim, ve
                 ctx.infos[0]['C'] = C_cpu
                 ctx.infos[0]['b'] = b_cpu
                 ctx.infos[0]['obs_in_reach_idx'] = obs_in_reach_idx
-            zp.reset()
 
 
 

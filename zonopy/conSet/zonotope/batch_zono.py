@@ -412,7 +412,7 @@ class batchZonotope:
         else:
             assert False, 'Invalid reduction option'
 
-    def to_polyZonotope(self,dim=None,prop='None'):
+    def to_polyZonotope(self,dim=None,id=None):
         '''
         convert zonotope to polynomial zonotope
         self: <zonotope>
@@ -425,7 +425,7 @@ class batchZonotope:
         idx = self.generators[self.batch_idx_all+(slice(None),dim)] == 0
         assert ((~idx).sum(-1)==1).all(), 'sliceable generator should be one for the dimension.'
         Z = torch.cat((self.center.unsqueeze(-2),self.generators[~idx].reshape(self.batch_shape+(-1,self.dimension)),self.generators[idx].reshape(self.batch_shape+(-1,self.dimension))),-2)
-        return batchPolyZonotope(Z,1,prop=prop)
+        return batchPolyZonotope(Z,1,id=id)
 
     def to_interval(self):
         c = self.center

@@ -21,7 +21,6 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
     class RTS_2D_Layer(torch.autograd.Function):
         @staticmethod
         def forward(ctx, lambd, observation):
-            zp.reset()
             # observation = [ qpos | qvel | qgoal | obs_pos1,...,obs_posO | obs_size1,...,obs_sizeO ]
             ctx.lambd_shape, ctx.obs_shape = lambd.shape, observation.shape
             lambd = lambd.clone().reshape(-1, n_links).to(dtype=dtype,device=device)
@@ -85,8 +84,7 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                     FO_link_budgets = zp.batchPolyZonotope(FO_link_temp.Z[rtd_pass_indices].unsqueeze(0).repeat(budget,1,1,1,1), # Z: budget, n_problems, n_timesteps, * ,dimension
                                                         FO_link_temp.n_dep_gens,
                                                         FO_link_temp.expMat,
-                                                        FO_link_temp.id,
-                                                        compress=0)
+                                                        FO_link_temp.id)
                     c_k = FO_link_budgets.center_slice_all_dep(lambda_candidates_to_slc).unsqueeze(-1) 
                     for o in range(n_obs): 
                         h_obs = ((As[j,o][:,rtd_pass_indices] @ c_k).squeeze(-1) - bs[j,o][:,rtd_pass_indices]).nan_to_num(-torch.inf) 
@@ -103,7 +101,6 @@ def gen_RTS_2D_Layer(link_zonos, joint_axes, n_links, n_obs, params, dtype = tor
                 lambd[rtd_success_indices] = lambda_best
                 flags[rtd_pass_indices] = (~rtd_success).to(dtype=flags.dtype)
 
-            zp.reset()
             return lambd, FO_links, flags
 
         @staticmethod
@@ -118,7 +115,6 @@ if __name__ == '__main__':
     from zonopy.environments.arm_2d import Arm_2D
     from zonopy.environments.parallel_arm_2d import Parallel_Arm_2D
     import time
-    from zonopy.conSet import PROPERTY_ID
     ##### 0. SET DEVICE #####
     if torch.cuda.is_available():
         device = 'cuda:0'

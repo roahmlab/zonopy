@@ -184,7 +184,6 @@ class ARMTD_2D_planner():
         return torch.tensor(self.g_ka*k_opt,dtype=self.dtype,device=self.device), self.info['status']
         
     def plan(self,env,ka_0):
-        zp.reset()
         self.prepare_constraints2(env.qpos,env.qvel,env.obs_zonos)
         t1 = time.time()
         k_opt, flag = self.trajopt(env.qgoal,ka_0)

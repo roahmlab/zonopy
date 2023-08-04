@@ -40,7 +40,7 @@ def gen_batch_rotatotope_from_jrs_trig(bPZ,rot_axis):
     cosq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(cos_dim,cos_dim+1))].unsqueeze(-1)
     sinq = bPZ.Z[bPZ.batch_idx_all+(slice(1,None),slice(sin_dim,sin_dim+1))].unsqueeze(-1)
     G = sinq*w_hat - cosq*(w_hat@w_hat)
-    return batchMatPolyZonotope(torch.cat((C.unsqueeze(-3),G),-3),bPZ.n_dep_gens,bPZ.expMat,bPZ.id,compress=0)
+    return batchMatPolyZonotope(torch.cat((C.unsqueeze(-3),G),-3),bPZ.n_dep_gens,bPZ.expMat,bPZ.id)
 
 def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     '''
@@ -60,7 +60,7 @@ def gen_rotatotope_from_jrs_trig(polyZono,rot_axis):
     cosq = polyZono.Z[1:,cos_dim:cos_dim+1].unsqueeze(-1)
     sinq = polyZono.Z[1:,sin_dim:sin_dim+1].unsqueeze(-1)
     G = sinq*w_hat - cosq*(w_hat@w_hat)
-    return matPolyZonotope(torch.vstack((C,G)),polyZono.n_dep_gens,polyZono.expMat,polyZono.id,compress=0)
+    return matPolyZonotope(torch.vstack((C,G)),polyZono.n_dep_gens,polyZono.expMat,polyZono.id)
 
 
 SIGN_COS = (-1, -1, 1, 1)
@@ -115,11 +115,11 @@ def _cos_sin(pz: Union[PZType, BPZType], order: int = 6) -> Union[PZType, BPZTyp
     Grest = torch.sum(out_sin.Grest, dim=-2) + remainder_sin.rad()
     Zsin = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
     if isinstance(pz, polyZonotope):
-        out_cos = polyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, compress=0, copy_Z=False)
-        out_sin = polyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, compress=0, copy_Z=False)
+        out_cos = polyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, copy_Z=False)
+        out_sin = polyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, copy_Z=False)
     else:
-        out_cos = batchPolyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, compress=0, copy_Z=False)
-        out_sin = batchPolyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, compress=0, copy_Z=False)
+        out_cos = batchPolyZonotope(Zcos, out_cos.n_dep_gens, out_cos.expMat, out_cos.id, copy_Z=False)
+        out_sin = batchPolyZonotope(Zsin, out_sin.n_dep_gens, out_sin.expMat, out_sin.id, copy_Z=False)
 
     return out_cos.exactCartProd(out_sin)
 
@@ -164,9 +164,9 @@ def get_pz_rotations_from_q(
     
     Z = torch.concat((C, tmp_G, tmp_Grest), dim=-3)
     if len(Z.shape) == 3:
-        out = matPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=0,copy_Z=False)
+        out = matPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, copy_Z=False).compress(2)
     else:
-        out = batchMatPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, compress=2)
+        out = batchMatPolyZonotope(Z, cos_sin_q.n_dep_gens, cos_sin_q.expMat, cos_sin_q.id, copy_Z=False).compress(2)
     return out
 
 

@@ -7,8 +7,6 @@ import mpl_toolkits.mplot3d as a3
 import os
 import numpy as np
 
-from zonopy.conSet import PROPERTY_ID
-
 def wrap_to_pi(phases):
     return (phases + torch.pi) % (2 * torch.pi) - torch.pi
 
@@ -604,9 +602,7 @@ class Parallel_Arm_3D:
             if FO_render_idx.numel() != 0:
                 FO_link_slc = []
                 for j in range(self.n_links):
-                    PROPERTY_ID.update(self.n_links)
                     FO_link_slc.append(FO_link[j][FO_render_idx].to(dtype=self.dtype,device=self.device).slice_all_dep((self.ka[FO_render_idx]/g_ka).unsqueeze(1).repeat(1,100,1)).reduce(4))
-                    zp.reset()
 
                 for idx, b in enumerate(FO_render_idx.tolist()):
                     self.FO_patches[b].remove()
