@@ -1,3 +1,5 @@
+# TODO VALIDATE
+
 import torch
 def dict_torch2np(dic):
     for key in dic.keys():

@@ -1,3 +1,5 @@
+# TODO VALIDATE
+
 import torch
 from zonopy import batchZonotope
 from zonopy.joint_reachable_set.jrs_trig.load_jrs_trig import JRS_KEY
@@ -29,7 +31,7 @@ def process_batch_JRS_trig(jrs_tensor, q_0,qd_0,joint_axes):
         Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=dtype,device=device)
         A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
         JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i:i+1])
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim, id=i)
         '''
         delta_k = PZ_JRS.G[0,0,ka_dim]
         c_breaking = - qd_0[i]/T_fail_safe
@@ -43,6 +45,8 @@ def process_batch_JRS_trig(jrs_tensor, q_0,qd_0,joint_axes):
         R_batch.append(R_temp)
     return PZ_JRS_batch, R_batch
 
+# batched over time and initial condition
+# TODO: Validate multiple batch dimension operations
 def process_batch_JRS_trig_ic(jrs_tensor,q_0,qd_0,joint_axes):
     dtype, device = jrs_tensor.dtype, jrs_tensor.device 
     q_0 = q_0.to(dtype=dtype,device=device)
@@ -61,7 +65,7 @@ def process_batch_JRS_trig_ic(jrs_tensor,q_0,qd_0,joint_axes):
             + torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]],dtype=dtype,device=device))
         
         JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim, id=i)
         R_temp= gen_batch_rotatotope_from_jrs_trig(PZ_JRS,joint_axes[i])
         PZ_JRS_batch.append(PZ_JRS)
         R_batch.append(R_temp)
@@ -80,14 +84,15 @@ if __name__ == '__main__':
     qpos = 2*torch.pi*torch.rand(n_test,2)-torch.pi
     qvel = 2*torch.pi*torch.rand(n_test,2)-torch.pi
 
+    axis = [torch.tensor([0.0,0.0,1.0])]*2
     t00 = time.time()
-    JRS0,_  = process_batch_JRS_trig_ic(jrs_tensor, qpos,qvel)
+    JRS0,_  = process_batch_JRS_trig_ic(jrs_tensor, qpos,qvel, axis)
     print(f'Elasped time for batch process:{time.time()-t00}')
     for i in range(n_test):
         t1 = time.time()
         JRS1,_ = zp.load_batch_JRS_trig(qpos[i],qvel[i])
         t2 = time.time()
-        JRS2,_ = process_batch_JRS_trig(jrs_tensor, qpos[i],qvel[i])
+        JRS2,_ = process_batch_JRS_trig(jrs_tensor, qpos[i],qvel[i], axis)
         t3 = time.time()
         t_load += t2-t1
         t_process += t3-t2

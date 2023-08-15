@@ -1,4 +1,6 @@
 import torch
+
+# TODO: CHECK
 def compare_permuted_gen(G1, G2,eps = 1e-6):
     assert G1.shape == G2.shape
 
@@ -21,6 +23,7 @@ def compare_permuted_gen(G1, G2,eps = 1e-6):
     return True
 
 
+# TODO: CHECK
 def compare_permuted_dep_gen(expMat1, expMat2, G1, G2,eps = 1e-6):
     assert G1.shape == G2.shape and expMat1.shape == expMat2.shape
     n_gens = G1.shape[0]

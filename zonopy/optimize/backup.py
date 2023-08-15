@@ -1,3 +1,5 @@
+# TODO VALIDATE
+
 import torch
 import numpy as np
 import zonopy as zp

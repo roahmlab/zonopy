@@ -3,6 +3,8 @@ import struct
 from zonopy.robots.urdf_parser_py.urdf import URDF
 import os
 
+# TODO DEPRECATE
+
 ROBOT_ARM_PATH = {'Fetch': 'fetch_arm/fetch_arm_reduced.urdf',
                   'Kinova3': 'kinova_arm/gen3.urdf',
                   'Kuka': 'kuka_arm/kuka_iiwa_arm.urdf',

@@ -4,6 +4,8 @@ Author: Yongseok Kwon
 Reference: MATLAB robotics toolbox
 """
 
+# TODO DEPRECATE
+
 from zonopy.robots.utils import Euler_to_Rot,Rp_to_Trans
 from torch import tensor, pi
 from torch import float as torch_float

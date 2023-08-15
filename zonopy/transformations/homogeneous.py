@@ -7,6 +7,7 @@ vel_dim = 2
 acc_dim = 3
 k_dim = 3
 
+# TODO: VALIDATE
 def gen_batch_H_from_jrs_trig(bPZ,rot_axis):
     rot_axis = rot_axis.to(dtype=torch.float32)
     # normalize

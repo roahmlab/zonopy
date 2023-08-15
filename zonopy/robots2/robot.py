@@ -5,6 +5,8 @@ from typing import Union
 import torch
 import zonopy as zp
 
+# NOTE: WIP
+
 # Function to create a 3D basis for any defining normal vector (to an arbitrary hyperplane)
 # Returns the basis as column vectors
 def normal_vec_to_basis(norm_vec):

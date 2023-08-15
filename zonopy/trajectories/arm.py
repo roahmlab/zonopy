@@ -4,7 +4,7 @@ import numpy as np
 import math
 import zonopy as zp
 
-# Rewrite it in a more basic way to start split
+# TODO: DOCUMENT, TYPE & SPLIT
 class BaseArmTrajectory:
     def __init__(self,
                  q0:     Union[torch.Tensor, np.ndarray],
@@ -102,7 +102,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
 
         # Second half of the trajectory
         if len(mask_stopping) > 0:
-            t = times[mask_stopping]
+            t = times[mask_stopping] - self.tbrake
             for i in range(self.num_q):
                 q_stopping[i] = self._qpeak[i] \
                     + t * self._qdpeak[i] \
@@ -159,7 +159,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
         
         # Second half of the trajectory
         if np.any(mask_stopping):
-            t = times[mask_stopping]
+            t = times[mask_stopping] - self.tbrake
             q_out[mask_stopping,:] = self._qpeak \
                 + np.outer(t, self._qdpeak) \
                 + 0.5 * np.outer(t*t, self._stopping_qdd)
@@ -190,7 +190,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
         
         # Second half of the trajectory
         if torch.any(mask_stopping):
-            t = times[mask_stopping]
+            t = times[mask_stopping] - self.tbrake
             q_out[mask_stopping,:] = self._qpeak \
                 + torch.outer(t, self._qdpeak) \
                 + 0.5 * torch.outer(t*t, self._stopping_qdd)

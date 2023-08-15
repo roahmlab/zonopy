@@ -13,6 +13,7 @@ from zonopy.utils.utils import compare_permuted_gen, compare_permuted_dep_gen
 SIGN_COS = (-1, -1, 1, 1)
 SIGN_SIN = (1, -1, -1, 1)
 
+# TODO: CHECK
 def close(zono1,zono2,eps = 1e-6,match_id=False):
     assert isinstance(zono1, type(zono2)) 
     if isinstance(zono1, zonotope):
@@ -56,6 +57,7 @@ def close(zono1,zono2,eps = 1e-6,match_id=False):
     else:
         print('Other types are not implemented yet.')
     
+# TODO: FIXME
 def cross(zono1,zono2):
     '''
     
@@ -102,6 +104,7 @@ def cross(zono1,zono2):
         return zono1_skew_sym@zono2    
     
 
+# TODO: FIXME
 def dot(zono1,zono2):
     if isinstance(zono1,torch.Tensor):
         if isinstance(zono2,polyZonotope):
@@ -114,6 +117,7 @@ def dot(zono1,zono2):
             return polyZonotope(c,G,Grest,zono2.expMat,zono2.id,zono2.dtype,zono2.itype,zono2.device).compress(2)
 
 
+# TODO: DOCUMENT
 @torch.jit.script
 def _int_cos_script(inf, sup):
     # Expand out the interval cos function then jit it.
@@ -136,8 +140,6 @@ def _int_cos_script(inf, sup):
     rot_180 = lower > torch.pi
     nom = torch.logical_and(not_full_period, ~rot_180)
     nom_180 = torch.logical_and(not_full_period, rot_180)
-    shifted_lower = lower - torch.pi
-    shifted_upper = upper - torch.pi
 
     # Region 1, upper < 180
     reg1 = upper < torch.pi
@@ -146,35 +148,41 @@ def _int_cos_script(inf, sup):
     out_low[1] = reg1_nom_num * torch.cos(upper)
     out_high[1] = reg1_nom_num * torch.cos(lower)
 
-    # Flip the 180 (flip upper&lower and negate)
-    reg1_180 = torch.logical_and(reg1, nom_180)
-    reg1_180_num = -reg1_180.long()
-    out_low[2] = reg1_180_num * torch.cos(shifted_lower)
-    out_high[2] = reg1_180_num * torch.cos(shifted_upper)
-
     # Region 2, 180 <= upper < 360
     reg2 = torch.logical_and(upper < pi_twice, ~reg1)
     reg2_nom = torch.logical_and(reg2, nom)
     reg2_nom_num = reg2_nom.long()
     out_low[3] = -reg2_nom_num
     out_high[3] = reg2_nom_num * torch.cos(torch.minimum(pi_twice-upper, lower))
-    
+
     # Flip the 180 (flip upper&lower and negate)
+    # 180 - 360 (shifted by 180)
     reg2_180 = torch.logical_and(reg2, nom_180)
     reg2_180_num = reg2_180.long()
-    out_low[4] = -reg2_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
-    out_high[4] = reg2_180_num
+    out_low[2] = reg2_180_num * torch.cos(lower)
+    out_high[2] = reg2_180_num * torch.cos(upper)
+
+    # Flip the 180 (flip upper&lower and negate)
+    # we know that nom_180 requires a shift of pi, so reg3_180
+    # is 360 - 540 (shifted by 180)
+    reg3 = torch.logical_and(upper < pi_twice + torch.pi, ~reg2)
+    reg3_180 = torch.logical_and(reg3, nom_180)
+    reg3_180_num = reg3_180.long()
+    out_low[4] = reg3_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+    out_high[4] = reg3_180_num
     
-    # Region 3, 360 < upper
-    reg3 = ~torch.logical_or(reg1, reg2)
-    reg3_num = reg3.long()
-    out_low[5] = -reg3_num
-    out_high[5] = reg3_num
+    # Region 4, 360 < upper, lower < 180
+    reg4 = torch.logical_or(reg1, reg2)
+    reg4 = ~torch.logical_or(reg4, reg3_180)
+    reg4_num = reg4.long()
+    out_low[5] = -reg4_num
+    out_high[5] = reg4_num
     
     # Reduce and return
     return out_low.sum(0), out_high.sum(0)
 
 
+# TODO: DOCUMENT
 def sin(Set,order=6):
     if isinstance(Set,interval):
         half_pi = torch.pi / 2
@@ -200,9 +208,9 @@ def sin(Set,order=6):
             factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
             if i % 2 == 0:
-                out = out + (SIGN_SIN(i%4) * cs_cf / factor) * T_factor
+                out = out + (SIGN_SIN[i%4] * cs_cf / factor) * T_factor
             else:
-                out = out + (SIGN_SIN(i%4) * sn_cf / factor) * T_factor
+                out = out + (SIGN_SIN[i%4] * sn_cf / factor) * T_factor
 
         # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()
@@ -246,6 +254,7 @@ def sin(Set,order=6):
         #     T_factor = T_factor * pz_neighbor
         #     out += factors[i] * T_factor
 
+# TODO: DOCUMENT
 def cos(Set,order = 6):
     if isinstance(Set,interval):
         res_inf, res_sup = _int_cos_script(Set.inf, Set.sup)
@@ -270,9 +279,9 @@ def cos(Set,order = 6):
             factor = factor * (i + 1)
             T_factor = T_factor * pz_neighbor
             if i % 2:
-                out = out + (SIGN_COS(i%4) * cs_cf / factor) * T_factor
+                out = out + (SIGN_COS[i%4] * cs_cf / factor) * T_factor
             else:
-                out = out + (SIGN_COS(i%4) * sn_cf / factor) * T_factor
+                out = out + (SIGN_COS[i%4] * sn_cf / factor) * T_factor
 
         # add lagrange remainder interval to Grest
         rem = pz_neighbor.to_interval()

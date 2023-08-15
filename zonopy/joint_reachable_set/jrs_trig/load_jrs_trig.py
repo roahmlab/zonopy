@@ -33,6 +33,7 @@ acc_dim = 3
 kv_dim = 4
 time_dim = 5
 
+# TODO VALIDATE
 def preload_batch_JRS_trig(dtype=torch.float,device='cpu'):
     jrs_tensor = []
     for c_kv in JRS_KEY['c_kvi'][0]:
@@ -42,6 +43,7 @@ def preload_batch_JRS_trig(dtype=torch.float,device='cpu'):
     return torch.tensor(jrs_tensor,dtype=dtype,device=device)
 
 
+# TODO VALIDATE
 def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
     q_0 = q_0.to(dtype=dtype,device=device)
     qd_0 = qd_0.to(dtype=dtype,device=device)
@@ -66,7 +68,7 @@ def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cp
             + s_qpos*torch.tensor([[0,-1]+[0]*4,[1]+[0]*5]+[[0]*6]*4,dtype=dtype,device=device)
             + torch.tensor([[0.0]*6]*2+[[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]],dtype=dtype,device=device))
         JRS_batch_zono = A.unsqueeze(1)@JRS_batch_zono.slice(kv_dim,qd_0[:,i:i+1].unsqueeze(1).repeat(1,100,1))
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim, id=i)
 
         '''
         delta_k = PZ_JRS.G[:,0,0,ka_dim]
@@ -82,6 +84,7 @@ def load_batch_JRS_trig_ic(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cp
     return PZ_JRS_batch, R_batch
 
 
+# TODO CLEAN
 def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
     q_0 = q_0.to(dtype=dtype,device=device)
     qd_0 = qd_0.to(dtype=dtype,device=device)
@@ -102,7 +105,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu')
         Rot_qpos = torch.tensor([[c_qpos,-s_qpos],[s_qpos,c_qpos]],dtype=dtype,device=device)
         A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
         JRS_batch_zono = A@JRS_batch_zono.slice(kv_dim,qd_0[i])
-        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim)
+        PZ_JRS = JRS_batch_zono.deleteZerosGenerators(sorted=True).to_polyZonotope(ka_dim, id=i)
         '''
         delta_k = PZ_JRS.G[0,0,ka_dim]
         c_breaking = - qd_0[i]/T_fail_safe
@@ -117,6 +120,7 @@ def load_batch_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu')
     return PZ_JRS_batch, R_batch
 
 
+# TODO CLEAN
 def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
     '''
     load joint reachable set precomputed by MATLAB CORA (look gen_jrs).
@@ -172,7 +176,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
             A = torch.block_diag(Rot_qpos,torch.eye(4,dtype=dtype,device=device))
             JRS_zono_i = zonotope(torch.tensor(jrs_mats_load[t,0],dtype=dtype,device=device).squeeze(0))
             JRS_zono_i = A @ JRS_zono_i.slice(kv_dim,qd_0[i])
-            PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim))
+            PZ_JRS[t].append(JRS_zono_i.deleteZerosGenerators().to_polyZonotope(ka_dim, id=i))
             '''
             # fail safe
             if t == 0:
@@ -187,6 +191,7 @@ def load_JRS_trig(q_0,qd_0,joint_axes=None,dtype=torch.float,device='cpu'):
             R[t].append(R_temp)
     return PZ_JRS, R
 
+# TODO VALIDATE
 def load_traj_JRS_trig(q_0, qd_0, uniform_bound, Kr, joint_axes = None,dtype=torch.float,device='cpu'):
     q_0 = q_0.to(dtype=dtype,device=device)
     qd_0 = qd_0.to(dtype=dtype,device=device)

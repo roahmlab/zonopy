@@ -1,3 +1,5 @@
+# TODO VALIDATE
+
 import torch 
 import zonopy as zp
 import matplotlib.pyplot as plt 

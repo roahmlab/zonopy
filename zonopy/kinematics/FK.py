@@ -1,3 +1,5 @@
+# TODO CLEANUP IMPORTS & DOCUMENT
+
 from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from urchin import URDF

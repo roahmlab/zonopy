@@ -1,6 +1,8 @@
+# TODO IMPLEMENT PRISMATIC, DOCUMENT, & CLEAN IMPORTS
+
 import torch
 from zonopy.transformations.rotation import get_pz_rotations_from_q
-from zonopy.joint_reachable_set.utils import remove_dependence_and_compress
+from zonopy.conSet.polynomial_zonotope.utils import remove_dependence_and_compress
 import zonopy as zp
 
 from zonopy.trajectories import BernsteinArmTrajectory

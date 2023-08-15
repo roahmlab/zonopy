@@ -1,9 +1,13 @@
 import zonopy as zp
 import torch
 
+# TODO: EVALUATE REQUIREMENT
+
+
 P_zero = torch.zeros(3,dtype=torch.float32)
 R_identity = torch.eye(3,dtype=torch.float32)
 
+# TODO: CHECK
 def obstacle_collison_free_check(qpos,robot_params,obs_zono,R0=None,P0=None):
     n_joints = robot_params['n_joints']
     P = robot_params['P']
@@ -29,6 +33,7 @@ def obstacle_collison_free_check(qpos,robot_params,obs_zono,R0=None,P0=None):
             return False    
     return True
 
+# TODO: CHECK
 def config_safety_check(qpos,robot_params,obs_zonos, R0=None, P0=None):
     '''
     True: safe, False: unsafe
@@ -60,6 +65,7 @@ def config_safety_check(qpos,robot_params,obs_zonos, R0=None, P0=None):
     return True
 
 
+# TODO: CHECK
 def traj_safety_check(qpos,qvel,ka,robot_params,obs_zonos,R0=None, P0=None):
     '''
     True: safe, False: unsafe

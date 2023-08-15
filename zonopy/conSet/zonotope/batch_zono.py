@@ -148,7 +148,7 @@ class batchZonotope:
             return batchZonotope(Z)
         
         elif isinstance(other, (zonotope, batchZonotope)): 
-            Z = _add_genzono_impl(self, other)
+            Z = _add_genzono_impl(self, other, batch_shape=self.batch_shape)
             return batchZonotope(Z)
         
         else:
@@ -196,7 +196,7 @@ class batchZonotope:
         self: <batchZonotope>
         return <batchZonotope>
         '''   
-        Z = torch.copy(self.Z)
+        Z = torch.clone(self.Z)
         Z[...,0,:] *= -1
         return batchZonotope(Z)    
     

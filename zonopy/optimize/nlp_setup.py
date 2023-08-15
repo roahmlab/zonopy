@@ -1,3 +1,5 @@
+# TODO VALIDATE
+
 import numpy as np 
 import torch 
 

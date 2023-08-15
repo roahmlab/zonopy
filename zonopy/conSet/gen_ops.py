@@ -1,3 +1,5 @@
+# TODO DOCUMENT
+
 from __future__ import annotations
 from .polynomial_zonotope.utils import mergeExpMatrix
 import torch
@@ -185,6 +187,7 @@ def __matmul_Z_tensormerge(Z1: torch.Tensor, Z2: torch.Tensor, z1_ndep: int, z2_
     Z = torch.cat((z1,z2,z3,z4),dim=-3)
     return Z
 
+# NOTE: DUE TO THE OVERAPPROXIMATED NATURE, BOTH INPUTS MUST BE COMPRESSED ALREADY
 def _matmul_genmpz_impl(
         mpz1: Union[MPZType, BMPZType],
         mpz2: Union[MPZType, BMPZType]

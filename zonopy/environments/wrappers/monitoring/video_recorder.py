@@ -1,3 +1,5 @@
+# TODO VALIDATE
+
 import os
 import subprocess
 class VideoRecorder:

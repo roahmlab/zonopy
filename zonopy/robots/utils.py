@@ -5,6 +5,7 @@ Reference:
 """
 from torch import tensor, cos, sin
 
+# TODO EVAL
 def Euler_to_Rot(rpy):
     '''
     roll-pitch-yaw
@@ -22,10 +23,13 @@ def Euler_to_Rot(rpy):
     Rot[2][1] = S[0]*C[1]
     Rot[2][2] = C[0]*C[1]
     return Rot
+
+# TODO EVAL
 def Rp_to_Trans(R,p):
     return [R[i]+[p[i]] if i<3 else [0,0,0,1] for i in range(4)]
 
 
+# TODO EVAL
 def parellel_axis(Ii, mass, R, p):
     skew = tensor([[0.0,-p[2],p[1]],[p[2],0,-p[0]],[-p[1],p[0],0]])
     Io = R@Ii@R.T + mass*(skew@skew.T)

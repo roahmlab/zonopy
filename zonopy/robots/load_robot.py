@@ -4,6 +4,8 @@ Author: Yongseok Kwon
 Reference: MATLAB robotics toolbox, Jonathan Michaux and Patrick Holmes's implementation
 """
 
+# TODO DEPRECATE
+
 from zonopy.robots.urdf_parser_py.urdf import URDF
 from zonopy.robots.tree import rigidBodyTree
 from zonopy.robots.utils import parellel_axis

@@ -184,7 +184,7 @@ class zonotope:
         self: <zonotope>
         return <zonotope>
         '''   
-        Z = torch.copy(self.Z)
+        Z = torch.clone(self.Z)
         Z[0] *= -1
         return zonotope(Z)    
     
