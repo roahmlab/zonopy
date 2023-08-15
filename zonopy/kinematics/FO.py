@@ -9,6 +9,7 @@ from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
 
 # Use forward kinematics to get the forward occupancy
+# Note: zono_order=2 is 5 times faster than zono_order=20 on cpu
 def forward_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
                                          List[Union[matPolyZonotope, batchMatPolyZonotope]]],
                       robot: URDF,

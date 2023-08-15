@@ -115,14 +115,26 @@ print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
 num = 100
-print("Start Timing Batch FK", num, "Loops")
+print("Start Timing Batch FO new", num, "Loops")
 import timeit
-duration = timeit.timeit(lambda: kin.forward_kinematics(joints, rob.robot), number=num)
+duration = timeit.timeit(lambda: kin.forward_occupancy(joints, rob.robot, zono_order=2), number=num)
+print('Took', duration/num, 'seconds each loop for', num, 'loops')
+
+link_zonos = [link.bounding_pz for link in rob.robot.links][1:]
+robot_params = {
+    'n_joints': len(rob.robot.actuated_joint_names),
+    'P': [joint.origin_tensor[0:3,3] for joint in rob.robot.joints][1:],
+    'R': [joint.origin_tensor[0:3,0:3] for joint in rob.robot.joints][1:]
+}
+num = 100
+print("Start Timing Batch FO old", num, "Loops")
+import timeit
+duration = timeit.timeit(lambda: kin.forward_occupancy_old(joints, link_zonos, robot_params), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
 num = 100
-print("Start Timing Full Batch FO", num, "Loops")
+print("Start Timing Full Batch FO new", num, "Loops")
 import timeit
 duration = timeit.timeit(lambda: kin.forward_occupancy(JrsGenerator(rob, traj_class=traj_class, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), rob.robot), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
