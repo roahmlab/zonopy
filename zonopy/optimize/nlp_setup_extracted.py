@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import time
 
 T_PLAN, T_FULL = 0.5, 1.0
 BUFFER_AMOUNT = 0.03
@@ -13,7 +14,7 @@ class nlp_setup():
         'qgoal', 'M', 'dtype', 'n_timesteps', 'n_links',
         'M_obs', 'lim_flag', 'actual_pos_lim', 'vel_lim',
         'n_obs_in_frs', 'FO_link', 'A', 'b', 'dimension',
-        'n_obs_cons', 'x_prev', 'Cons', 'Jac'
+        'n_obs_cons', 'x_prev', 'Cons', 'Jac', 'constraint_times'
         ]
 
     def __init__(
@@ -61,6 +62,7 @@ class nlp_setup():
         self.x_prev = np.zeros(self.n_links)*np.nan
         self.Cons = None
         self.Jac = None
+        self.constraint_times = []
         pass
 
     def objective(p,x):
@@ -93,6 +95,7 @@ class nlp_setup():
     '''
     def compute_constraints(p,x):
         if (p.x_prev!=x).any():                
+            start = time.perf_counter()
             ka = torch.tensor(x,dtype=p.dtype).unsqueeze(0).repeat(p.n_timesteps,1)
             Cons = torch.zeros(p.M,dtype=p.dtype)
             Jac = torch.zeros(p.M,p.n_links,dtype=p.dtype)
@@ -144,7 +147,8 @@ class nlp_setup():
             p.Cons = Cons.numpy()
             p.Jac = Jac.numpy()
             # p.Hess = Hess.numpy()
-            p.x_prev = np.copy(x)   
+            p.x_prev = np.copy(x)  
+            p.constraint_times.append(time.perf_counter() - start) 
 
     def intermediate(p, alg_mod, iter_count, obj_value, inf_pr, inf_du, mu,
                 d_norm, regularization_size, alpha_du, alpha_pr,

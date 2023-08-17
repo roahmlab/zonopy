@@ -167,18 +167,18 @@ class ARMTD_3D_planner():
         )
 
         #nlp.add_option('hessian_approximation', 'exact')
-        nlp.add_option('sb', 'yes')
+        nlp.add_option('sb', 'yes') # Silent Banner
         nlp.add_option('print_level', 0)
         nlp.add_option('tol', 1e-3)
 
         k_opt, self.info = nlp.solve(ka_0.cpu().numpy())                
-        return torch.tensor(self.g_ka*k_opt,dtype=self.dtype,device=self.device), self.info['status']
+        return torch.tensor(self.g_ka*k_opt,dtype=self.dtype,device=self.device), self.info['status'], problem_obj.constraint_times
         
     def plan(self,env,ka_0):
         preproc_time, FO_gen_time, constraint_time = self.prepare_constraints2(env.qpos,env.qvel,env.obs_zonos)
         t1 = time.perf_counter()
-        k_opt, flag = self.trajopt(env.qgoal,ka_0)
-        return k_opt, flag, time.perf_counter()-t1, constraint_time, FO_gen_time, preproc_time
+        k_opt, flag, constraint_times = self.trajopt(env.qgoal,ka_0)
+        return k_opt, flag, time.perf_counter()-t1, constraint_time, FO_gen_time, preproc_time, constraint_times
 
 
 if __name__ == '__main__':
@@ -194,30 +194,55 @@ if __name__ == '__main__':
         dtype = torch.float
 
     ##### 1. SET ENVIRONMENT #####        
-    env = Arm_3D(n_obs=5)
-    env.set_initial(qpos=torch.tensor([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),qvel=torch.tensor([0,0,0,0,0,0,0.]),qgoal = torch.tensor([ 0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428]), obs_pos=[torch.tensor([0.65,-0.46,0.33]),torch.tensor([0.5,-0.43,0.3]),torch.tensor([0.47,-0.45,0.15]),torch.tensor([-0.3,0.2,0.23]),torch.tensor([0.3,0.2,0.31])])
+    # env = Arm_3D(n_obs=5)
+    # env.set_initial(qpos=torch.tensor([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),qvel=torch.tensor([0,0,0,0,0,0,0.]),qgoal = torch.tensor([ 0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428]), obs_pos=[torch.tensor([0.65,-0.46,0.33]),torch.tensor([0.5,-0.43,0.3]),torch.tensor([0.47,-0.45,0.15]),torch.tensor([-0.3,0.2,0.23]),torch.tensor([0.3,0.2,0.31])])
+    env = Arm_3D(n_obs=10)
+    env.set_initial(
+        qpos=torch.tensor([ 3.1098, -0.9964, -0.2729, -2.3615,  0.2724, -1.6465, -0.5739]),
+        qvel=torch.tensor([0,0,0,0,0,0,0.]),
+        qgoal = torch.tensor([-1.9472,  1.4003, -1.3683, -1.1298,  0.7062, -1.0147, -1.1896]),
+        obs_pos=[
+            torch.tensor([ 0.3925, -0.7788,  0.2958]),
+            torch.tensor([0.3550, 0.3895, 0.3000]),
+            torch.tensor([-0.0475, -0.1682, -0.7190]),
+            torch.tensor([0.3896, 0.5005, 0.7413]),
+            torch.tensor([0.4406, 0.1859, 0.1840]),
+            torch.tensor([ 0.1462, -0.6461,  0.7416]),
+            torch.tensor([-0.4969, -0.5828,  0.1111]),
+            torch.tensor([-0.0275,  0.1137,  0.6985]),
+            torch.tensor([ 0.4139, -0.1155,  0.7733]),
+            torch.tensor([ 0.5243, -0.7838,  0.4781])
+            ])
     ##### 2. RUN ARMTD #####    
     planner = ARMTD_3D_planner(env)
-    t_armtd = 0
-    T_NLP = 0
-    T_CONSTR = 0
-    T_FO = 0
-    T_PREPROC = 0
+    t_armtd = []
+    T_NLP = []
+    T_CONSTR = []
+    T_FO = []
+    T_PREPROC = []
+    T_CONSTR_E = []
+    N_EVALS = []
     n_steps = 100
     for _ in range(n_steps):
         ts = time.time()
-        ka, flag, tnlp, tconstr, tfo, tpreproc = planner.plan(env,torch.zeros(env.n_links))
+        ka, flag, tnlp, tconstr, tfo, tpreproc, tconstraint_evals = planner.plan(env,torch.zeros(env.n_links))
         t_elasped = time.time()-ts
         #print(f'Time elasped for ARMTD-3d:{t_elasped}')
-        T_NLP += tnlp
-        T_CONSTR += tconstr
-        T_FO += tfo
-        T_PREPROC += tpreproc
-        t_armtd += t_elasped
+        T_NLP.append(tnlp)
+        T_CONSTR.append(tconstr)
+        T_FO.append(tfo)
+        T_PREPROC.append(tpreproc)
+        T_CONSTR_E.extend(tconstraint_evals)
+        N_EVALS.append(len(tconstraint_evals))
+        t_armtd.append(t_elasped)
         env.step(ka,flag)
         # env.render()
-    print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {t_armtd}')
-    print(f'Time for NLP per step: {T_NLP/n_steps}')
-    print(f'Time for obs buffering and constraint generation per step: {T_CONSTR/n_steps}')
-    print(f'Time for FO generation per step: {T_FO/n_steps}')
-    print(f'Time for JRS preprocessing per step: {T_PREPROC/n_steps}')
+    from scipy import stats
+    print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {stats.describe(t_armtd)}')
+    print("Per step")
+    print(f'NLP: {stats.describe(T_NLP)}')
+    print(f'constraint evals: {stats.describe(T_CONSTR_E)}')
+    print(f'number of constraint evals: {stats.describe(N_EVALS)}')
+    print(f'obs buffering and constraint generation: {stats.describe(T_CONSTR)}')
+    print(f'FO generation: {stats.describe(T_FO)}')
+    print(f'JRS preprocessing: {stats.describe(T_PREPROC)}')
