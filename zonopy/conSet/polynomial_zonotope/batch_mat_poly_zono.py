@@ -112,6 +112,10 @@ class batchMatPolyZonotope():
             return batchMatPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,copy_Z=False)
         else:
             return zp.matPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,copy_Z=False)
+        
+    def __len__(self):
+        return self.Z.shape[0]
+    
     @property 
     def batch_shape(self):
         return self.Z.shape[:-3]

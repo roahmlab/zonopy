@@ -228,6 +228,9 @@ class batchZonotope:
 
     __rmul__ = __mul__ # '*' operator is commutative.
 
+    def __len__(self):
+        return self.Z.shape[0]
+
     def slice(self,slice_dim,slice_pt):
         '''
         slice zonotope on specified point in a certain dimension

@@ -194,25 +194,25 @@ if __name__ == '__main__':
         dtype = torch.float
 
     ##### 1. SET ENVIRONMENT #####        
-    # env = Arm_3D(n_obs=5)
-    # env.set_initial(qpos=torch.tensor([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),qvel=torch.tensor([0,0,0,0,0,0,0.]),qgoal = torch.tensor([ 0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428]), obs_pos=[torch.tensor([0.65,-0.46,0.33]),torch.tensor([0.5,-0.43,0.3]),torch.tensor([0.47,-0.45,0.15]),torch.tensor([-0.3,0.2,0.23]),torch.tensor([0.3,0.2,0.31])])
-    env = Arm_3D(n_obs=10)
-    env.set_initial(
-        qpos=torch.tensor([ 3.1098, -0.9964, -0.2729, -2.3615,  0.2724, -1.6465, -0.5739]),
-        qvel=torch.tensor([0,0,0,0,0,0,0.]),
-        qgoal = torch.tensor([-1.9472,  1.4003, -1.3683, -1.1298,  0.7062, -1.0147, -1.1896]),
-        obs_pos=[
-            torch.tensor([ 0.3925, -0.7788,  0.2958]),
-            torch.tensor([0.3550, 0.3895, 0.3000]),
-            torch.tensor([-0.0475, -0.1682, -0.7190]),
-            torch.tensor([0.3896, 0.5005, 0.7413]),
-            torch.tensor([0.4406, 0.1859, 0.1840]),
-            torch.tensor([ 0.1462, -0.6461,  0.7416]),
-            torch.tensor([-0.4969, -0.5828,  0.1111]),
-            torch.tensor([-0.0275,  0.1137,  0.6985]),
-            torch.tensor([ 0.4139, -0.1155,  0.7733]),
-            torch.tensor([ 0.5243, -0.7838,  0.4781])
-            ])
+    env = Arm_3D(n_obs=5)
+    env.set_initial(qpos=torch.tensor([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),qvel=torch.tensor([0,0,0,0,0,0,0.]),qgoal = torch.tensor([ 0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428]), obs_pos=[torch.tensor([0.65,-0.46,0.33]),torch.tensor([0.5,-0.43,0.3]),torch.tensor([0.47,-0.45,0.15]),torch.tensor([-0.3,0.2,0.23]),torch.tensor([0.3,0.2,0.31])])
+    # env = Arm_3D(n_obs=10)
+    # env.set_initial(
+    #     qpos=torch.tensor([ 3.1098, -0.9964, -0.2729, -2.3615,  0.2724, -1.6465, -0.5739]),
+    #     qvel=torch.tensor([0,0,0,0,0,0,0.]),
+    #     qgoal = torch.tensor([-1.9472,  1.4003, -1.3683, -1.1298,  0.7062, -1.0147, -1.1896]),
+    #     obs_pos=[
+    #         torch.tensor([ 0.3925, -0.7788,  0.2958]),
+    #         torch.tensor([0.3550, 0.3895, 0.3000]),
+    #         torch.tensor([-0.0475, -0.1682, -0.7190]),
+    #         torch.tensor([0.3896, 0.5005, 0.7413]),
+    #         torch.tensor([0.4406, 0.1859, 0.1840]),
+    #         torch.tensor([ 0.1462, -0.6461,  0.7416]),
+    #         torch.tensor([-0.4969, -0.5828,  0.1111]),
+    #         torch.tensor([-0.0275,  0.1137,  0.6985]),
+    #         torch.tensor([ 0.4139, -0.1155,  0.7733]),
+    #         torch.tensor([ 0.5243, -0.7838,  0.4781])
+    #         ])
     ##### 2. RUN ARMTD #####    
     planner = ARMTD_3D_planner(env)
     t_armtd = []
@@ -236,7 +236,7 @@ if __name__ == '__main__':
         N_EVALS.append(len(tconstraint_evals))
         t_armtd.append(t_elasped)
         env.step(ka,flag)
-        # env.render()
+        env.render()
     from scipy import stats
     print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {stats.describe(t_armtd)}')
     print("Per step")

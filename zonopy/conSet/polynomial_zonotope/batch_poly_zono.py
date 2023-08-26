@@ -260,6 +260,9 @@ class batchPolyZonotope:
         
         else:
             return NotImplemented
+        
+    def __len__(self):
+        return self.Z.shape[0]
 
     def reduce_indep(self,order,option='girard'):
         # extract dimensions

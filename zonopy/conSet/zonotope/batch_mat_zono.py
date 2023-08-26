@@ -135,6 +135,9 @@ class batchMatZonotope():
         
         else:
             assert False, 'Invalid object for reversed matrix multiplication with matrix zonotope.'
+            
+    def __len__(self):
+        return self.Z.shape[0]
 
 
     def deleteZerosGenerators(self,sorted=False,sort=False):
