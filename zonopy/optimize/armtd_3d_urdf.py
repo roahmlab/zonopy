@@ -62,7 +62,7 @@ class ARMTD_3D_planner():
                 vel_lim[i] = joint.limit.velocity
                 eff_lim[i] = joint.limit.effort
             joint_axis.append(joint.axis)
-        self.joint_axis = torch.tensor(joint_axis)
+        self.joint_axis = torch.as_tensor(np.array(joint_axis))
         self.pos_lim = np.array(pos_lim).T
         self.vel_lim = np.array(vel_lim)
         # self.eff_lim = np.array(eff_lim) # Unused for now
@@ -154,7 +154,7 @@ class ARMTD_3D_planner():
         FO_links, _ = forward_occupancy(JRS_R, self.robot, self.zono_order)
         # let's assume we can ignore the base link and convert to a list of pz's
         # end effector link is a thing???? (n actuated_joints = 7, n links = 8)
-        FO_links = list(FO_links.values())[1:]
+        FO_links = list(FO_links.values())[1:-1]
         # two more constants
         n_links = len(FO_links)
         n_frs_timesteps = len(FO_links[0])
@@ -279,7 +279,7 @@ class ARMTD_3D_planner():
         # Create obs zonotopes
         obs_Z = torch.cat((
             torch.as_tensor(obs[0], dtype=self.dtype, device=self.device).unsqueeze(-2),
-            torch.diag_embed(torch.as_tensor(obs[1], dtype=self.dtype, device=self.device))
+            torch.diag_embed(torch.as_tensor(obs[1], dtype=self.dtype, device=self.device))/2.
             ), dim=-2)
         obs_zono = zp.batchZonotope(obs_Z)
 
@@ -323,7 +323,7 @@ if __name__ == '__main__':
         robot=rob.robot,
         step_type='integration',
         check_joint_limits=True,
-        check_self_collision=True,
+        check_self_collision=False,
         use_bb_collision=True,
         render_mesh=True,
         reopen_on_close=False,
@@ -389,7 +389,8 @@ if __name__ == '__main__':
             ka = (0 - qvel)/(T_FULL - T_PLAN)
         obs, rew, done, info = env.step(ka)
         # env.step(ka,flag)
-        env.render()
+        assert(not info['collision_info']['in_collision'])
+        # env.render()
     from scipy import stats
     print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {stats.describe(t_armtd)}')
     print("Per step")

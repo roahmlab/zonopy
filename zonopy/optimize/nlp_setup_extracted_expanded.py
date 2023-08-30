@@ -226,15 +226,26 @@ class armtd_nlp():
         return Cons_out, Jac_out
     
     def _FO_constraint(self, x, Cons_out=None, Jac_out=None):
-        ka = torch.as_tensor(x, dtype=torch.float).expand(self.n_frs_timesteps,-1)
+        # ka = torch.as_tensor(x, dtype=torch.float).expand(self.n_frs_timesteps,-1)
+        x = torch.as_tensor(x, dtype=torch.float)
         if Cons_out is None:
             Cons_out = np.empty(self.M_fo, dtype=self.dtype)
         if Jac_out is None:
             Jac_out = np.empty((self.M_fo, self.n_joints), dtype=self.dtype)
 
         for j in range(self.n_links):
-            c_k = self.FO_link_zono[j].center_slice_all_dep(ka)
-            grad_c_k = self.FO_link_zono[j].grad_center_slice_all_dep(ka)
+            # c_k = self.FO_link_zono[j].center_slice_all_dep(ka)
+            # grad_c_k = self.FO_link_zono[j].grad_center_slice_all_dep(ka)
+            c_k = self.FO_link_zono[j].center_slice_all_dep(x)
+            grad_c_k = self.FO_link_zono[j].grad_center_slice_all_dep(x)
+            # c_k_comp = self.FO_link_zono[j].center_slice_all_dep(x)
+            # grad_c_k_comp = self.FO_link_zono[j].grad_center_slice_all_dep(x)
+            # assert((c_k == c_k_comp).all())
+            # if not (grad_c_k == grad_c_k_comp).all():
+            #     c_k_comp = self.FO_link_zono[j].center_slice_all_dep(x)
+            #     grad_c_k_comp = self.FO_link_zono[j].grad_center_slice_all_dep(x)
+            #     print('ACK')
+            
 
             h_obs = (self.A[j]@c_k.unsqueeze(-1)).squeeze(-1) - self.b[j]
 

@@ -405,29 +405,50 @@ class batchPolyZonotope:
     
 
     def center_slice_all_dep(self,val_slc):
-        n_ids = self.id.shape[0] # n_ids
-        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
-        expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
-        #val_slc**expMat: b1, b2, ..., n_dep_gens, n_ids
-        #torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2): b1, b2, ..., 1, n_dep_gens
-        #(torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2):b1, b2, ...,dim
-        return self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2) 
+        # n_ids = self.id.shape[0] # n_ids
+        # val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
+        # expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
+        # return self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2)
+        # get all values in order
+        val_slc = val_slc[..., None, self.id] # Batch dims, ..., 1, n_ids
+        # Exponentiate by exponent matrix, reduce the product for each term, then multiply by each dep gen
+        # offset = torch.prod(val_slc**self.expMat, dim=-1).unsqueeze(-2)@self.G
+        # Torch einsum accomplishes the above with better accuracy and arbitrary dimensions
+        alpha_coeffs = torch.prod(val_slc**self.expMat, dim=-1)
+        offset = torch.einsum('...g,...gd->...d',
+                              alpha_coeffs,
+                              self.G) # b1, b2,..., dim
+        return self.c + offset.squeeze(-2)
 
     def grad_center_slice_all_dep(self,val_slc):        
-        n_ids = self.id.shape[0] 
-        n_short = val_slc.shape[-1] - n_ids
-        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].reshape(self.batch_shape+(1,1,n_ids)) # b1, b2,..., 1, 1, n_ids
-        expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
-        expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
-        #torch.prod(val_slc**expMat_red,dim=-1), b1, b2,..., n_ids,  n_dep_gens
-        #(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)), b1, b2,..., n_ids,  n_dep_gens
-        #self.G, b1, b2,..., n_dep_gens, dim
-        #(self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-3)), 
-        #res, b1, b2,..., 1, n_ids,  n_dep_gens
-        grad = ((expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
-        grad = torch.cat((grad,torch.zeros(self.batch_shape+self.shape+(n_short,),dtype=self.dtype,device=self.device)),-1)
+        # n_ids = self.id.shape[0] 
+        # n_short = val_slc.shape[-1] - n_ids
+        # val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].reshape(self.batch_shape+(1,1,n_ids)) # b1, b2,..., 1, 1, n_ids
+        # expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
+        # expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
+        # #torch.prod(val_slc**expMat_red,dim=-1), b1, b2,..., n_ids,  n_dep_gens
+        # #(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)), b1, b2,..., n_ids,  n_dep_gens
+        # #self.G, b1, b2,..., n_dep_gens, dim
+        # #(self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-3)), 
+        # #res, b1, b2,..., 1, n_ids,  n_dep_gens
+        # grad = ((expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
+        # grad = torch.cat((grad,torch.zeros(self.batch_shape+self.shape+(n_short,),dtype=self.dtype,device=self.device)),-1)
+        # return grad
+        grad = torch.zeros(self.batch_shape + self.shape + val_slc.shape[-1:])#,dtype=self.dtype,device=self.device)
+        n_ids = len(self.id)
+
+        val_slc = val_slc[..., None, None, self.id] # Batch dims, ..., 1, 1, n_ids
+        expMat_red = self.expMat.expand(n_ids, -1, -1) - torch.eye(n_ids, dtype=self.expMat.dtype).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
+        # grad[..., self.id] = ((self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
+        # Torch einsum accomplishes the above with better accuracy and arbitrary dimensions
+        alpha_coeffs = self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num()
+        grad[..., self.id] = torch.einsum('...ig,...gd->...di',
+                                          alpha_coeffs,
+                                          self.G) # b1, b2,..., dim, n_ids
+        # torch.einsum('...ig,...gd->...di',self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num(),self.G)
         return grad
 
+    # Unverified since update
     def hess_center_slice_all_dep(self,val_slc):
         n_ids= self.id.shape[0]
         n_vals = val_slc.shape[-1]
@@ -453,14 +474,15 @@ class batchPolyZonotope:
 
         ##################################
  
-        n_ids = self.id.shape[0] # n_ids
-        val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
-        expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
-        #val_slc**expMat: b1, b2, ..., n_dep_gens, n_ids
-        #torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2): b1, b2, ..., 1, n_dep_gens
-        #(torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2):b1, b2, ...,dim
-        c = self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2) 
-        return zp.batchZonotope(torch.cat((c.unsqueeze(-2),self.Grest),-2))
+        # n_ids = self.id.shape[0] # n_ids
+        # val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
+        # expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
+        # #val_slc**expMat: b1, b2, ..., n_dep_gens, n_ids
+        # #torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2): b1, b2, ..., 1, n_dep_gens
+        # #(torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2):b1, b2, ...,dim
+        # c = self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2) 
+        # return zp.batchZonotope(torch.cat((c.unsqueeze(-2),self.Grest),-2))
+        return zp.batchZonotope(torch.cat((self.center_slice_all_dep(val_slc).unsqueeze(-2),self.Grest), -2))
 
 
     def deleteZerosGenerators(self,eps=0):

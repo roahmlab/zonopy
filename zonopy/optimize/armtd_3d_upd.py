@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 import zonopy as zp
-from zonopy.kinematics.FO import forward_occupancy_old as forward_occupancy
+from zonopy.kinematics.FO import forward_occupancy as forward_occupancy_new, forward_occupancy_old as forward_occupancy
 import cyipopt
 
 
@@ -99,6 +99,7 @@ class ARMTD_3D_planner():
             #obs_Z.append(Z.unsqueeze(0))
             # import pdb;pdb.set_trace()
             obs_Z.append(obs.Z.unsqueeze(0))
+        comp = zp.batchZonotope(torch.cat(obs_Z,0).to(dtype=self.dtype, device=self.device))
         obs_Z = torch.cat(obs_Z,0).to(dtype=self.dtype, device=self.device).unsqueeze(1).repeat(1,self.n_timesteps,1,1)
 
         obs_in_reach_idx = torch.zeros(self.n_obs,dtype=bool,device=self.device)
@@ -236,7 +237,7 @@ if __name__ == '__main__':
         N_EVALS.append(len(tconstraint_evals))
         t_armtd.append(t_elasped)
         env.step(ka,flag)
-        env.render()
+        # env.render()
     from scipy import stats
     print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {stats.describe(t_armtd)}')
     print("Per step")
