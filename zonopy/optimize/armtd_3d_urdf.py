@@ -9,14 +9,11 @@ import cyipopt
 
 import time
 
-def wrap_to_pi(phases):
-    return (phases + torch.pi) % (2 * torch.pi) - torch.pi
-
 T_PLAN, T_FULL = 0.5, 1.0
-BUFFER_AMOUNT = 0.03
 
 from urchin import URDF
 from typing import List
+from nlp_setup_extracted_expanded import armtd_nlp, OfflineArmtdFoConstraints
 
 class ARMTD_3D_planner():
     def __init__(self,
@@ -25,8 +22,10 @@ class ARMTD_3D_planner():
                  max_combs: int = 200,
                  dtype: torch.dtype = torch.float,
                  device: torch.device = torch.device('cpu'),
+                 include_end_effector: bool = False,
                  ):
         self.dtype, self.device = dtype, device
+        self.np_dtype = torch.empty(0,dtype=dtype).numpy().dtype
 
         self.robot = robot
         self.PI = torch.tensor(torch.pi,dtype=self.dtype,device=self.device)
@@ -35,8 +34,21 @@ class ARMTD_3D_planner():
         self.zono_order = zono_order
         self.max_combs = max_combs
         self.combs = self._generate_combinations_upto(max_combs)
+        self.include_end_effector = include_end_effector
 
         self._setup_robot(robot)
+
+        # Prepare the nlp
+        self.g_ka = np.ones((self.dof),dtype=self.np_dtype) * np.pi/24                  # Hardcoded because it's preloaded...
+        self.nlp_problem_obj = armtd_nlp(self.dof,
+                                         self.g_ka,
+                                         self.pos_lim, 
+                                         self.vel_lim,
+                                         self.continuous_joints,
+                                         self.pos_lim_mask,
+                                         self.dtype,
+                                         T_PLAN,
+                                         T_FULL)
 
         # self.wrap_env(env)
         # self.n_timesteps = 100
@@ -72,68 +84,6 @@ class ARMTD_3D_planner():
 
     def _generate_combinations_upto(self, max_combs):
         return [torch.combinations(torch.arange(i,device=self.device),2) for i in range(max_combs+1)]
-    
-    def _wrap_cont_joints(self, pos: torch.tensor) -> torch.tensor:
-        pos = torch.clone(pos)
-        pos[..., self.continuous_joints] = (pos[..., self.continuous_joints] + torch.pi) % (2 * torch.pi) - torch.pi
-        return pos
-
-    # def wrap_env(self,env):
-    #     assert env.dimension == 3
-    #     self.dimension = 3
-    #     self.n_links = env.n_links
-    #     self.n_obs = env.n_obs
-
-    #     P,R,self.link_zonos = [], [], []
-    #     for p,r,l in zip(env.P0,env.R0,env.link_zonos):
-    #         P.append(p.to(dtype=self.dtype,device=self.device))
-    #         R.append(r.to(dtype=self.dtype,device=self.device))
-    #         self.link_zonos.append(l.to(dtype=self.dtype,device=self.device))
-    #     self.params = {'n_joints':env.n_links, 'P':P, 'R':R}        
-    #     self.joint_axes = env.joint_axes.to(dtype=self.dtype,device=self.device)
-    #     self.vel_lim =  env.vel_lim.cpu()
-    #     self.pos_lim = env.pos_lim.cpu()
-    #     self.actual_pos_lim = env.pos_lim[env.lim_flag].cpu()
-    #     self.n_pos_lim = int(env.lim_flag.sum().cpu())
-    #     self.lim_flag = env.lim_flag.cpu()
-
-    # def wrap_cont_joint_to_pi(self,phases):
-    #     phases_new = torch.clone(phases)
-    #     phases_new[~self.lim_flag] = (phases[~self.lim_flag] + torch.pi) % (2 * torch.pi) - torch.pi
-    #     return phases_new
-
-    # NOTE Assumes the base link can be ignored
-    # THIS IS USELESS FOR ARMTD :(
-    def _prepare_JLS_constraints(self,
-                                 JRS_Q: List[zp.batchPolyZonotope],
-                                 JRS_Qd: List[zp.batchPolyZonotope],
-                                 ):
-        JLS_gen_time = time.perf_counter()
-        n_joints = len(JRS_Q)
-        bounds_constraints = []
-        for idx in range(n_joints):
-            q, qd = JRS_Q[idx], JRS_Qd[idx]
-            q_buff = torch.sum(torch.abs(q.Grest), dim=-2)
-            q_ub = zp.batchPolyZonotope(torch.cat((q.c + q_buff, q.G), dim=-2), q.n_dep_gens, q.expMat, q.id)
-            q_lb = zp.batchPolyZonotope(torch.cat((q.c - q_buff, q.G), dim=-2), q.n_dep_gens, q.expMat, q.id)
-            active_q_ub = q_ub.to_interval().sup >= 0
-            active_q_lb = q_lb.to_interval().sup >= 0
-            qd_buff = torch.sum(torch.abs(qd.Grest), dim=-2)
-            qd_ub = zp.batchPolyZonotope(torch.cat((qd.c + qd_buff, qd.G), dim=-2), qd.n_dep_gens, qd.expMat, qd.id)
-            qd_lb = zp.batchPolyZonotope(torch.cat((qd.c - qd_buff, qd.G), dim=-2), qd.n_dep_gens, qd.expMat, qd.id)
-            active_qd_ub = qd_ub.to_interval().sup >= 0
-            active_qd_lb = qd_lb.to_interval().sup >= 0
-            # Only add if active
-            if active_q_ub.any():
-                bounds_constraints.append(q_ub[active_q_ub])
-            if active_q_lb.any():
-                bounds_constraints.append(q_lb[active_q_lb])
-            if active_qd_ub.any():
-                bounds_constraints.append(qd_ub[active_qd_ub])
-            if active_qd_lb.any():
-                bounds_constraints.append(qd_lb[active_qd_lb])
-        final_time = time.perf_counter()
-        return np.array(bounds_constraints), final_time - JLS_gen_time
         
     def _prepare_FO_constraints(self,
                                 JRS_R: zp.batchMatPolyZonotope,
@@ -142,19 +92,14 @@ class ARMTD_3D_planner():
         # constant
         n_obs = len(obs_zono)
 
-        ### prepare the JRS
-        # process_time = time.perf_counter()
-        # _, JRS_R = zp.process_batch_JRS_trig(self.JRS_tensor,
-        #                                      qpos,
-        #                                      qvel,
-        #                                      self.joint_axis)
-        
         ### get the forward occupancy
         FO_gen_time = time.perf_counter()
         FO_links, _ = forward_occupancy(JRS_R, self.robot, self.zono_order)
         # let's assume we can ignore the base link and convert to a list of pz's
         # end effector link is a thing???? (n actuated_joints = 7, n links = 8)
-        FO_links = list(FO_links.values())[1:-1]
+        FO_links = list(FO_links.values())[1:]
+        if not self.include_end_effector:
+            FO_links = FO_links[:-1]
         # two more constants
         n_links = len(FO_links)
         n_frs_timesteps = len(FO_links[0])
@@ -163,15 +108,10 @@ class ARMTD_3D_planner():
         constraint_gen_time = time.perf_counter()
         out_A = np.empty((n_links),dtype=object)
         out_b = np.empty((n_links),dtype=object)
-        out_g_ka = np.ones((self.dof),dtype=np.float32) * np.pi/24                  # Hardcoded because it's preloaded...
+        out_g_ka = self.g_ka
         out_FO_links = np.empty((n_links),dtype=object)
 
-        # combine all obstacles
-        # Batch dims = {0: n_obs, 1: n_timesteps}
-        # obs_Z = []
-        # for obs in obs_zono:
-        #     obs_Z.append(obs.Z.unsqueeze(0))
-        # obs_Z = torch.cat(obs_Z,0).to(dtype=self.dtype, device=self.device).unsqueeze(1).repeat(1,self.n_timesteps,1,1)
+        # Get the obstacle Z matrix
         obs_Z = obs_zono.Z.unsqueeze(1) # expand dim for timesteps
 
         obs_in_reach_idx = torch.zeros(n_obs,dtype=bool,device=self.device)
@@ -208,53 +148,23 @@ class ARMTD_3D_planner():
             'FO_gen': constraint_gen_time - FO_gen_time,
             'constraint_gen': final_time - constraint_gen_time,
         }
-        return out_FO_links, out_A, out_b, out_g_ka, out_n_obs_in_frs, out_times
+        FO_constraint = OfflineArmtdFoConstraints(dtype=dtype)
+        FO_constraint.set_params(out_FO_links, out_A, out_b, out_g_ka, out_n_obs_in_frs, self.dof)
+        return FO_constraint, out_times
 
-    def trajopt(self, qpos, qvel, qgoal, ka_0, FO_links, A, b, g_ka, n_obs_in_FO):
-        n_links = len(FO_links)
-        n_timesteps = len(FO_links[0])
-        n_obs_cons = n_timesteps * n_obs_in_FO
-
-        M_fo = n_links * n_obs_cons
-        M_limits = 2*self.dof + 6*self.pos_lim_mask.sum()
-        M = int(M_fo + M_limits)
-
+    def trajopt(self, qpos, qvel, qgoal, ka_0, FO_constraint):
         # Moved to another file
-        from zonopy.optimize.nlp_setup_extracted_expanded import armtd_nlp
-        problem_obj = armtd_nlp(
-            qpos,
-            qvel,
-            qgoal,
-            FO_links,
-            A,
-            b,
-            g_ka,
-            np.float32, # FIX
-            n_links,
-            self.dof,
-            n_timesteps,
-            n_obs_in_FO,
-            M,
-            M_fo,
-            M_limits,
-            self.pos_lim,
-            self.vel_lim,
-            self.continuous_joints,
-            self.pos_lim_mask,
-            3,
-            n_obs_cons,
-            T_PLAN,
-            T_FULL,
-        )
+        self.nlp_problem_obj.reset(qpos, qvel, qgoal, FO_constraint)
+        n_constraints = self.nlp_problem_obj.M
 
         nlp = cyipopt.Problem(
         n = self.dof,
-        m = M,
-        problem_obj=problem_obj,
+        m = n_constraints,
+        problem_obj=self.nlp_problem_obj,
         lb = [-1]*self.dof,
         ub = [1]*self.dof,
-        cl = [-1e20]*M,
-        cu = [-1e-6]*M,
+        cl = [-1e20]*n_constraints,
+        cu = [-1e-6]*n_constraints,
         )
 
         #nlp.add_option('hessian_approximation', 'exact')
@@ -265,7 +175,7 @@ class ARMTD_3D_planner():
         if ka_0 is None:
             ka_0 = np.zeros(self.dof, dtype=np.float32)
         k_opt, self.info = nlp.solve(ka_0)                
-        return g_ka * k_opt, self.info['status'], problem_obj.constraint_times
+        return FO_constraint.g_ka * k_opt, self.info['status'], self.nlp_problem_obj.constraint_times
         
     def plan(self,qpos, qvel, qgoal, obs, ka_0 = None):
         # prepare the JRS
@@ -284,12 +194,12 @@ class ARMTD_3D_planner():
         obs_zono = zp.batchZonotope(obs_Z)
 
         # Compute FO
-        FO_links, FO_A, FO_b, g_ka, n_obs_in_FO, FO_times = self._prepare_FO_constraints(JRS_R, obs_zono)
+        FO_constraint, FO_times = self._prepare_FO_constraints(JRS_R, obs_zono)
 
         # preproc_time, FO_gen_time, constraint_time = self.prepare_constraints2(env.qpos,env.qvel,env.obs_zonos)
 
         trajopt_time = time.perf_counter()
-        k_opt, flag, constraint_times = self.trajopt(qpos, qvel, qgoal, ka_0, FO_links, FO_A, FO_b, g_ka, n_obs_in_FO)
+        k_opt, flag, constraint_times = self.trajopt(qpos, qvel, qgoal, ka_0, FO_constraint)
         trajopt_time = time.perf_counter() - trajopt_time
         return k_opt, flag, trajopt_time, FO_times['constraint_gen'], FO_times['FO_gen'], JRS_process_time, constraint_times
 

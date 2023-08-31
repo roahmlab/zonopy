@@ -349,6 +349,7 @@ class KinematicUrdfBase:
                     self._create_pyrender_scene(render_mesh, render_size, render_fps, renderer_kwargs)
                 elif not self.scene_viewer.is_active:
                     return
+                self.scene_viewer.render_lock.release()
                 self.scene_viewer.render_lock.acquire()
                 for mesh, node in self.scene_map.items():
                     pose = fk[mesh][i]
@@ -358,6 +359,7 @@ class KinematicUrdfBase:
                     proc_time = time.time() - proc_time_start
                     pause_time = max(0, 1.0/render_fps - proc_time)
                     time.sleep(pause_time)
+                self.scene_viewer.render_lock.acquire()
         elif renderer == RENDERER.PYRENDER_OFFSCREEN:
             if self.scene is None:
                 self._create_pyrender_scene(render_mesh, render_size, render_fps, renderer_kwargs)
@@ -480,6 +482,7 @@ class KinematicUrdfBase:
             self.scene_viewer = pyrender.Viewer(
                                     self.scene,
                                     **kwargs)
+            self.scene_viewer.render_lock.acquire()
         else:
             w, h = render_size
             ### compute a camera (from the pyrender viewer code)
