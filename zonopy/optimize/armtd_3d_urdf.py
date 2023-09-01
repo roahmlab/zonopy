@@ -271,7 +271,7 @@ if __name__ == '__main__':
     #         ])
 
     ##### 2. RUN ARMTD #####    
-    planner = ARMTD_3D_planner(rob.robot)
+    planner = ARMTD_3D_planner(rob.robot, device=device)
     t_armtd = []
     T_NLP = []
     T_CONSTR = []

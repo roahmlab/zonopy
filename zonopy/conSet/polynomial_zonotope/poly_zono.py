@@ -47,12 +47,13 @@ class polyZonotope:
         | coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1]
     }
     '''
-    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True):
+    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True, dtype=None, device=None):
         # If compress=2, it will always copy.
 
         # Make sure Z is a tensor
-        if not isinstance(Z, torch.Tensor):
-            Z = torch.as_tensor(Z,dtype=torch.float)
+        if not isinstance(Z, torch.Tensor) and dtype is None:
+            dtype = torch.float
+        Z = torch.as_tensor(Z, dtype=dtype, device=device)
         
         # Make an expMat and id if not given
         if expMat is None and id is None:

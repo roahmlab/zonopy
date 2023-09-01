@@ -183,7 +183,7 @@ def _Ztrig_to_rot(
     # Compute for C and use broadcasting
     cq = pz_trig_Z[..., 0, 0, None, None]
     sq = pz_trig_Z[..., 0, 1, None, None]
-    Z[...,0,:,:] = torch.eye(3) + sq*U + (1-cq)*U@U
+    Z[...,0,:,:] = torch.eye(3, dtype=pz_trig_Z.dtype, device=pz_trig_Z.device) + sq*U + (1-cq)*U@U
 
     # Compute for G & use broadcasting
     cq = pz_trig_Z[..., 1:, 0, None, None]

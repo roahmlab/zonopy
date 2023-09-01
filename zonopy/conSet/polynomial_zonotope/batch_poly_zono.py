@@ -46,12 +46,13 @@ class batchPolyZonotope:
      
     '''
     # NOTE: property for mat pz
-    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True):
+    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True, dtype=None, device=None):
         # If compress=2, it will always copy.
 
         # Make sure Z is a tensor and shaped right
-        if not isinstance(Z, torch.Tensor):
-            Z = torch.as_tensor(Z,dtype=torch.float)
+        if not isinstance(Z, torch.Tensor) and dtype is None:
+            dtype = torch.float
+        Z = torch.as_tensor(Z, dtype=dtype, device=device)
         assert len(Z.shape) > 2, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
 
         self.batch_dim = len(Z.shape) - 2

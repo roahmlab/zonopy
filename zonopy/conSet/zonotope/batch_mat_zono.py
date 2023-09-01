@@ -28,10 +28,11 @@ class batchMatZonotope():
     G = [[G1],[G2],...,[GN]]
     zono = C + a1*G1 + a2*G2 + ... + aN*GN
     '''
-    def __init__(self,Z):
+    def __init__(self,Z, dtype=None, device=None):
         # Make sure Z is a tensor
-        if not isinstance(Z, torch.Tensor):
-            Z = torch.as_tensor(Z, dtype=torch.float)
+        if not isinstance(Z, torch.Tensor) and dtype is None:
+            dtype = torch.float
+        Z = torch.as_tensor(Z, dtype=dtype, device=device)
         assert len(Z.shape) > 3, f'The dimension of Z input should be > 3, not {len(Z.shape)}.'
         self.Z = Z
         self.batch_dim = len(Z.shape) - 3

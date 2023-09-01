@@ -39,12 +39,13 @@ class batchMatPolyZonotope():
     pZ = c + a1*Gi1 + a2*Gi2 + ... + aN*GiN + b1^i11*b2^i21*...*bp^ip1*Gd1 + b1^i12*b2^i22*...*bp^ip2*Gd2 + ... 
     + b1^i1M*b2^i2M*...*bp^ipM*GdM
     '''
-    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True):
+    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True, device=None, dtype=None):
         # If compress=2, it will always copy.
 
         # Make sure Z is a tensor and shaped right
-        if not isinstance(Z, torch.Tensor):
-            Z = torch.as_tensor(Z,dtype=torch.float)
+        if not isinstance(Z, torch.Tensor) and dtype is None:
+            dtype = torch.float
+        Z = torch.as_tensor(Z, dtype=dtype, device=device)
         assert len(Z.shape) > 3, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
 
         self.batch_dim = len(Z.shape) - 3

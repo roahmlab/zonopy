@@ -222,24 +222,143 @@ def load_robot(filepath):
 
     return robot
 
+import copy
 
 class ArmRobot:
-    # __slots__ = ['mass', '', 'G']
-    def __init__(self, robot: Union[URDF, str]):
+    __slots__ = [
+        'urdf',
+        'dof',
+        'np',
+        'tensor',
+        'joint_axis',
+        'joint_origins',
+        'pos_lim',
+        'vel_lim',
+        'eff_lim',
+        'continuous_joints',
+        'pos_lim_mask',
+        '__joint_axis',
+        '__joint_origins',
+        '__pos_lim',
+        '__vel_lim',
+        '__eff_lim',
+        '__continuous_joints',
+        '__pos_lim_mask',
+        '__joint_axis_np',
+        '__joint_origins_np',
+        '__pos_lim_np',
+        '__vel_lim_np',
+        '__eff_lim_np',
+        '__continuous_joints_np',
+        '__pos_lim_mask_np',
+        ]
+    
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def load(robot: Union[URDF, str], device=None, dtype=None, itype=None):
+        # Resolve the dtype and device to use
+        temp = torch.empty(0, device=device, dtype=dtype)
+        device = temp.device
+        dtype = temp.dtype
+        np_dtype = temp.numpy().dtype
+        if itype is not None:
+            temp = torch.empty(0, dtype=dtype)
+        else:
+            temp = torch.tensor([0])
+        itype = temp.dtype
+        np_itype = temp.numpy().dtype
+        
+        # Prepare the robot
         if type(robot) == str:
             robot = load_robot(robot)
-        self.robot = robot
+        constructed = ArmRobot()
+        constructed.urdf = robot
+        constructed.dof = len(robot.actuated_joints)
+        constructed._setup_robot_data(robot, np_dtype, np_itype)
+        constructed = constructed.to(device)
         
-        self.num_q = len(robot.actuated_joints)
+        constructed.np = constructed.numpy()
+        constructed.tensor = constructed.to(device=device)
+        return constructed
 
-        self.joint_axis = [joint.axis for joint in robot.actuated_joints]
-        self.joint_axis = np.array(self.joint_axis)
-
-        self.joint_origins = [joint.origin for joint in robot.actuated_joints]
-        self.joint_origins = np.array(self.joint_origins)
-
-        self.actuated_joint_names = [joint.name for joint in robot.actuated_joints]
+    def _setup_robot_data(self, robot, dtype, itype):
+        continuous_joints = []
+        pos_lim = [[-np.Inf, np.Inf]]*self.dof
+        vel_lim = [np.Inf]*self.dof
+        eff_lim = [np.Inf]*self.dof
+        joint_axis = []
+        joint_origins = []
+        for i,joint in enumerate(robot.actuated_joints):
+            if joint.joint_type == 'continuous':
+                continuous_joints.append(i)
+            elif joint.joint_type in ['floating', 'planar']:
+                raise NotImplementedError
+            if joint.limit is not None:
+                lower = joint.limit.lower if joint.limit.lower is not None else -np.Inf
+                upper = joint.limit.upper if joint.limit.upper is not None else np.Inf
+                pos_lim[i] = [lower, upper]
+                vel_lim[i] = joint.limit.velocity
+                eff_lim[i] = joint.limit.effort
+            joint_axis.append(joint.axis)
+            joint_origins.append(joint.origin)
         
+        # initial numpy conversion
+        self.__joint_axis = np.array(joint_axis, dtype=dtype)
+        self.__joint_origins = np.array(joint_origins, dtype=dtype)
+        self.__pos_lim = np.array(pos_lim, dtype=dtype).T
+        self.__vel_lim = np.array(vel_lim, dtype=dtype)
+        self.__eff_lim = np.array(eff_lim, dtype=dtype) # Unused for now
+        self.__continuous_joints = np.array(continuous_joints, dtype=itype)
+        self.__pos_lim_mask = np.isfinite(self.pos_lim).any(axis=0)
+
+        # Create tensor references
+        self.__joint_axis = torch.from_numpy(self.__joint_axis).pin_memory()
+        self.__joint_origins = torch.from_numpy(self.__joint_origins).pin_memory()
+        self.__pos_lim = torch.from_numpy(self.__pos_lim).pin_memory()
+        self.__vel_lim = torch.from_numpy(self.__vel_lim).pin_memory()
+        self.__eff_lim = torch.from_numpy(self.__eff_lim).pin_memory()
+        self.__continuous_joints = torch.from_numpy(self.__continuous_joints).pin_memory()
+        self.__pos_lim_mask = torch.from_numpy(self.__pos_lim_mask).pin_memory()
+
+        # Create numpy references to the pinned tensor
+        self.__joint_axis_np = self.__joint_axis.numpy()
+        self.__joint_origins_np = self.__joint_origins.numpy()
+        self.__pos_lim_np = self.__pos_lim.numpy()
+        self.__vel_lim_np = self.__vel_lim.numpy()
+        self.__eff_lim_np = self.__eff_lim.numpy()
+        self.__continuous_joints_np = self.__continuous_joints.numpy()
+        self.__pos_lim_mask_np = self.__pos_lim_mask.numpy()
+    
+    def numpy(self):
+        # create a shallow copy of self
+        ret = copy.copy(self)
+        # update references to all the properties we care about
+        ret.joint_axis = self.__joint_axis_np
+        ret.joint_origins = self.__joint_origins_np
+        ret.pos_lim = self.__pos_lim_np
+        ret.vel_lim = self.__vel_lim_np
+        ret.eff_lim = self.__eff_lim_np
+        ret.continuous_joints = self.__continuous_joints_np
+        ret.pos_lim_mask = self.__pos_lim_mask_np
+    
+    def to(self, device=None):
+        # create a shallow copy of self
+        ret = copy.copy(self)
+        # update references to all the properties we care about
+        ret.joint_axis = self.__joint_axis.to(device=device)
+        ret.joint_origins = self.__joint_origins.to(device=device)
+        ret.pos_lim = self.__pos_lim.to(device=device)
+        ret.vel_lim = self.__vel_lim.to(device=device)
+        ret.eff_lim = self.__eff_lim.to(device=device)
+        ret.continuous_joints = self.__continuous_joints.to(device=device)
+        ret.pos_lim_mask = self.__pos_lim_mask.to(device=device)
+
+    # TODO
+    @property
+    def dtype(self):
+        return torch.float
 
 if __name__ == '__main__':
     import os
