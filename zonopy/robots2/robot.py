@@ -393,6 +393,14 @@ class ZonoArmRobot:
 
             single_link_data = ZonoArmRobotLink()
             single_link_data._bounding_pz = zp.polyZonotope(Z, dtype=dtype, device='cpu')
+
+            single_link_data._mass = torch.as_tensor(link.inertial.mass, dtype=dtype, device='cpu')
+            single_link_data._center_mass = torch.as_tensor(link.inertial.origin[0:3,3], dtype=dtype, device='cpu')
+            single_link_data._inertia = torch.as_tensor(link.inertial.inertia, dtype=dtype, device='cpu')
+            single_link_data._mass_np = single_link_data._mass.numpy()
+            single_link_data._center_mass_np = single_link_data._center_mass.numpy()
+            single_link_data._inertia_np = single_link_data._inertia.numpy()
+            
             single_link_data.np = single_link_data.numpy()
             single_link_data.tensor = single_link_data.to(device='cpu')
 
@@ -518,7 +526,16 @@ class ZonoArmRobotLink:
         'device',
         'tensor',
         'bounding_pz',
+        'mass',
+        'center_mass',
+        'inertia',
         '_bounding_pz',
+        '_mass',
+        '_center_mass',
+        '_inertia',
+        '_mass_np',
+        '_center_mass_np',
+        '_inertia_np',
         ]
     
     def __init__(self):
@@ -530,6 +547,9 @@ class ZonoArmRobotLink:
         ret = copy.copy(self)
         # update references to all the properties we care about
         ret.bounding_pz = None
+        ret.mass = self._mass_np
+        ret.center_mass = self._center_mass_np
+        ret.inertia = self._inertia_np
 
         # Save the device
         ret.device = None
@@ -540,6 +560,9 @@ class ZonoArmRobotLink:
         ret = copy.copy(self)
         # update references to all the properties we care about
         ret.bounding_pz = self._bounding_pz.to(device=device)
+        ret.mass = self._mass.to(device=device)
+        ret.center_mass = self._center_mass.to(device=device)
+        ret.inertia = self._inertia.to(device=device)
 
         # Save the device
         ret.device = device

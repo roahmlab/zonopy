@@ -29,7 +29,7 @@ class JrsGenerator:
         self.robot = robot
         self.traj = traj_class
 
-        self.num_q = robot.num_q
+        self.num_q = robot.dof
 
         self.param_range = np.ones(self.num_q) * param_range
         self.param_range = np.vstack(

@@ -70,6 +70,8 @@ def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batch
                 if mimic_joint.name in cfg_map:
                     rotato_cfg = cfg_map[mimic_joint.name]
                     rotato_cfg = joint.mimic.multiplier * rotato_cfg + joint.mimic.offset
+                    import warnings
+                    warnings.warn('Mimic joint may not work')
             elif joint.name in cfg_map:
                 rotato_cfg = cfg_map[joint.name]
             else:

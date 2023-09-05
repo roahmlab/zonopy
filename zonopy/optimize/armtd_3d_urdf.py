@@ -56,31 +56,6 @@ class ARMTD_3D_planner():
         #self.joint_speed_limit = torch.vstack((torch.pi*torch.ones(n_links),-torch.pi*torch.ones(n_links)))
     
     def _setup_robot(self, robot: ZonoArmRobot):
-        ## Duplicated from env
-        # self.dof = len(robot.actuated_joints)
-        # continuous_joints = []
-        # pos_lim = [[-np.Inf, np.Inf]]*self.dof
-        # vel_lim = [np.Inf]*self.dof
-        # eff_lim = [np.Inf]*self.dof
-        # joint_axis = []
-        # for i,joint in enumerate(robot.actuated_joints):
-        #     if joint.joint_type == 'continuous':
-        #         continuous_joints.append(i)
-        #     elif joint.joint_type in ['floating', 'planar']:
-        #         raise NotImplementedError
-        #     if joint.limit is not None:
-        #         lower = joint.limit.lower if joint.limit.lower is not None else -np.Inf
-        #         upper = joint.limit.upper if joint.limit.upper is not None else np.Inf
-        #         pos_lim[i] = [lower, upper]
-        #         vel_lim[i] = joint.limit.velocity
-        #         eff_lim[i] = joint.limit.effort
-        #     joint_axis.append(joint.axis)
-        # self.joint_axis = torch.as_tensor(np.array(joint_axis))
-        # self.pos_lim = np.array(pos_lim).T
-        # self.vel_lim = np.array(vel_lim)
-        # # self.eff_lim = np.array(eff_lim) # Unused for now
-        # self.continuous_joints = np.array(continuous_joints, dtype=int)
-        # self.pos_lim_mask = np.isfinite(self.pos_lim).any(axis=0)
         self.dof = robot.dof
         self.joint_axis = robot.joint_axis
         self.pos_lim = robot.np.pos_lim
@@ -110,7 +85,7 @@ class ARMTD_3D_planner():
             FO_links = FO_links[:-1]
         # two more constants
         n_links = len(FO_links)
-        n_frs_timesteps = len(FO_links[0])
+        n_frs_timesteps = FO_links[0].batch_shape[0]
 
         ### begin generating constraints
         constraint_gen_time = time.perf_counter()

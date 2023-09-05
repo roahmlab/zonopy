@@ -15,7 +15,7 @@ class OfflineArmtdFoConstraints:
         self.g_ka = g_ka
         self.n_obs_in_FO = n_obs_in_FO
         self.n_links = len(FO_link_zono)
-        self.n_timesteps = len(FO_link_zono[0])
+        self.n_timesteps = FO_link_zono[0].batch_shape[0]
         self.n_obs_cons = self.n_timesteps * n_obs_in_FO
         self.M = self.n_links * self.n_obs_cons
         self.n_joints = n_joints

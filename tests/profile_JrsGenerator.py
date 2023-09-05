@@ -10,6 +10,10 @@ import zonopy as zp
 use_cuda = True
 if use_cuda:
     zp.setup_cuda()
+basetype = torch.empty(0)
+dtype = basetype.dtype
+device = basetype.device
+
 # Disable extra debug checks
 zp.internal.__debug_extra__ = False
 
@@ -20,7 +24,8 @@ basedirname = os.path.dirname(zp.__file__)
 robots2.DEBUG_VIZ = False
 print('Loading Robot')
 # This is hardcoded for now
-rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
+# rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
+rob = robots2.ZonoArmRobot.load(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'), device=device, dtype=dtype, create_joint_occupancy=True)
 q = np.array([0.624819195837238,-1.17185521197975,-2.04687142485692,1.69686054456768,-2.28521956398477,0.151194251967712,1.54233217035569])
 qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])
 qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290896919579042,-0.133005741757336,0.133000561712863,0.0608503609673116])
@@ -45,7 +50,7 @@ import zonopy.kinematics as kin
 for i in range (0,100,10):
     patches = []
     print('t', i)
-    fk = kin.forward_kinematics(list(b['R'][i]), rob.robot)
+    fk = kin.forward_kinematics(list(b['R'][i]), rob)
 #     print('updating plot')
 #     for name, (pos, rot) in fk.items():
 #         if name in ['base_link']:#,'shoulder_link','half_arm_1_link']:
@@ -79,19 +84,24 @@ print('Testing batched kinematics')
 
 joints = [zp.batchMatPolyZonotope.from_mpzlist(joint_Rs) for joint_Rs in b['R'].T]
 
-fk = kin.forward_kinematics(joints, rob.robot)
-fo = kin.forward_occupancy(joints, rob.robot)
-jo = kin.joint_occupancy(joints, rob.robot)
+fk = kin.forward_kinematics(joints, rob)
+fo = kin.forward_occupancy(joints, rob)
+jo = kin.joint_occupancy(joints, rob)
 
 print('Testing batched JRS Generation')
 c = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
 d = c.gen_JRS(q, qd, qdd)
 print('Finished batched JRS Generation')
 
-fk = kin.forward_kinematics(d['R'], rob.robot)
-fo = kin.forward_occupancy(d['R'], rob.robot)
-jo = kin.joint_occupancy(d['R'], rob.robot)
+fk = kin.forward_kinematics(d['R'], rob)
+fo = kin.forward_occupancy(d['R'], rob)
+jo = kin.joint_occupancy(d['R'], rob)
 
+# Test pzrnea
+from zonopy.dynamics.RNEA import pzrnea
+print('Test PZRNEA')
+out = pzrnea(d['R'], d['qd'], d['qd_aux'], d['qdd_aux'], rob)
+print('Finished PZRNEA')
 # Timing
 # num = 1
 # print("Start Timing JRS", num, "Loops")
@@ -110,21 +120,21 @@ print('Took', duration/num, 'seconds each loop for', num, 'loops')
 num = 1
 print("Start Timing Serial FK", num, "Loops")
 import timeit
-duration = timeit.timeit(lambda: [kin.forward_kinematics(list(R), rob.robot) for R in b['R']], number=num)
+duration = timeit.timeit(lambda: [kin.forward_kinematics(list(R), rob) for R in b['R']], number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Timing
 num = 100
 print("Start Timing Batch FO new", num, "Loops")
 import timeit
-duration = timeit.timeit(lambda: kin.forward_occupancy(joints, rob.robot, zono_order=2), number=num)
+duration = timeit.timeit(lambda: kin.forward_occupancy(joints, rob, zono_order=2), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
-link_zonos = [link.bounding_pz for link in rob.robot.links][1:]
+link_zonos = [link.bounding_pz for link in rob.urdf.links][1:]
 robot_params = {
-    'n_joints': len(rob.robot.actuated_joint_names),
-    'P': [joint.origin_tensor[0:3,3] for joint in rob.robot.joints][1:],
-    'R': [joint.origin_tensor[0:3,0:3] for joint in rob.robot.joints][1:]
+    'n_joints': len(rob.urdf.actuated_joint_names),
+    'P': [rob.joint_data[joint].origin[0:3,3] for joint in rob.urdf.joints][1:],
+    'R': [rob.joint_data[joint].origin[0:3,0:3] for joint in rob.urdf.joints][1:]
 }
 num = 100
 print("Start Timing Batch FO old", num, "Loops")
@@ -136,7 +146,7 @@ print('Took', duration/num, 'seconds each loop for', num, 'loops')
 num = 100
 print("Start Timing Full Batch FO new", num, "Loops")
 import timeit
-duration = timeit.timeit(lambda: kin.forward_occupancy(JrsGenerator(rob, traj_class=traj_class, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), rob.robot), number=num)
+duration = timeit.timeit(lambda: kin.forward_occupancy(JrsGenerator(rob, traj_class=traj_class, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True), rob), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
 # Profiling
@@ -154,7 +164,7 @@ import pstats
 prof = profile.Profile()
 prof.enable()
 R = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False).gen_JRS(q, qd, qdd, only_R=True)
-kin.forward_kinematics(R, rob.robot)
+kin.forward_kinematics(R, rob)
 prof.disable()
 prof.dump_stats('pyprof.out')
 # pyprof2calltree -i pyprof.out -k

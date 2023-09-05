@@ -6,6 +6,7 @@ from zonopy import (
     polyZonotope,
     matPolyZonotope,
     batchPolyZonotope,
+    batchMatPolyZonotope,
     batchMatZonotope,
 )
 from zonopy.utils.utils import compare_permuted_gen, compare_permuted_dep_gen
@@ -67,39 +68,34 @@ def cross(zono1,zono2):
         if isinstance(zono1,torch.Tensor):
             assert len(zono1.shape) == 1 and zono1.shape[0] == 3
             return torch.cross(zono1,zono2)
-        elif isinstance(zono1,polyZonotope):
+        elif isinstance(zono1, (polyZonotope, batchPolyZonotope)):
             assert zono1.dimension ==3
             return cross(-zono2,zono1)
 
-    elif type(zono2) == polyZonotope:
+    elif isinstance(zono2, (polyZonotope, batchPolyZonotope)):
         assert zono2.dimension == 3
         if type(zono1) == torch.Tensor:
             assert len(zono1.shape) == 1 and zono1.shape[0] == 3
-            zono1_skew_sym = torch.tensor([[0,-zono1[2],zono1[1]],[zono1[2],0,-zono1[1]],[-zono1[1],zono1[0],0]])
-            dtype = zono2.dtype
-            itype = zono2.itype
-            device = zono2.device
+            zono1_skew_sym = torch.tensor([[0,-zono1[2],zono1[1]],
+                                           [zono1[2],0,-zono1[0]],
+                                           [-zono1[1],zono1[0],0]], dtype=zono1.dtype, device=zono1.device)
 
-        elif type(zono1) == polyZonotope:
+        elif isinstance(zono1, (polyZonotope, batchPolyZonotope)):
             assert zono1.dimension ==3
-            c = zono1.c
-            G = zono1.G
-            Grest = zono1.Grest
 
-            dtype = zono1.dtype
-            itype = zono1.itype
-            device = zono1.device
-            
-            Z = torch.hstack((c.reshape(-1,1),G,Grest))
-            Z_skew = torch.zeros(3,3,Z.shape[1])
-            
-            num_c_G = 1+zono1.G.shape[1]
-            
-            for j in range(Z.shape[1]):
-                z = Z[:,j]
-                Z_skew[:,:,j] = torch.tensor([[0,-z[2],z[1]],[z[2],0,-z[1]],[-z[1],z[0],0]])
-            
-            zono1_skew_sym = matPolyZonotope(Z_skew[:,:,0],Z_skew[:,:,1:num_c_G],Z_skew[:,:,num_c_G:],zono1.expMat,zono1.id).compress(2)
+            Z = zono1.Z
+            Z_skew = torch.zeros(Z.shape + Z.shape[-1:], dtype=Z.dtype, device=Z.device)
+            Z_skew[..., 0, 1] = -Z[...,2]
+            Z_skew[..., 0, 2] =  Z[...,1]
+            Z_skew[..., 1, 0] =  Z[...,2]
+            Z_skew[..., 1, 2] = -Z[...,0]
+            Z_skew[..., 2, 0] = -Z[...,1]
+            Z_skew[..., 2, 1] =  Z[...,0]
+
+            if len(Z_skew.shape) > 3:
+                zono1_skew_sym = batchMatPolyZonotope(Z_skew, zono1.n_dep_gens, zono1.expMat, zono1.id, copy_Z=False)
+            else:
+                zono1_skew_sym = matPolyZonotope(Z_skew, zono1.n_dep_gens, zono1.expMat, zono1.id, copy_Z=False)
 
         return zono1_skew_sym@zono2    
     

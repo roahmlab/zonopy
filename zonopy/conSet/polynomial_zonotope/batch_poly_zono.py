@@ -251,7 +251,7 @@ class batchPolyZonotope:
         # if other is a matrix
         if isinstance(other, torch.Tensor):            
             Z = self.Z@other.transpose(-2,-1)
-            return polyZonotope(Z,self.n_dep_gens,self.expMat,self.id).compress(1) # TODO IS THIS RIGHT?
+            return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,copy_Z=False).compress(1) # TODO IS THIS RIGHT?
         
         if isinstance(other, zp.matPolyZonotope):
             # Shim self to batchMatPolyZono and return that matmul
@@ -262,8 +262,18 @@ class batchPolyZonotope:
         else:
             return NotImplemented
         
-    def __len__(self):
-        return self.Z.shape[0]
+    # def __len__(self):
+    #     return self.Z.shape[0]
+
+    def reduce(self, order, option='girard'):
+        # Reduce by iterating over all
+        # Shim for pzrnea
+        len_ents = int(np.prod(self.batch_shape))
+        idx_tuple = np.unravel_index(np.arange(len_ents), self.batch_shape)
+        pzlist = [None]*len_ents
+        for out_i, idxs in enumerate(zip(*idx_tuple)):
+            pzlist[out_i] = self[idxs].reduce(order, option=option)
+        return zp.batchPolyZonotope.from_pzlist(pzlist, batch_shape=self.batch_shape)
 
     def reduce_indep(self,order,option='girard'):
         # extract dimensions
@@ -508,7 +518,7 @@ class batchPolyZonotope:
         return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,copy_Z=False).compress(1)
     
     @staticmethod
-    def from_pzlist(pzlist):
+    def from_pzlist(pzlist, batch_shape=None):
         assert len(pzlist) > 0, "Expected at least 1 element input!"
         # Check type
         assert np.all([isinstance(pz, polyZonotope) for pz in pzlist]), "Expected all elements to be of type polyZonotope"
@@ -558,7 +568,9 @@ class batchPolyZonotope:
         
         # Combine, reduce, output.
         Z = torch.concat((all_c, all_G, all_grest), dim=-2)
-        out = zp.batchPolyZonotope(Z, all_dep_gens, all_expMat, all_ids).compress(2)
+        if batch_shape is not None:
+            Z = Z.reshape(batch_shape + Z.shape[-2:])
+        out = zp.batchPolyZonotope(Z, all_dep_gens, all_expMat, all_ids, copy_Z=False).compress(2)
         return out
     
     @staticmethod
