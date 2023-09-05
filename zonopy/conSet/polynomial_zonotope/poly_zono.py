@@ -527,16 +527,16 @@ class polyZonotope:
     '''
     
     @staticmethod
-    def zeros(dims):
-        Z = torch.zeros((1, dims))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+    def zeros(dims, dtype=None, device=None):
+        Z = torch.zeros((1, dims), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.polyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
-    def ones(dims):
-        Z = torch.ones((1, dims))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+    def ones(dims, dtype=None, device=None):
+        Z = torch.ones((1, dims), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.polyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
 

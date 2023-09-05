@@ -201,7 +201,7 @@ if __name__ == '__main__':
     # This is hardcoded for now
     import zonopy.robots2.robot as robots2
     robots2.DEBUG_VIZ = False
-    rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
+    rob = robots2.ZonoArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
     # rob = robots2.ArmRobot('/home/adamli/rtd-workspace/urdfs/panda_arm/panda_arm_proc.urdf')
 
     test = KinematicUrdfWithObstacles(robot = rob.robot, step_type='integration', check_joint_limits=True, check_self_collision=True, use_bb_collision=True, render_mesh=True, reopen_on_close=False, n_obs=5, render_fps=30, render_frames=10)

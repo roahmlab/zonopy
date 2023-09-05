@@ -7,12 +7,13 @@ from urchin import URDF
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
+from zonopy.robots2.robot import ZonoArmRobot
 
 # Use forward kinematics to get the forward occupancy
 # Note: zono_order=2 is 5 times faster than zono_order=20 on cpu
 def forward_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
                                          List[Union[matPolyZonotope, batchMatPolyZonotope]]],
-                      robot: URDF,
+                      robot: ZonoArmRobot,
                       zono_order: int = 20,
                       links: List[str] = None,
                       link_zono_override: Dict[str, polyZonotope] = None,
@@ -21,7 +22,8 @@ def forward_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchM
                                                             Tuple[batchPolyZonotope, batchMatPolyZonotope]]]]:
     
     link_fk_dict = forward_kinematics(rotatotopes, robot, zono_order, links=links)
-    link_zonos = {name: robot._link_map[name].bounding_pz for name in link_fk_dict.keys()}
+    urdf = robot.urdf
+    link_zonos = {name: robot.link_data[urdf._link_map[name]].bounding_pz for name in link_fk_dict.keys()}
     if link_zono_override is not None:
         link_zonos.update(link_zono_override)
     

@@ -601,7 +601,7 @@ if __name__ == '__main__':
     # This is hardcoded for now
     import zonopy.robots2.robot as robots2
     robots2.DEBUG_VIZ = False
-    rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
+    rob = robots2.ZonoArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
 
     test = KinematicUrdfBase(rob.robot, step_type='integration', check_joint_limits=True, check_self_collision=True, use_bb_collision=True, render_mesh=True, reopen_on_close=False)
     test.render()

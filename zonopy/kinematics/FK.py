@@ -8,6 +8,7 @@ import torch
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
+from zonopy.robots2.robot import ZonoArmRobot
 
 # Helper function to create a config dictionary from the rotatotopes if a list is provided
 def make_rotato_cfg(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
@@ -32,52 +33,53 @@ def make_rotato_cfg(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMat
 # This is based on the Urchin's FK source
 def forward_kinematics(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
                                           List[Union[matPolyZonotope, batchMatPolyZonotope]]],
-                       robot: URDF,
+                       robot: ZonoArmRobot,
                        zono_order: int = 20,
                        links: List[str] = None,
                        ) -> OrderedDictType[str, Union[Tuple[polyZonotope, matPolyZonotope],
                                                        Tuple[batchPolyZonotope, batchMatPolyZonotope]]]:
     # Create the rotato config dictionary
-    cfg_map = make_rotato_cfg(rotatotopes, robot)
+    cfg_map = make_rotato_cfg(rotatotopes, robot.urdf)
+    urdf = robot.urdf
 
     # Get our output link set, assume it's all links if unspecified
     link_set = set()
     if links is not None:
         for lnk in links:
-            link_set.add(robot._link_map[lnk])
+            link_set.add(urdf._link_map[lnk])
     else:
-        link_set = robot.links
+        link_set = urdf.links
 
     # Compute forward kinematics in reverse topological order, base to end
     fk = OrderedDict()
-    for lnk in robot._reverse_topo:
+    for lnk in urdf._reverse_topo:
         if lnk not in link_set:
             continue
         # Get the path back to the base and build with that
-        path = robot._paths_to_base[lnk]
-        pos = polyZonotope.zeros(3)
-        rot = matPolyZonotope.eye(3)
+        path = urdf._paths_to_base[lnk]
+        pos = polyZonotope.zeros(3, dtype=robot.dtype, device=robot.device)
+        rot = matPolyZonotope.eye(3, dtype=robot.dtype, device=robot.device)
         for i in range(len(path) - 1):
             child = path[i]
             parent = path[i + 1]
-            joint = robot._G.get_edge_data(child, parent)["joint"]
+            joint = urdf._G.get_edge_data(child, parent)["joint"]
 
             rotato_cfg = None
             if joint.mimic is not None:
-                mimic_joint = robot._joint_map[joint.mimic.joint]
+                mimic_joint = urdf._joint_map[joint.mimic.joint]
                 if mimic_joint.name in cfg_map:
                     rotato_cfg = cfg_map[mimic_joint.name]
                     rotato_cfg = joint.mimic.multiplier * rotato_cfg + joint.mimic.offset
             elif joint.name in cfg_map:
                 rotato_cfg = cfg_map[joint.name]
             else:
-                rotato_cfg = torch.eye(3)
+                rotato_cfg = torch.eye(3, dtype=robot.dtype, device=robot.device)
             
             # Get the transform for the joint
             # joint_rot = torch.as_tensor(joint.origin[0:3,0:3], dtype=torch.float64)
             # joint_pos = torch.as_tensor(joint.origin[0:3,3], dtype=torch.float64)
-            joint_rot = joint.origin_tensor[0:3,0:3]
-            joint_pos = joint.origin_tensor[0:3,3]
+            joint_rot = robot.joint_data[joint].origin[0:3,0:3]
+            joint_pos = robot.joint_data[joint].origin[0:3,3]
             joint_rot = joint_rot@rotato_cfg
             
             # We are moving from child to parent, so apply in reverse

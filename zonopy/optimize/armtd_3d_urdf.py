@@ -14,10 +14,11 @@ T_PLAN, T_FULL = 0.5, 1.0
 from urchin import URDF
 from typing import List
 from nlp_setup_extracted_expanded import armtd_nlp, OfflineArmtdFoConstraints
+from zonopy.robots2.robot import ZonoArmRobot
 
 class ARMTD_3D_planner():
     def __init__(self,
-                 robot: URDF,
+                 robot: ZonoArmRobot,
                  zono_order: int = 2, # this appears to have been 40 before but it was ignored for 2
                  max_combs: int = 200,
                  dtype: torch.dtype = torch.float,
@@ -54,32 +55,39 @@ class ARMTD_3D_planner():
         # self.n_timesteps = 100
         #self.joint_speed_limit = torch.vstack((torch.pi*torch.ones(n_links),-torch.pi*torch.ones(n_links)))
     
-    def _setup_robot(self, robot):
+    def _setup_robot(self, robot: ZonoArmRobot):
         ## Duplicated from env
-        self.dof = len(robot.actuated_joints)
-        continuous_joints = []
-        pos_lim = [[-np.Inf, np.Inf]]*self.dof
-        vel_lim = [np.Inf]*self.dof
-        eff_lim = [np.Inf]*self.dof
-        joint_axis = []
-        for i,joint in enumerate(robot.actuated_joints):
-            if joint.joint_type == 'continuous':
-                continuous_joints.append(i)
-            elif joint.joint_type in ['floating', 'planar']:
-                raise NotImplementedError
-            if joint.limit is not None:
-                lower = joint.limit.lower if joint.limit.lower is not None else -np.Inf
-                upper = joint.limit.upper if joint.limit.upper is not None else np.Inf
-                pos_lim[i] = [lower, upper]
-                vel_lim[i] = joint.limit.velocity
-                eff_lim[i] = joint.limit.effort
-            joint_axis.append(joint.axis)
-        self.joint_axis = torch.as_tensor(np.array(joint_axis))
-        self.pos_lim = np.array(pos_lim).T
-        self.vel_lim = np.array(vel_lim)
+        # self.dof = len(robot.actuated_joints)
+        # continuous_joints = []
+        # pos_lim = [[-np.Inf, np.Inf]]*self.dof
+        # vel_lim = [np.Inf]*self.dof
+        # eff_lim = [np.Inf]*self.dof
+        # joint_axis = []
+        # for i,joint in enumerate(robot.actuated_joints):
+        #     if joint.joint_type == 'continuous':
+        #         continuous_joints.append(i)
+        #     elif joint.joint_type in ['floating', 'planar']:
+        #         raise NotImplementedError
+        #     if joint.limit is not None:
+        #         lower = joint.limit.lower if joint.limit.lower is not None else -np.Inf
+        #         upper = joint.limit.upper if joint.limit.upper is not None else np.Inf
+        #         pos_lim[i] = [lower, upper]
+        #         vel_lim[i] = joint.limit.velocity
+        #         eff_lim[i] = joint.limit.effort
+        #     joint_axis.append(joint.axis)
+        # self.joint_axis = torch.as_tensor(np.array(joint_axis))
+        # self.pos_lim = np.array(pos_lim).T
+        # self.vel_lim = np.array(vel_lim)
+        # # self.eff_lim = np.array(eff_lim) # Unused for now
+        # self.continuous_joints = np.array(continuous_joints, dtype=int)
+        # self.pos_lim_mask = np.isfinite(self.pos_lim).any(axis=0)
+        self.dof = robot.dof
+        self.joint_axis = robot.joint_axis
+        self.pos_lim = robot.np.pos_lim
+        self.vel_lim = robot.np.vel_lim
         # self.eff_lim = np.array(eff_lim) # Unused for now
-        self.continuous_joints = np.array(continuous_joints, dtype=int)
-        self.pos_lim_mask = np.isfinite(self.pos_lim).any(axis=0)
+        self.continuous_joints = robot.np.continuous_joints
+        self.pos_lim_mask = robot.np.pos_lim_mask
         pass
 
     def _generate_combinations_upto(self, max_combs):
@@ -225,12 +233,12 @@ if __name__ == '__main__':
     # This is hardcoded for now
     import zonopy.robots2.robot as robots2
     robots2.DEBUG_VIZ = False
-    rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
+    rob = robots2.ZonoArmRobot.load(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'), device=device, dtype=dtype)
     # rob = robots2.ArmRobot('/home/adamli/rtd-workspace/urdfs/panda_arm/panda_arm_proc.urdf')
 
     ##### SET ENVIRONMENT #####
     env = KinematicUrdfWithObstacles(
-        robot=rob.robot,
+        robot=rob.urdf,
         step_type='integration',
         check_joint_limits=True,
         check_self_collision=False,
@@ -271,7 +279,7 @@ if __name__ == '__main__':
     #         ])
 
     ##### 2. RUN ARMTD #####    
-    planner = ARMTD_3D_planner(rob.robot, device=device)
+    planner = ARMTD_3D_planner(rob, device=device)
     t_armtd = []
     T_NLP = []
     T_CONSTR = []

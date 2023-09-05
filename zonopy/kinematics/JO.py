@@ -7,12 +7,13 @@ from urchin import URDF
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
+from zonopy.robots2.robot import ZonoArmRobot
 
 # Use forward occupancy or forward kinematics to get the joint occupancy
 # For the true bohao approach, enable use_outer_bb
 def joint_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],
                                        List[Union[matPolyZonotope, batchMatPolyZonotope]]],
-                    robot: URDF,
+                    robot: ZonoArmRobot,
                     zono_order: int = 20,
                     joints: List[str] = None,
                     joint_zono_override: Dict[str, polyZonotope] = {},
@@ -21,12 +22,13 @@ def joint_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMat
                                OrderedDictType[str, Union[Tuple[polyZonotope, matPolyZonotope],
                                                           Tuple[batchPolyZonotope, batchMatPolyZonotope]]]]:
     
+    urdf = robot.urdf
     # Process out the joint bb's
     if joints is None:
-        joints = [joint.name for joint in robot.actuated_joints]
+        joints = [joint.name for joint in urdf.actuated_joints]
     
     # Identify the links we are going to care about
-    links = [robot._joint_map[name].child for name in joints]
+    links = [urdf._joint_map[name].child for name in joints]
 
     # Create the map of joint zonos
     joint_zonos = {}
@@ -34,9 +36,9 @@ def joint_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMat
         if name in joint_zono_override:
             joint_zonos[name] = joint_zono_override[name]
         elif use_outer_bb:
-            joint_zonos[name] = robot._joint_map[name].outer_pz
+            joint_zonos[name] = robot.joint_data[urdf._joint_map[name]].outer_pz
         else:
-            joint_zonos[name] = robot._joint_map[name].bounding_pz
+            joint_zonos[name] = robot.joint_data[urdf._joint_map[name]].bounding_pz
 
     # Get forward kinematics
     link_fk_dict = forward_kinematics(rotatotopes, robot, zono_order, links=links)

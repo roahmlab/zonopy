@@ -323,25 +323,25 @@ class matPolyZonotope():
         return matPolyZonotope(ZRed,n_dg_red,self.expMat,self.id,copy_Z=False).compress(1)
     
     @staticmethod
-    def zeros(dim1, dim2 = None):
+    def zeros(dim1, dim2 = None, dtype=None, device=None):
         dim2 = dim1 if dim2 is not None else dim2
-        Z = torch.zeros((1, dim1, dim2))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+        Z = torch.zeros((1, dim1, dim2), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.matPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
-    def ones(dim1, dim2 = None):
+    def ones(dim1, dim2 = None, dtype=None, device=None):
         dim2 = dim1 if dim2 is not None else dim2
-        Z = torch.zeros((1, dim1, dim2))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+        Z = torch.zeros((1, dim1, dim2), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.matPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
-    def eye(dim):
-        Z = torch.eye(dim).unsqueeze(0)
-        expMat = torch.empty((0,0),dtype=torch.int64)
+    def eye(dim, dtype=None, device=None):
+        Z = torch.eye(dim, dtype=dtype, device=device).unsqueeze(0)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.matPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
 
