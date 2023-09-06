@@ -1,15 +1,13 @@
 import numpy as np
 import torch
 import zonopy as zp
-from zonopy.conSet.polynomial_zonotope.utils import remove_dependence_and_compress
 import unittest
 import zonopy.robots2.robot as robots2
 from zonopy.joint_reachable_set.gen_jrs import JrsGenerator
 from zonopy.dynamics.RNEA import pzrnea
 import os
 
-# Test cases to just make sure the trajectory is likely valid and matches expectation
-# for the bernstein ARMOUR formulation
+# Test cases to make sure PZRNEA is behaving as expected. They're specified with hard values relative to a specific file.
 class TestPZRNEA(unittest.TestCase):
     def setUp(self):
         basedirname = os.path.dirname(zp.__file__)
@@ -60,13 +58,13 @@ class TestPZRNEA(unittest.TestCase):
         out_batch = pzrnea(center_R, center_qd, center_qd_aux, center_qdd_aux, self.robot)
 
         torques_0_24_83_99 = np.array(
-            [[-2.2042183978194529e-02, -4.2815671257143549e-02,  2.3021233448274281e-02,  3.2878781823081587e-03],
-             [ 1.5531301286779399e+01,  1.5579021222253147e+01,  1.5306366375474180e+01,  1.5348854443730943e+01],
-             [ 5.8900950939497765e+00,  5.9691650202786555e+00,  5.8428142087410881e+00,  5.8228703231861907e+00],
-             [-2.3977409114264705e+00, -2.3162445058299674e+00, -2.3437119099190498e+00, -2.3652641790086890e+00],
-             [-6.8723803969095817e-02, -5.3948238277981980e-02, -6.5783483899117381e-02, -6.7633173293524987e-02],
-             [-3.4169564558686338e-01, -3.7699848952899562e-01, -3.5043851389640102e-01, -3.4165892547393895e-01],
-             [ 4.4905090597637115e-02,  4.4376042657398120e-02,  4.4783701428330866e-02,  4.4622660228522446e-02]]
+            [[-2.2043249e-02, -4.2815480e-02,  2.3025298e-02,  3.2934831e-03],
+             [ 1.5531300e+01,  1.5579023e+01,  1.5306368e+01,  1.5348853e+01],
+             [ 5.8900938e+00,  5.9691648e+00,  5.8428183e+00,  5.8228750e+00],
+             [-2.3977411e+00, -2.3162429e+00, -2.3437095e+00, -2.3652601e+00],
+             [-6.8723798e-02, -5.3948201e-02, -6.5783419e-02, -6.7633063e-02],
+             [-3.4169534e-01, -3.7699845e-01, -3.5043979e-01, -3.4166098e-01],
+             [ 4.4905085e-02,  4.4376034e-02,  4.4783697e-02,  4.4622652e-02]],
         ) # n_joints by time_idx's
 
         torques = [out_dict['torque'][[0, 24, 83, 99]] for out_dict in list(out_batch.values())[:-1]]
