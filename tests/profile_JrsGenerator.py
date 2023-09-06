@@ -8,11 +8,17 @@ import zonopy as zp
 
 # Set cuda if desired and available
 use_cuda = True
+# if use_cuda:
+#     zp.setup_cuda()
+# basetype = torch.empty(0)
+# dtype = basetype.dtype
+# device = basetype.device
+dtype = None
+device = None
 if use_cuda:
-    zp.setup_cuda()
-basetype = torch.empty(0)
-dtype = basetype.dtype
-device = basetype.device
+    # use to this test eager specification
+    dtype = torch.float
+    device = 'cuda:0'
 
 # Disable extra debug checks
 zp.internal.__debug_extra__ = False
@@ -130,7 +136,7 @@ import timeit
 duration = timeit.timeit(lambda: kin.forward_occupancy(joints, rob, zono_order=2), number=num)
 print('Took', duration/num, 'seconds each loop for', num, 'loops')
 
-link_zonos = [link.bounding_pz for link in rob.urdf.links][1:]
+link_zonos = [rob.link_data[link].bounding_pz for link in rob.urdf.links][1:]
 robot_params = {
     'n_joints': len(rob.urdf.actuated_joint_names),
     'P': [rob.joint_data[joint].origin[0:3,3] for joint in rob.urdf.joints][1:],

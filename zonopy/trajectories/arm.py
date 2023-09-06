@@ -52,7 +52,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
         self._qdpeak = self.qd0 \
             + self._param * self.tbrake
         
-        self._stopping_qdd = (0 - self._qdpeak) * (1.0 / stopping_time)
+        self._stopping_qdd = (-self._qdpeak) * (1.0 / stopping_time)
 
         self._final_q = self._qpeak \
             + self._qdpeak * stopping_time \
@@ -102,7 +102,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
 
         # Second half of the trajectory
         if len(mask_stopping) > 0:
-            t = times[mask_stopping] - self.tbrake
+            t = times[mask_stopping] + (-self.tbrake)
             for i in range(self.num_q):
                 q_stopping[i] = self._qpeak[i] \
                     + t * self._qdpeak[i] \
@@ -159,7 +159,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
         
         # Second half of the trajectory
         if np.any(mask_stopping):
-            t = times[mask_stopping] - self.tbrake
+            t = times[mask_stopping] + (-self.tbrake)
             q_out[mask_stopping,:] = self._qpeak \
                 + np.outer(t, self._qdpeak) \
                 + 0.5 * np.outer(t*t, self._stopping_qdd)
@@ -238,13 +238,13 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
 
             # Velocity Constraints
             beta[1] = q0 + (tspan * qd0) * (1.0/5.0)
-            beta[4] = q1 - (tspan * qd1) * (1.0/5.0)
+            beta[4] = q1 + (-(tspan * qd1) * (1.0/5.0))
 
             # Acceleration Constraints
             beta[2] = (tspan * tspan * qdd0) * (1.0/20.0) \
                 + (2 * tspan * qd0) * (1.0/5.0) + q0
             beta[3] = (tspan * tspan * qdd1) * (1.0/20.0) \
-                - (2 * tspan * qd1) * (1.0/5.0) + q1
+                + (-(2 * tspan * qd1) * (1.0/5.0)) + q1
             
             return beta
         
@@ -295,11 +295,11 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
             t_mask = times[mask] * scale
             # Precompute all the t powers
             tpow = np.empty(len(self._alphas), dtype=object)
-            tpow[0] = zp.batchPolyZonotope.ones(len(mask), 1)
+            tpow[0] = zp.batchPolyZonotope.ones(len(mask), 1, dtype=times.dtype, device=times.device)
             for i in range(1,len(self._alphas)):
                 tpow[i] = tpow[i-1]*t_mask
             # Set all q initial conditions
-            zero = zp.batchPolyZonotope.zeros(len(mask), 1)
+            zero = zp.batchPolyZonotope.zeros(len(mask), 1, dtype=times.dtype, device=times.device)
             q_plan[:] = zero
             qd_plan[:] = zero
             qdd_plan[:] = zero
@@ -315,7 +315,7 @@ class BernsteinArmTrajectory(BaseArmTrajectory):
 
         if len(stopped_idxs) > 0:
             # End condition
-            zero = [zp.polyZonotope.zeros(1)]*len(stopped_idxs)
+            zero = [zp.polyZonotope.zeros(1, dtype=times.dtype, device=times.device)]*len(stopped_idxs)
             q_stopped = [[el] * len(stopped_idxs) for el in self._final_q]
             qd_stopped = [zero] * self.num_q
             qdd_stopped = [zero] * self.num_q

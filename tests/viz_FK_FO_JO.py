@@ -18,7 +18,7 @@ basedirname = os.path.dirname(zp.__file__)
 robots2.DEBUG_VIZ = False
 print('Loading Robot')
 # This is hardcoded for now
-rob = robots2.ArmRobot(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'))
+rob = robots2.ZonoArmRobot.load(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'), create_joint_occupancy=True)
 q = np.array([0.624819195837238,-1.17185521197975,-2.04687142485692,1.69686054456768,-2.28521956398477,0.151194251967712,1.54233217035569])
 qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])*2
 qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290896919579042,-0.133005741757336,0.133000561712863,0.0608503609673116])*2
@@ -35,10 +35,10 @@ print('Finished JRS Generation')
 serial_forward = []
 for Rs in b['R']:
     Rs = list(Rs)
-    fk = kin.forward_kinematics(Rs, rob.robot)
-    fo, _ = kin.forward_occupancy(Rs, rob.robot)
-    jo, _ = kin.joint_occupancy(Rs, rob.robot)
-    jo_bzlike, _ = kin.joint_occupancy(Rs, rob.robot, use_outer_bb=True)
+    fk = kin.forward_kinematics(Rs, rob)
+    fo, _ = kin.forward_occupancy(Rs, rob)
+    jo, _ = kin.joint_occupancy(Rs, rob)
+    jo_bzlike, _ = kin.joint_occupancy(Rs, rob, use_outer_bb=True)
     serial_forward.append((fk, fo, jo, jo_bzlike))
 
 
@@ -49,10 +49,10 @@ d = c.gen_JRS(q, qd, qdd)
 print('Finished batched JRS Generation')
 joints = list(d['R'])
 
-fk = kin.forward_kinematics(joints, rob.robot)
-fo, _ = kin.forward_occupancy(joints, rob.robot)
-jo, _ = kin.joint_occupancy(joints, rob.robot)
-jo_bzlike, _ = kin.joint_occupancy(joints, rob.robot, use_outer_bb=True)
+fk = kin.forward_kinematics(joints, rob)
+fo, _ = kin.forward_occupancy(joints, rob)
+jo, _ = kin.joint_occupancy(joints, rob)
+jo_bzlike, _ = kin.joint_occupancy(joints, rob, use_outer_bb=True)
 
 
 # Plot
@@ -85,7 +85,7 @@ else:
     ax2 = a3.Axes3D(subfigs[1])
 
 if plot_arm and not plot_ref:
-    ref_fk = rob.robot.visual_trimesh_fk(cfg=q)
+    ref_fk = rob.urdf.visual_trimesh_fk(cfg=q)
     for mesh, transform in ref_fk.items():
         mesh = mesh.bounding_box.copy()
         mesh.apply_transform(transform)
@@ -158,7 +158,7 @@ for i in range(100):
     ref2=[]
     ref3=[]
     if plot_arm and plot_ref:
-        ref_fk = rob.robot.visual_trimesh_fk(cfg=reference[i])
+        ref_fk = rob.urdf.visual_trimesh_fk(cfg=reference[i])
         for mesh, transform in ref_fk.items():
             mesh = mesh.bounding_box.copy()
             mesh.apply_transform(transform)

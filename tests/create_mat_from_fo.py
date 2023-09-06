@@ -35,7 +35,7 @@ if use_cuda:
 print('Loading Robot')
 # make sure not to show any debug vizualizations
 robots2.DEBUG_VIZ = False
-rob = robots2.ArmRobot(os.path.join(basedirname, robot_file))
+rob = robots2.ZonoArmRobot.load(os.path.join(basedirname, robot_file), create_joint_occupancy=True)
 
 
 print('Starting JRS Generation')
@@ -51,9 +51,9 @@ else:
 
 print("Perform forward operations")
 # fk = kin.forward_kinematics(joints, rob.robot)
-fo, _ = kin.forward_occupancy(joints, rob.robot)
-jo, _ = kin.joint_occupancy(joints, rob.robot)
-jobz, _ = kin.joint_occupancy(joints, rob.robot, use_outer_bb=True)
+fo, _ = kin.forward_occupancy(joints, rob)
+jo, _ = kin.joint_occupancy(joints, rob)
+jobz, _ = kin.joint_occupancy(joints, rob, use_outer_bb=True)
 
 
 print("Exporting")

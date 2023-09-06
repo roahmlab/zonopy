@@ -19,7 +19,7 @@ class interval:
     Eq.
     I = { inf*(1-a)/2 + sup*(1+a)/2 | coef. a \in [-1,1] }
     '''
-    def __init__(self, inf=None, sup=None, dtype=torch.get_default_dtype(), device=None):
+    def __init__(self, inf=None, sup=None, dtype=None, device=None):
         if inf is None and sup is None:
             inf = torch.empty(0, dtype=dtype, device=device)
             sup = torch.empty(0, dtype=dtype, device=device)
@@ -28,10 +28,9 @@ class interval:
         elif sup is None:
             sup = inf
         
-        if not isinstance(inf, torch.Tensor):
-            inf = torch.as_tensor(inf, dtype=dtype, device=device)
-        if not isinstance(sup, torch.Tensor):
-            sup = torch.as_tensor(sup, dtype=dtype, device=device)
+        
+        inf = torch.as_tensor(inf, dtype=dtype, device=device)
+        sup = torch.as_tensor(sup, dtype=dtype, device=device)
         
         assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
         if zpi.__debug_extra__: assert torch.all(inf <= sup), "inf should be less than sup entry-wise"

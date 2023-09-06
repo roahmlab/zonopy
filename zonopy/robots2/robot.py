@@ -271,15 +271,15 @@ class ZonoArmRobot:
         dtype = temp_dtype.dtype
         np_dtype = temp_dtype.numpy().dtype
         if itype is not None:
-            temp_itype = torch.empty(0, dtype=dtype)
+            temp_itype = torch.empty(0, dtype=dtype, device='cpu')
         else:
-            temp_itype = torch.tensor([0])
+            temp_itype = torch.tensor([0], device='cpu')
         itype = temp_itype.dtype
         np_itype = temp_itype.numpy().dtype
         
         # Prepare the robot
         if type(robot) == str:
-            robot = load_robot(robot)
+            robot = URDF.load(robot)
         constructed = ZonoArmRobot()
         constructed.urdf = robot
         constructed.dof = len(robot.actuated_joints)

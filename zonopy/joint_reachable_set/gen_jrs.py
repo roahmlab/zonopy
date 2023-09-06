@@ -54,7 +54,7 @@ class JrsGenerator:
             self.id_map[f'k{i}'] = id
             self.base_params[i] = zp.polyZonotope(
                 [[0],[1]],
-                1, id=id
+                1, id=id, dtype=self.dtype, device=self.device
             )
             self.k_ids[i] = id
 
@@ -83,7 +83,7 @@ class JrsGenerator:
                 dtype=torch.get_default_dtype()
                 )
             z = torch.vstack([centers, gens]).unsqueeze(2).transpose(0,1)
-            self.times = zp.batchPolyZonotope(z, n_dep_gens, expMat, ids)
+            self.times = zp.batchPolyZonotope(z, n_dep_gens, expMat, ids, dtype=self.dtype, device=self.device)
             # Make sure to update the id map (fixes slicing bug)!
             idmap = OrderedDict((f't{i}', id) for i,id in enumerate(ids))
             self.id_map.update(idmap)
@@ -98,7 +98,7 @@ class JrsGenerator:
                     self.id_map[f't{i}'] = id
                 self.times[i] = zp.polyZonotope(
                     [[self.tdiscretization*i+self.tdiscretization/2],[self.tdiscretization/2]],
-                    1, id=id
+                    1, id=id, dtype=self.dtype, device=self.device
                 )
         
         # Create PZ's for error
@@ -111,13 +111,13 @@ class JrsGenerator:
                 id = len(self.id_map)
                 self.id_map[f'e_pos{i}'] = id
                 self.error_pos[i] = zp.polyZonotope(
-                    [[0],[ultimate_bound/k_r]], 1, id=id
+                    [[0],[ultimate_bound/k_r]], 1, id=id, dtype=self.dtype, device=self.device
                 )
 
                 id = len(self.id_map)
                 self.id_map[f'e_vel{i}'] = id
                 self.error_vel[i] = zp.polyZonotope(
-                    [[0],[2*ultimate_bound]], 1, id=id
+                    [[0],[2*ultimate_bound]], 1, id=id, dtype=self.dtype, device=self.device
                 )
     
     def gen_JRS(self, q_in, qd_in, qdd_in=None, taylor_degree=1, make_gens_independent=True, only_R=False):
@@ -230,6 +230,14 @@ class JrsGenerator:
             rem_dep = np.vectorize(remove_dependence_and_compress, excluded=[1])
             R = rem_dep(R, self.k_ids)
         return R.T
+    
+    @property
+    def dtype(self):
+        return self.robot.dtype
+    
+    @property
+    def device(self):
+        return self.robot.device
 
 
 if __name__ == '__main__':

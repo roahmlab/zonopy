@@ -58,8 +58,7 @@ class batchMatPolyZonotope():
 
         # Otherwise make sure expMat is right
         elif expMat is not None:
-            if not isinstance(expMat, torch.Tensor):
-                expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
+            expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
             assert expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
             if zpi.__debug_extra__: assert torch.all(expMat >= 0), 'Invalid exponent matrix.' 
 
@@ -284,6 +283,8 @@ class batchMatPolyZonotope():
         # Validate dimensions match
         n_mpz = len(mpzlist)
         shape = mpzlist[0].shape
+        dtype = mpzlist[0].dtype
+        device = mpzlist[0].device
         [mpz.shape for mpz in mpzlist].count(shape) == n_mpz, "Expected all elements to have the same shape!"
 
         # First loop to extract key parts
@@ -305,9 +306,9 @@ class batchMatPolyZonotope():
         all_c = torch.stack(all_c)
 
         # Preallocate
-        all_G = torch.zeros((n_mpz, all_dep_gens) + shape)
-        all_grest = torch.zeros((n_mpz, n_grest) + shape)
-        all_expMat = torch.zeros((all_dep_gens, len(all_ids)), dtype=torch.int64)
+        all_G = torch.zeros((n_mpz, all_dep_gens) + shape, dtype=dtype, device=device)
+        all_grest = torch.zeros((n_mpz, n_grest) + shape, dtype=dtype, device=device)
+        all_expMat = torch.zeros((all_dep_gens, len(all_ids)), dtype=torch.int64, device=device)
         last_expMat_idx = 0
 
         # expand remaining values
@@ -339,25 +340,25 @@ class batchMatPolyZonotope():
         return zp.batchMatPolyZonotope.from_pzlist(out_list)
     
     @staticmethod
-    def zeros(batch_size, dim1, dim2=None):
+    def zeros(batch_size, dim1, dim2=None, dtype=None, device=None):
         dim2 = dim1 if dim2 is not None else dim2
-        Z = torch.zeros((batch_size, 1, dim1, dim2))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+        Z = torch.zeros((batch_size, 1, dim1, dim2), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
-    def ones(batch_size, dim1, dim2=None):
+    def ones(batch_size, dim1, dim2=None, dtype=None, device=None):
         dim2 = dim1 if dim2 is not None else dim2
-        Z = torch.zeros((batch_size, 1, dim1, dim2))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+        Z = torch.zeros((batch_size, 1, dim1, dim2), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
-    def eye(batch_size, dim):
-        Z = torch.eye(dim).unsqueeze(0).expand(batch_size, -1, -1, -1)
-        expMat = torch.empty((0,0),dtype=torch.int64)
+    def eye(batch_size, dim, dtype=None, device=None):
+        Z = torch.eye(dim, dtype=dtype, device=device).unsqueeze(0).expand(batch_size, -1, -1, -1)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     

@@ -213,9 +213,9 @@ def sin(Set,order=6):
         rem_pow = (T_factor * pz_neighbor).to_interval()
 
         if order % 2 == 1:
-            J = sin(pz.c + interval([0], [1]) * rem)
+            J = sin(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
         else:
-            J = cos(pz.c + interval([0], [1]) * rem)
+            J = cos(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
         
         if order % 4 == 1 or order % 4 == 2:
             J = -J
@@ -284,9 +284,9 @@ def cos(Set,order = 6):
         rem_pow = (T_factor * pz_neighbor).to_interval()
 
         if order % 2 == 0:
-            J = sin(pz.c + interval([0], [1]) * rem)
+            J = sin(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
         else:
-            J = cos(pz.c + interval([0], [1]) * rem)
+            J = cos(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
         
         if order % 4 == 0 or order % 4 == 1:
             J = -J

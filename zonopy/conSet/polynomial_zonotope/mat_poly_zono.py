@@ -55,8 +55,7 @@ class matPolyZonotope():
 
         # Otherwise make sure expMat is right
         elif expMat is not None:
-            if not isinstance(expMat, torch.Tensor):
-                expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
+            expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
             assert expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.' 
             if zpi.__debug_extra__: assert torch.all(expMat >= 0), 'Invalid exponent matrix.'
             

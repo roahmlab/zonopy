@@ -65,9 +65,8 @@ class batchPolyZonotope:
             
         # Otherwise make sure expMat is right
         elif expMat is not None:
-            #check correctness of user input 
-            if not isinstance(expMat, torch.Tensor):
-                expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
+            #check correctness of user input
+            expMat = torch.as_tensor(expMat,dtype=torch.long,device=Z.device)
             assert expMat.shape[0] == n_dep_gens, 'Invalid exponent matrix.'
             if zpi.__debug_extra__: assert torch.all(expMat >= 0), 'Invalid exponent matrix.' 
             
@@ -327,7 +326,7 @@ class batchPolyZonotope:
         new_G_shape = self.G.shape[:-2] + (self.G.shape[-2] + other.G.shape[-2], self.G.shape[-1] + other.G.shape[-1])
         g1_slice = self.batch_idx_all + (slice(None,self.G.shape[-2]),slice(None,self.G.shape[-1]))
         g2_slice = self.batch_idx_all + (slice(self.G.shape[-2],None),slice(self.G.shape[-1],None))
-        G = torch.zeros(new_G_shape)
+        G = torch.zeros(new_G_shape, dtype=self.dtype, device=self.device)
         G[g1_slice] = self.G
         G[g2_slice] = other.G
 
@@ -335,7 +334,7 @@ class batchPolyZonotope:
         new_Grest_shape = self.Grest.shape[:-2] + (self.Grest.shape[-2] + other.Grest.shape[-2], self.Grest.shape[-1] + other.Grest.shape[-1])
         g1_slice = self.batch_idx_all + (slice(None,self.Grest.shape[-2]),slice(None,self.Grest.shape[-1]))
         g2_slice = self.batch_idx_all + (slice(self.Grest.shape[-2],None),slice(self.Grest.shape[-1],None))
-        Grest = torch.zeros(new_Grest_shape)
+        Grest = torch.zeros(new_Grest_shape, dtype=self.dtype, device=self.device)
         Grest[g1_slice] = self.Grest
         Grest[g2_slice] = other.Grest
 
@@ -525,6 +524,8 @@ class batchPolyZonotope:
         # Validate dimensions match
         n_pz = len(pzlist)
         dim = pzlist[0].dimension
+        dtype = pzlist[0].dtype
+        device = pzlist[0].device
         [pz.dimension for pz in pzlist].count(dim) == n_pz, "Expected all elements to have the same dimensions!"
 
         # First loop to extract key parts
@@ -546,9 +547,9 @@ class batchPolyZonotope:
         all_c = torch.stack(all_c)
 
         # Preallocate
-        all_G = torch.zeros((n_pz, all_dep_gens, dim))
-        all_grest = torch.zeros((n_pz, n_grest, dim))
-        all_expMat = torch.zeros((all_dep_gens, len(all_ids)), dtype=torch.int64)
+        all_G = torch.zeros((n_pz, all_dep_gens, dim), dtype=dtype, device=device)
+        all_grest = torch.zeros((n_pz, n_grest, dim), dtype=dtype, device=device)
+        all_expMat = torch.zeros((all_dep_gens, len(all_ids)), dtype=torch.int64, device=device)
         last_expMat_idx = 0
 
         # expand remaining values
@@ -582,15 +583,15 @@ class batchPolyZonotope:
         return zp.batchPolyZonotope.from_pzlist(out_list)
     
     @staticmethod
-    def zeros(batch_size, dims):
-        Z = torch.zeros((batch_size, 1, dims))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+    def zeros(batch_size, dims, dtype=None, device=None):
+        Z = torch.zeros((batch_size, 1, dims), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
-    def ones(batch_size, dims):
-        Z = torch.ones((batch_size, 1, dims))
-        expMat = torch.empty((0,0),dtype=torch.int64)
+    def ones(batch_size, dims, dtype=None, device=None):
+        Z = torch.ones((batch_size, 1, dims), dtype=dtype, device=device)
+        expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)

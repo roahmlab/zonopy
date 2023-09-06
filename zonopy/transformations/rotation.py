@@ -107,7 +107,7 @@ def cos_sin_cartProd(
 
     factor = 1
     T_factor = 1
-    pz_neighbor = pz - pz.c
+    pz_neighbor = pz + (-pz.c)
     for i in range(order):
         factor = factor * (i + 1)
         T_factor = T_factor * pz_neighbor
@@ -122,11 +122,11 @@ def cos_sin_cartProd(
     rem = pz_neighbor.to_interval()
     rem_pow = (T_factor * pz_neighbor).to_interval()
     if order % 2:
-        Jcos = zpcos(pz.c + interval([0], [1]) * rem)
-        Jsin = zpsin(pz.c + interval([0], [1]) * rem)
+        Jcos = zpcos(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
+        Jsin = zpsin(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
     else:
-        Jcos = zpsin(pz.c + interval([0], [1]) * rem)
-        Jsin = zpcos(pz.c + interval([0], [1]) * rem)
+        Jcos = zpsin(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
+        Jsin = zpcos(pz.c + interval([0], [1], dtype=pz.dtype, device=pz.device) * rem)
     if order % 4 == 0 or order % 4 == 1:
         Jcos = -Jcos
     if order % 4 == 1 or order % 4 == 2:
