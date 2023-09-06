@@ -3,11 +3,10 @@
 from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from .FK import forward_kinematics
-from urchin import URDF
+from zonopy.robots2.robot import ZonoArmRobot
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
-from zonopy.robots2.robot import ZonoArmRobot
 
 # Use forward occupancy or forward kinematics to get the joint occupancy
 # For the true bohao approach, enable use_outer_bb

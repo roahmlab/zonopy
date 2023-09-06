@@ -51,7 +51,7 @@ class batchPolyZonotope:
 
         # Make sure Z is a tensor and shaped right
         if not isinstance(Z, torch.Tensor) and dtype is None:
-            dtype = torch.float
+            dtype = torch.get_default_dtype()
         Z = torch.as_tensor(Z, dtype=dtype, device=device)
         assert len(Z.shape) > 2, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
 

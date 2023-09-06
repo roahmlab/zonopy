@@ -3,11 +3,10 @@
 from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from .FK import forward_kinematics
-from urchin import URDF
+from zonopy.robots2.robot import ZonoArmRobot
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
-from zonopy.robots2.robot import ZonoArmRobot
 
 # Use forward kinematics to get the forward occupancy
 # Note: zono_order=2 is 5 times faster than zono_order=20 on cpu

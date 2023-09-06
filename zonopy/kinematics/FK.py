@@ -3,12 +3,12 @@
 from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPolyZonotope
 from collections import OrderedDict
 from urchin import URDF
+from zonopy.robots2.robot import ZonoArmRobot
 import numpy as np
 import torch
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
-from zonopy.robots2.robot import ZonoArmRobot
 
 # Helper function to create a config dictionary from the rotatotopes if a list is provided
 def make_rotato_cfg(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]],

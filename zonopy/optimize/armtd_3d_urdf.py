@@ -11,9 +11,8 @@ import time
 
 T_PLAN, T_FULL = 0.5, 1.0
 
-from urchin import URDF
 from typing import List
-from nlp_setup_extracted_expanded import armtd_nlp, OfflineArmtdFoConstraints
+from zonopy.optimize.armtd_nlp_problem import ArmtdNlpProblem, OfflineArmtdFoConstraints
 from zonopy.robots2.robot import ZonoArmRobot
 
 class ARMTD_3D_planner():
@@ -41,7 +40,7 @@ class ARMTD_3D_planner():
 
         # Prepare the nlp
         self.g_ka = np.ones((self.dof),dtype=self.np_dtype) * np.pi/24                  # Hardcoded because it's preloaded...
-        self.nlp_problem_obj = armtd_nlp(self.dof,
+        self.nlp_problem_obj = ArmtdNlpProblem(self.dof,
                                          self.g_ka,
                                          self.pos_lim, 
                                          self.vel_lim,

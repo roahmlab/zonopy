@@ -8,17 +8,17 @@ import zonopy as zp
 
 # Set cuda if desired and available
 use_cuda = True
-# if use_cuda:
-#     zp.setup_cuda()
-# basetype = torch.empty(0)
-# dtype = basetype.dtype
-# device = basetype.device
-dtype = None
-device = None
 if use_cuda:
-    # use to this test eager specification
-    dtype = torch.float
-    device = 'cuda:0'
+    zp.setup_cuda()
+basetype = torch.empty(0)
+dtype = basetype.dtype
+device = basetype.device
+# dtype = None
+# device = None
+# if use_cuda:
+#     # use to this test eager specification
+#     dtype = torch.float
+#     device = 'cuda:0'
 
 # Disable extra debug checks
 zp.internal.__debug_extra__ = False

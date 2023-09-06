@@ -52,7 +52,7 @@ class polyZonotope:
 
         # Make sure Z is a tensor
         if not isinstance(Z, torch.Tensor) and dtype is None:
-            dtype = torch.float
+            dtype = torch.get_default_dtype()
         Z = torch.as_tensor(Z, dtype=dtype, device=device)
         
         # Make an expMat and id if not given

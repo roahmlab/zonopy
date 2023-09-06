@@ -47,7 +47,7 @@ class OfflineArmtdFoConstraints:
 # NOTE
 # NOTE
 # NOTE: ARE YOU SOLVING K OR LAMBDA ???
-class armtd_nlp():
+class ArmtdNlpProblem():
     __slots__ = [
         't_plan',
         't_full',

@@ -30,7 +30,7 @@ class matZonotope():
     def __init__(self,Z, dtype=None, device=None):
         # Make sure Z is a tensor
         if not isinstance(Z, torch.Tensor) and dtype is None:
-            dtype = torch.float
+            dtype = torch.get_default_dtype()
         Z = torch.as_tensor(Z, dtype=dtype, device=device)
         assert len(Z.shape) == 3, f'The dimension of Z input should be 3, not {len(Z.shape)}.'
         self.Z = Z

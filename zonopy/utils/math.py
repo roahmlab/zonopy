@@ -10,6 +10,8 @@ from zonopy import (
     batchMatZonotope,
 )
 from zonopy.utils.utils import compare_permuted_gen, compare_permuted_dep_gen
+import numpy as np
+import zonopy.internal as zpi
 
 SIGN_COS = (-1, -1, 1, 1)
 SIGN_SIN = (1, -1, -1, 1)
@@ -57,32 +59,46 @@ def close(zono1,zono2,eps = 1e-6,match_id=False):
         return compare_permuted_dep_gen(zono1.expMat[:,torch.argsort(zono1.id)],zono2.expMat[:,torch.argsort(zono2.id)],zono1.G,zono2.G,eps)
     else:
         print('Other types are not implemented yet.')
-    
+
+
 # TODO: FIXME
+def dot(zono1,zono2):
+    if isinstance(zono1,torch.Tensor):
+        if isinstance(zono2,polyZonotope):
+            assert len(zono1.shape) == 1 and zono1.shape[0] == zono2.dimension
+            zono1 = zono1.to(dtype=zono2.dtype)
+
+            c = (zono1@zono2.c).reshape(1)
+            G = (zono1@zono2.G).reshape(1,-1)
+            Grest = (zono1@zono2.Grest).reshape(1,-1)
+            return polyZonotope(c,G,Grest,zono2.expMat,zono2.id,zono2.dtype,zono2.itype,zono2.device).compress(2)
+
+
+# TODO: DOCUMENT
 def cross(zono1,zono2):
     '''
     
     '''
-    if isinstance(zono2,torch.Tensor):
+    # Handle flipped case as well as torch/np passthrough
+    if isinstance(zono2, (torch.Tensor, np.ndarray)):
         assert len(zono2.shape) == 1 and zono2.shape[0] == 3
-        if isinstance(zono1,torch.Tensor):
+        if isinstance(zono1, (torch.Tensor, np.ndarray)):
             assert len(zono1.shape) == 1 and zono1.shape[0] == 3
-            return torch.cross(zono1,zono2)
+            return torch.cross(torch.as_tensor(zono1), torch.as_tensor(zono2))
         elif isinstance(zono1, (polyZonotope, batchPolyZonotope)):
-            assert zono1.dimension ==3
-            return cross(-zono2,zono1)
+            assert zono1.dimension == 3
+            return cross(-zono2, zono1)
 
+    # Handle PZ cases
     elif isinstance(zono2, (polyZonotope, batchPolyZonotope)):
         assert zono2.dimension == 3
-        if type(zono1) == torch.Tensor:
+        if isinstance(zono1, (torch.Tensor, np.ndarray)):
             assert len(zono1.shape) == 1 and zono1.shape[0] == 3
             zono1_skew_sym = torch.tensor([[0,-zono1[2],zono1[1]],
                                            [zono1[2],0,-zono1[0]],
-                                           [-zono1[1],zono1[0],0]], dtype=zono1.dtype, device=zono1.device)
-
+                                           [-zono1[1],zono1[0],0]], dtype=zono2.dtype, device=zono2.device)
         elif isinstance(zono1, (polyZonotope, batchPolyZonotope)):
-            assert zono1.dimension ==3
-
+            assert zono1.dimension == 3
             Z = zono1.Z
             Z_skew = torch.zeros(Z.shape + Z.shape[-1:], dtype=Z.dtype, device=Z.device)
             Z_skew[..., 0, 1] = -Z[...,2]
@@ -96,21 +112,9 @@ def cross(zono1,zono2):
                 zono1_skew_sym = batchMatPolyZonotope(Z_skew, zono1.n_dep_gens, zono1.expMat, zono1.id, copy_Z=False)
             else:
                 zono1_skew_sym = matPolyZonotope(Z_skew, zono1.n_dep_gens, zono1.expMat, zono1.id, copy_Z=False)
-
-        return zono1_skew_sym@zono2    
+        return zono1_skew_sym@zono2
     
-
-# TODO: FIXME
-def dot(zono1,zono2):
-    if isinstance(zono1,torch.Tensor):
-        if isinstance(zono2,polyZonotope):
-            assert len(zono1.shape) == 1 and zono1.shape[0] == zono2.dimension
-            zono1 = zono1.to(dtype=zono2.dtype)
-
-            c = (zono1@zono2.c).reshape(1)
-            G = (zono1@zono2.G).reshape(1,-1)
-            Grest = (zono1@zono2.Grest).reshape(1,-1)
-            return polyZonotope(c,G,Grest,zono2.expMat,zono2.id,zono2.dtype,zono2.itype,zono2.device).compress(2)
+    return NotImplementedError
 
 
 # TODO: DOCUMENT
@@ -227,10 +231,10 @@ def sin(Set,order=6):
         G = out.G
         Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
         Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
-        if isinstance(pz, polyZonotope):
-            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
-        else:
+        if len(Z.shape) > 2:
             out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
+        else:
+            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
         return out
 
     return NotImplementedError
@@ -298,10 +302,10 @@ def cos(Set,order = 6):
         G = out.G
         Grest = torch.sum(out.Grest, dim=-2) + remainder.rad()
         Z = torch.cat([c.unsqueeze(-2), G, Grest.unsqueeze(-2)], axis=-2)
-        if isinstance(pz, polyZonotope):
-            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
-        else:
+        if len(Z.shape) > 2:
             out = batchPolyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
+        else:
+            out = polyZonotope(Z, out.n_dep_gens, out.expMat, out.id).compress(2)
         return out
     
     return NotImplementedError
