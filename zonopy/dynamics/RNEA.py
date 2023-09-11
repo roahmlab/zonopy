@@ -1,5 +1,5 @@
 # TODO VALIDATE
-
+from __future__ import annotations
 import torch
 import zonopy as zp
 import numpy as np
@@ -7,13 +7,20 @@ from urchin import URDF, Link
 from collections import OrderedDict
 from zonopy.robots2.robot import ZonoArmRobot
 
-from typing import Dict, Any, Union, List
+if annotations:
+    from typing import Dict, Any, Union, List
+    from typing import OrderedDict as OrderedDictType
+    from zonopy import polyZonotope as PZType
+    from zonopy import matPolyZonotope as MPZType
+    from zonopy import batchPolyZonotope as BPZType
+    from zonopy import batchMatPolyZonotope as BMPZType
+
 
 # Helper function to create a config dictionary from the rotatotopes if a list is provided
-def make_cfg_dict(configs: Union[Dict[str, Any], List[Any]],
-                  robot: URDF,
-                  allow_incomplete: bool = False,
-                  ) -> Dict[str, Any]: 
+def _make_cfg_dict(configs: Union[Dict[str, Any], List[Any]],
+                   robot: URDF,
+                   allow_incomplete: bool = False,
+                   ) -> Dict[str, Any]: 
     if isinstance(configs, dict):
         assert all(isinstance(x, str) for x in configs.keys()), "Keys for the config dict are not strings!"
     elif isinstance(configs, (list, np.ndarray)):
@@ -27,53 +34,53 @@ def make_cfg_dict(configs: Union[Dict[str, Any], List[Any]],
         raise TypeError
     return configs
 
-def pzrnea(rotatotopes,
-           qd,
-           qd_aux,
-           qdd,
+def pzrnea(rotatotopes: Union[Dict[str, Union[MPZType, BMPZType]], List[Union[MPZType, BMPZType]]],
+           qd: Union[Dict[str, Union[PZType, BPZType]], List[Union[PZType, BPZType]]],
+           qd_aux: Union[Dict[str, Union[PZType, BPZType]], List[Union[PZType, BPZType]]],
+           qdd: Union[Dict[str, Union[PZType, BPZType]], List[Union[PZType, BPZType]]],
            robot: ZonoArmRobot,
            zono_order: int = 40,
-           gravity: torch.Tensor = torch.tensor([0, 0, -9.81]),
+           gravity: Union[torch.Tensor, np.ndarray] = torch.tensor([0, 0, -9.81]),
            link_mass_override: Dict[str, Any] = None,
            link_center_mass_override: Dict[str, Any] = None,
-           link_inertia_override: Dict[str, Any] = None):
-    # Mass override
-    # COM override
-    # Intertia override
+           link_inertia_override: Dict[str, Any] = None,
+           ) -> OrderedDictType[str, Dict[str, Union[PZType, BPZType, torch.Tensor]]]:
+    """RNEA for an arm robot using Polynomial Zonotopes
+
+    This is implemented based the description of the Iterative Newton-Euler Algorithm (RNEA) described in John J. Craig's "Introduction to Robotics: Mechanics and Control" 3rd Edition, Chapter 6.5. ISBN: 978-0-201-54361-2.
+
+    Args:
+        rotatotopes (Union[Dict[str, Union[matPolyZonotope, batchMatPolyZonotope]], List[Union[matPolyZonotope, batchMatPolyZonotope]]]):
+            Dictionary of rotatotopes for each joint, or a list of rotatotopes for each joint. If a list is provided, it is assumed to be in the same order as the actuated joints in the URDF.
+        qd (Union[Dict[str, Union[polyZonotope, batchPolyZonotope]], List[Union[polyZonotope, batchPolyZonotope]]]):
+            Dictionary of joint velocities for each joint, or a list of joint velocities for each joint. If a list is provided, it is assumed to be in the same order as the actuated joints in the URDF.
+        qd_aux (Union[Dict[str, Union[polyZonotope, batchPolyZonotope]], List[Union[polyZonotope, batchPolyZonotope]]]):
+            Dictionary of joint auxillary velocities for each joint, or a list of joint auxillary velocities for each joint. If a list is provided, it is assumed to be in the same order as the actuated joints in the URDF.
+        qdd (Union[Dict[str, Union[polyZonotope, batchPolyZonotope]], List[Union[polyZonotope, batchPolyZonotope]]]):
+            Dictionary of joint accelerations for each joint, or a list of joint accelerations for each joint. If a list is provided, it is assumed to be in the same order as the actuated joints in the URDF.
+        robot (ZonoArmRobot):
+            The robot to use for the RNEA
+        zono_order (int, optional): 
+            The order of the zonotopes to use. Lower is faster but less accurate. Defaults to 40.
+        gravity (Union[torch.Tensor, np.ndarray], optional):
+            The gravity vector to use. Defaults to [0, 0, -9.81].
+        link_mass_override (Dict[str, Any], optional):
+            Dictionary of link masses to override the URDF values. Defaults to None.
+        link_center_mass_override (Dict[str, Any], optional): [description].
+            Dictionary of link center of masses to override the URDF values. Defaults to None.
+        link_inertia_override (Dict[str, Any], optional): [description].
+            Dictionary of link inertias to override the URDF values. Defaults to None.
     
-    # get mass
-    # cet center of mass
-    # get inertia wrt to com frame
-    # get n_joints?
-    # get n_actuated_joints
-    # get transforms
-
-    ## Inputs
-    # joint_vel
-    # joint_acc
-    # joint_vel_aux
-
-    # Prep
-    # rot axis of base frame
-    # TODO: torch or np?
-    # z0 = np.array([0, 0, 1.])
-    # irrelevant
-
-    # position of each joint frame with respect to the prior frame
-    # P = [joint.origin for joint in robot.joints]
-
-    # Each frame's axis of rotation expressed in said frame
-    # z = [joint.axis for joint in robot.joints]
-
-    # orientation of frame I with respect to frame i-1
-    # generate matPolyZonotopes for R from q
-    # needed?
+    Returns:
+        OrderedDictType[str, Dict[str, Union[polyZonotope, batchPolyZonotope, torch.Tensor]]]:
+            Dictionary of joint dynamics. Each entry is a dictionary with keys 'force', 'moment', and 'torque' (if applicable).
+    """
 
     ## RUN
-    rot_map = make_cfg_dict(rotatotopes, robot.urdf)
-    qd_map = make_cfg_dict(qd, robot.urdf)
-    qd_aux_map = make_cfg_dict(qd_aux, robot.urdf)
-    qdd_map = make_cfg_dict(qdd, robot.urdf)
+    rot_map = _make_cfg_dict(rotatotopes, robot.urdf)
+    qd_map = _make_cfg_dict(qd, robot.urdf)
+    qd_aux_map = _make_cfg_dict(qd_aux, robot.urdf)
+    qdd_map = _make_cfg_dict(qdd, robot.urdf)
     urdf = robot.urdf
 
     # Update all overrides
@@ -158,18 +165,18 @@ def pzrnea(rotatotopes,
         else:
             joint_tuple = None
 
-        out = pzrnea_forward_recursion(joint_rot,
-                                       w_parent,
-                                       w_aux_parent,
-                                       wdot_parent,
-                                       linear_acc_parent,
-                                       joint_axis,
-                                       joint_pos,
-                                       link_mass[lnk.name],
-                                       link_center_mass[lnk.name],
-                                       link_inertia[lnk.name],
-                                       joint_tuple,
-                                       zono_order)
+        out = _pzrnea_forward_recursion(joint_rot,
+                                        w_parent,
+                                        w_aux_parent,
+                                        wdot_parent,
+                                        linear_acc_parent,
+                                        joint_axis,
+                                        joint_pos,
+                                        link_mass[lnk.name],
+                                        link_center_mass[lnk.name],
+                                        link_inertia[lnk.name],
+                                        joint_tuple,
+                                        zono_order)
         
         out_w, out_w_aux, out_wdot, out_linear_acc, out_F, out_N = out
         joint_dict[joint] = {
@@ -202,14 +209,14 @@ def pzrnea(rotatotopes,
             continue
         parent_props = joint_dict[props['parent_joint']]
 
-        out = pzrnea_reverse_recursion(props['joint_rot'],
-                                       props['f'],
-                                       parent_props['F'],
-                                       props['n'],
-                                       parent_props['N'],
-                                       robot.link_data[parent_props['child_link']].center_mass,
-                                       props['joint_pos'],
-                                       zono_order)
+        out = _pzrnea_reverse_recursion(props['joint_rot'],
+                                        props['f'],
+                                        parent_props['F'],
+                                        props['n'],
+                                        parent_props['N'],
+                                        robot.link_data[parent_props['child_link']].center_mass,
+                                        props['joint_pos'],
+                                        zono_order)
         
         f = getattr(parent_props, 'f', 0) + out[0]
         n = getattr(parent_props, 'n', 0) + out[1]
@@ -235,7 +242,7 @@ def pzrnea(rotatotopes,
     return out_joint_dict
 
 
-def pzrnea_forward_recursion(joint_rot, w, w_aux, wdot, linear_acc, joint_axis, joint_pos, mass, com, I, joint_tuple = None, zono_order = 40):
+def _pzrnea_forward_recursion(joint_rot, w, w_aux, wdot, linear_acc, joint_axis, joint_pos, mass, com, I, joint_tuple = None, zono_order = 40):
     # handle if we have any joint state or not
     w_contrib = 0
     w_aux_contrib = 0
@@ -274,7 +281,7 @@ def pzrnea_forward_recursion(joint_rot, w, w_aux, wdot, linear_acc, joint_axis, 
     out_N = out_N.reduce_indep(zono_order)
     return out_w, out_w_aux, out_wdot, out_linear_acc, out_F, out_N
 
-def pzrnea_reverse_recursion(R, f, F, n, N, com, P, zono_order = 40):
+def _pzrnea_reverse_recursion(R, f, F, n, N, com, P, zono_order = 40):
     # this is going backwards!
     # 6.51 compute forces at each joint
     out_f = R @ f + F
