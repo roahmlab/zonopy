@@ -264,16 +264,18 @@ class batchPolyZonotope:
     # def __len__(self):
     #     return self.Z.shape[0]
 
+    # NOTE - this is a shim for reducing each individual pz in the batch
     def reduce(self, order, option='girard'):
         # Reduce by iterating over all
-        # Shim for pzrnea
+        # Shim to batchPolyZonotope
         len_ents = int(np.prod(self.batch_shape))
         idx_tuple = np.unravel_index(np.arange(len_ents), self.batch_shape)
         pzlist = [None]*len_ents
         for out_i, idxs in enumerate(zip(*idx_tuple)):
             pzlist[out_i] = self[idxs].reduce(order, option=option)
         return zp.batchPolyZonotope.from_pzlist(pzlist, batch_shape=self.batch_shape)
-
+    
+    # TODO Inspect for speedup?
     def reduce_indep(self,order,option='girard'):
         # extract dimensions
         N = self.dimension
@@ -301,7 +303,6 @@ class batchPolyZonotope:
             ZRed = torch.cat((ZRed[self.batch_idx_all+(0,)],ZRed[self.batch_idx_all+(slice(1,n_dg_red+1),)].sum(-2).unsqueeze(-2),ZRed[self.batch_idx_all+(slice(n_dg_red+1,None),)]),dim=-2)
             n_dg_red = 1
         return batchPolyZonotope(ZRed,n_dg_red,self.expMat,self.id,copy_Z=False)
-
 
     def exactCartProd(self,other):
         '''
@@ -358,6 +359,7 @@ class batchPolyZonotope:
         else:
             assert False, 'Not implemented'
 
+    # TODO Inspect for speedup?
     def slice_dep(self,id_slc,val_slc):
         '''
         Slice polynomial zonotpe in depdent generators
@@ -415,10 +417,6 @@ class batchPolyZonotope:
     
 
     def center_slice_all_dep(self,val_slc):
-        # n_ids = self.id.shape[0] # n_ids
-        # val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
-        # expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
-        # return self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2)
         # get all values in order
         val_slc = val_slc[..., None, self.id] # Batch dims, ..., 1, n_ids
         # Exponentiate by exponent matrix, reduce the product for each term, then multiply by each dep gen
@@ -430,23 +428,12 @@ class batchPolyZonotope:
                               self.G) # b1, b2,..., dim
         return self.c + offset.squeeze(-2)
 
-    def grad_center_slice_all_dep(self,val_slc):        
-        # n_ids = self.id.shape[0] 
-        # n_short = val_slc.shape[-1] - n_ids
-        # val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].reshape(self.batch_shape+(1,1,n_ids)) # b1, b2,..., 1, 1, n_ids
-        # expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
-        # expMat_red = expMat.unsqueeze(0).repeat(n_ids,1,1) - torch.eye(n_ids,dtype=int).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
-        # #torch.prod(val_slc**expMat_red,dim=-1), b1, b2,..., n_ids,  n_dep_gens
-        # #(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)), b1, b2,..., n_ids,  n_dep_gens
-        # #self.G, b1, b2,..., n_dep_gens, dim
-        # #(self.G.unsqueeze(-2)*(expMat.T*torch.prod(val_slc**expMat_red,dim=-1)).unsqueeze(-3)), 
-        # #res, b1, b2,..., 1, n_ids,  n_dep_gens
-        # grad = ((expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
-        # grad = torch.cat((grad,torch.zeros(self.batch_shape+self.shape+(n_short,),dtype=self.dtype,device=self.device)),-1)
-        # return grad
-        grad = torch.zeros(self.batch_shape + self.shape + val_slc.shape[-1:])#,dtype=self.dtype,device=self.device)
+    def grad_center_slice_all_dep(self,val_slc):
+        # prepare output
+        grad = torch.zeros(self.batch_shape + self.shape + val_slc.shape[-1:], dtype=self.dtype, device=self.device)
         n_ids = len(self.id)
 
+        # get all values in order
         val_slc = val_slc[..., None, None, self.id] # Batch dims, ..., 1, 1, n_ids
         expMat_red = self.expMat.expand(n_ids, -1, -1) - torch.eye(n_ids, dtype=self.expMat.dtype).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
         # grad[..., self.id] = ((self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
@@ -455,10 +442,9 @@ class batchPolyZonotope:
         grad[..., self.id] = torch.einsum('...ig,...gd->...di',
                                           alpha_coeffs,
                                           self.G) # b1, b2,..., dim, n_ids
-        # torch.einsum('...ig,...gd->...di',self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num(),self.G)
         return grad
 
-    # Unverified since update
+    # TODO Unverified since update
     def hess_center_slice_all_dep(self,val_slc):
         n_ids= self.id.shape[0]
         n_vals = val_slc.shape[-1]
@@ -471,7 +457,7 @@ class batchPolyZonotope:
         hess[self.batch_idx_all+(slice(None),slice(n_ids),slice(n_ids))] = ((expMat_first*expMat_red.transpose(-1,-2)*torch.prod(val_slc**expMat_twice_red,dim=-1).nan_to_num())@self.G.unsqueeze(-3)).transpose(-3,-1)
         return hess
 
-    
+
     def slice_all_dep(self,val_slc):
         '''
         Slice polynomial zonotpe in depdent generators
@@ -483,15 +469,6 @@ class batchPolyZonotope:
         '''
 
         ##################################
- 
-        # n_ids = self.id.shape[0] # n_ids
-        # val_slc = val_slc[self.batch_idx_all + (slice(n_ids),)].unsqueeze(-2) # b1, b2,..., 1, n_ids
-        # expMat = self.expMat[:,np.argsort(self.id)] # n_dep_gens, n_ids
-        # #val_slc**expMat: b1, b2, ..., n_dep_gens, n_ids
-        # #torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2): b1, b2, ..., 1, n_dep_gens
-        # #(torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2):b1, b2, ...,dim
-        # c = self.c + (torch.prod(val_slc**expMat,dim=-1).unsqueeze(-2)@self.G).squeeze(-2) 
-        # return zp.batchZonotope(torch.cat((c.unsqueeze(-2),self.Grest),-2))
         return zp.batchZonotope(torch.cat((self.center_slice_all_dep(val_slc).unsqueeze(-2),self.Grest), -2))
 
 
