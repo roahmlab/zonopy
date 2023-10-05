@@ -70,7 +70,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
 
     def _getReferenceBatchZpImpl(self, times: zp.batchPolyZonotope):
         mask_plan = (times.c <= self.tbrake).flatten()
-        mask_stopping = (times.c < self.tfinal).flatten() * ~mask_plan
+        mask_stopping = (times.c <= self.tfinal).flatten() * ~mask_plan
         mask_plan = np.nonzero(mask_plan.cpu().numpy())[0]
         mask_stopping = np.nonzero(mask_stopping.cpu().numpy())[0]
         stopped_idxs = np.nonzero((times.c >= self.tfinal).flatten().cpu().numpy())[0]
@@ -141,7 +141,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
             if hasattr(v, 'c'):
                 val = v.c
             mask_plan[i] = val <= self.tbrake
-            mask_stopping[i] = (val < self.tfinal) * ~mask_plan[i]
+            mask_stopping[i] = (val <= self.tfinal) * ~mask_plan[i]
         
         q_out = np.tile(self._final_q,(num_t,1))
         qd_out = np.tile(self._final_q * 0,(num_t,1))
@@ -171,7 +171,7 @@ class PiecewiseArmTrajectory(BaseArmTrajectory):
 
     def _getReferenceTorchImpl(self, times: torch.Tensor):
         mask_plan = times <= self.tbrake
-        mask_stopping = (times.c < self.tfinal) * ~mask_plan
+        mask_stopping = (times.c <= self.tfinal) * ~mask_plan
         num_t = len(times)
         
         q_out = torch.tile(self._final_q,(num_t,1))
