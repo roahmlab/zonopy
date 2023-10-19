@@ -57,7 +57,7 @@ class KinematicUrdfWithObstacles(KinematicUrdfBase):
             goal_fk = self.robot.link_fk(self.qgoal)
             for (link, start_tf), goal_tf in zip(start_fk.items(), goal_fk.values()):
                 if link.collision_mesh is not None:
-                    mesh = link.collision_mesh
+                    mesh = link.collision_mesh.bounding_box
                     start_collision_manager.add_object(link.name, mesh, transform=start_tf)
                     goal_collision_manager.add_object(link.name, mesh, transform=goal_tf)
                     
@@ -75,7 +75,7 @@ class KinematicUrdfWithObstacles(KinematicUrdfBase):
                 cand_pos[...,0:3,0:3] = np.eye(3)
                 for pose in cand_pos:
                     coll_start = start_collision_manager.in_collision_single(mesh, pose)
-                    coll_end = start_collision_manager.in_collision_single(mesh, pose)
+                    coll_end = goal_collision_manager.in_collision_single(mesh, pose)
                     if not (coll_start or coll_end):
                         return pose[0:3,3]
                 return None

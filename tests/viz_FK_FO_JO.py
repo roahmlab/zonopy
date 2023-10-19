@@ -53,6 +53,7 @@ fk = kin.forward_kinematics(joints, rob)
 fo, _ = kin.forward_occupancy(joints, rob)
 jo, _ = kin.joint_occupancy(joints, rob)
 jo_bzlike, _ = kin.joint_occupancy(joints, rob, use_outer_bb=True)
+jo_sphere, _ = kin.joint_occupancy(joints, rob, return_sphere=True)
 
 
 # Plot
@@ -64,7 +65,7 @@ import mpl_toolkits.mplot3d as a3
 plot_arm = True
 plot_ref = True
 slice_zonos = True
-plot_seperate = False
+plot_seperate = True
 k = np.ones(7)*0.5
 if plot_arm and plot_ref:
     reference, _, _ = traj_class(q, qd, qdd, k, a.param_range).getReference(np.arange(0, 1, 0.01))
@@ -97,6 +98,20 @@ if plot_arm and not plot_ref:
 
 for i in range(100):
     print(i)
+    ref1=[]
+    ref2=[]
+    ref3=[]
+    if plot_arm and plot_ref:
+        ref_fk = rob.urdf.visual_trimesh_fk(cfg=reference[i])
+        for mesh, transform in ref_fk.items():
+            mesh = mesh.bounding_box.copy()
+            mesh.apply_transform(transform)
+            if plot_seperate:
+                ref3.append(ax3.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange'))
+            else:
+                ref1.append(ax1.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange'))
+                ref2.append(ax2.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange'))
+
     def create_patches(body_dict):
         patches = []
         for occupancy in body_dict.values():
@@ -139,34 +154,46 @@ for i in range(100):
             patches.extend(patch)
         return patches
     
+    def create_patches_batch_sphere(batch_dict, i):
+        collections = []
+        for pos, radius in batch_dict.values():
+            try:
+                pos = pos[i]
+            except:
+                pos = pos
+            if slice_zonos:
+                pos = pos.slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype())).to_interval()
+                # assert torch.allclose(pos.inf, pos.sup)
+                radius = radius + pos.rad().max()*np.sqrt(3)
+                pos = pos.center()
+                # occupancy = occupancy.slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype()).view(1,7).repeat(100,1))
+            else:
+                # no op
+                #pos = pos.to_zonotope()
+                pass
+            theta = np.linspace(0, 2.*np.pi, 100)
+            phi = np.linspace(0, np.pi, 100)
+            x = radius * np.outer(np.cos(theta), np.sin(phi)) + pos[0]
+            y = radius * np.outer(np.sin(theta), np.sin(phi)) + pos[1]
+            z = radius * np.outer(np.ones(np.size(theta)), np.cos(phi)) + pos[2]
+            collections.append(ax2.plot_surface(x,y,z, edgecolor='purple', facecolor='purple', alpha=0.1, linewidth=0.5))
+        return collections
+    
     batch_fo = create_patches_batch(fo,i)
     batch_jo = create_patches_batch(jo,i)
     batch_jobz = create_patches_batch(jo_bzlike,i)
+    batch_josphere = create_patches_batch_sphere(jo_sphere,i)
 
     batch_fo = Poly3DCollection(batch_fo,alpha=0.1,edgecolor='red',facecolor='red',linewidths=0.5)
     batch_jo = Poly3DCollection(batch_jo,alpha=0.1,edgecolor='green',facecolor='green',linewidths=0.5)
     batch_jobz = Poly3DCollection(batch_jobz,alpha=0.1,edgecolor='blue',facecolor='blue',linewidths=0.5)
 
-    ax2.add_collection3d(batch_fo)
-    ax2.add_collection3d(batch_jo)
-    ax2.add_collection3d(batch_jobz)
+    # ax2.add_collection3d(batch_fo)
+    # ax2.add_collection3d(batch_jo)
+    # ax2.add_collection3d(batch_jobz)
     ax2.set_xlim([-.55,0.25])
     ax2.set_ylim([-.1,0.7])
     ax2.set_zlim([0,0.8])
-
-    ref1=[]
-    ref2=[]
-    ref3=[]
-    if plot_arm and plot_ref:
-        ref_fk = rob.urdf.visual_trimesh_fk(cfg=reference[i])
-        for mesh, transform in ref_fk.items():
-            mesh = mesh.bounding_box.copy()
-            mesh.apply_transform(transform)
-            if plot_seperate:
-                ref3.append(ax3.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange'))
-            else:
-                ref1.append(ax1.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange'))
-                ref2.append(ax2.plot_trisurf(mesh.vertices[:,0],mesh.vertices[:,1], mesh.vertices[:,2], triangles=mesh.faces,color='orange'))
 
     plt.draw()
     plt.pause(0.1)
@@ -174,9 +201,10 @@ for i in range(100):
     serial_fo.remove()
     serial_jo.remove()
     serial_jobz.remove()
-    batch_fo.remove()
-    batch_jo.remove()
-    batch_jobz.remove()
+    # batch_fo.remove()
+    # batch_jo.remove()
+    # batch_jobz.remove()
+    for ref in batch_josphere: ref.remove()
     for ref in ref1: ref.remove()
     for ref in ref2: ref.remove()
     for ref in ref3: ref.remove()

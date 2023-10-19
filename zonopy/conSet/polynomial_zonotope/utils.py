@@ -272,21 +272,3 @@ def remove_dependence_and_compress(
         return type(Set)(Z, G.shape[-3], ExpMat, Set.id[id_idx])
     else:
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    
-    expMat = torch.tensor([[1],[2],[1]])
-    G = torch.tensor([[2],[3],[4]])
-
-    expMat, G = removeRedundantExponents(expMat,G)
-    print(G)
-    print(expMat)
-
-    expMat1 = torch.tensor([[1,2],[2,3],[1,4]])
-    id1 = torch.tensor([1,2])
-    expMat2 = torch.tensor([[1,2],[2,3],[1,4]])
-    id2 = torch.tensor([2,3])
-    id, expMat1,expMat2 = mergeExpMatrix(id1,id2,expMat1,expMat2)    
-
-    print(id,expMat1,expMat2)

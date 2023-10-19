@@ -549,20 +549,3 @@ class polyZonotope:
         id = np.empty(0,dtype=np.int64)
         return zp.polyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
 
-if __name__ == '__main__':
-    #pz = polyZonotope(torch.tensor([1.212,24142.42]),torch.eye(2),torch.eye(2),dtype=float,itype=int)
-    #print(pz.__repr__())
-
-    pz = polyZonotope(torch.tensor([[1]]),0)
-    import pdb;pdb.set_trace()
-    #print(pz)
-    
-    #print(pz.reduce(10))
-
-
-
-
-
-
-
-        

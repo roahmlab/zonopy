@@ -282,7 +282,7 @@ if __name__ == '__main__':
         obs, rew, done, info = env.step(ka)
         # env.step(ka,flag)
         assert(not info['collision_info']['in_collision'])
-        # env.render()
+        env.render()
     from scipy import stats
     print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {stats.describe(t_armtd)}')
     print("Per step")

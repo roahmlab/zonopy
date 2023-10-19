@@ -343,25 +343,3 @@ class matPolyZonotope():
         expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.matPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
-
-if __name__ == '__main__':
-    
-    C1 = torch.rand(3,3,dtype=torch.float)
-    C2 = torch.rand(3,3,dtype=torch.float)
-    G1 = torch.rand(3,3,4,dtype=torch.float)
-    G2 = torch.rand(3,3,2,dtype=torch.float)
-    Grest1 = torch.rand(3,3,2,dtype=torch.float)
-    Grest2 = torch.rand(3,3,3,dtype=torch.float)
-    mp1 = matPolyZonotope(C1,G1,Grest1)
-    mp2 = matPolyZonotope(C2,G2,Grest2)
-
-    cen = torch.rand(3,dtype=torch.float)
-    gen = torch.rand(3,4,dtype=torch.float)
-    grest = torch.rand(3,2,dtype=torch.float)
-    pz = polyZonotope(cen,gen,grest)
-    
-    result1 = mp1@mp2@pz
-    result2 = mp1@(mp2@pz)
-    #import pdb; pdb.set_trace()
-    flag = zp.close(result1.to_zonotope(),result2.to_zonotope())
-    print(flag)
