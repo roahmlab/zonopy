@@ -535,6 +535,17 @@ class polyZonotope:
         pz = self.project(dim)
     '''
     
+    def split_dep_indep(self, center_on_dep=True):
+        Z_dep = torch.clone(self.Z[:self.n_dep_gens+1])
+        Z_indep = torch.clone(self.Z[-(self.n_indep_gens+1):])
+        Z_indep[0] *= 0
+        if not center_on_dep:
+            Z_indep[0] += Z_dep[0]
+            Z_dep[0] += 0
+        deps = polyZonotope(Z_dep,self.n_dep_gens,self.expMat,self.id,copy_Z=False)
+        indeps = zp.zonotope(Z_indep)
+        return deps, indeps
+    
     @staticmethod
     def zeros(dims, dtype=None, device=None):
         Z = torch.zeros((1, dims), dtype=dtype, device=device)

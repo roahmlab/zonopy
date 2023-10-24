@@ -4,6 +4,7 @@ from zonopy import polyZonotope, matPolyZonotope, batchPolyZonotope, batchMatPol
 from collections import OrderedDict
 from .FK import forward_kinematics
 from zonopy.robots2.robot import ZonoArmRobot
+import numpy as np
 
 from typing import Union, Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
@@ -17,7 +18,6 @@ def joint_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMat
                     joints: List[str] = None,
                     joint_zono_override: Dict[str, polyZonotope] = {},
                     use_outer_bb: bool = False,
-                    return_sphere: bool = False,
                     ) -> Tuple[OrderedDictType[str, Union[polyZonotope, batchPolyZonotope]],
                                OrderedDictType[str, Union[Tuple[polyZonotope, matPolyZonotope],
                                                           Tuple[batchPolyZonotope, batchMatPolyZonotope]]]]:
@@ -58,11 +58,6 @@ def joint_occupancy(rotatotopes: Union[Dict[str, Union[matPolyZonotope, batchMat
             jo_joint = pos + joint_zonos[name]
             jo[name] = jo_joint.reduce_indep(zono_order)
     # Otherwise rotate
-    elif return_sphere:
-        for name, (pos, rot) in joint_fk_dict.items():
-            jo_joint = pos.reduce_indep(zono_order)
-            radius = robot.joint_data[urdf._joint_map[name]].radius.max()
-            jo[name] = (jo_joint, radius)
     else:
         for name, (pos, rot) in joint_fk_dict.items():
             jo_joint = pos + rot@joint_zonos[name]

@@ -240,6 +240,7 @@ class ZonoArmRobot:
         'continuous_joints',
         'pos_lim_mask',
         'link_parent_joint',
+        'link_child_joints',
         'joint_data',
         'link_data',
         '__joint_axis',
@@ -334,11 +335,15 @@ class ZonoArmRobot:
     def _setup_robot_joint_data(self, robot, dtype, create_joint_occupancy=False):
         # Map from each link to the parent joint
         self.link_parent_joint = {robot.base_link.name: None}
+        self.link_child_joints = {el.name: None for el in robot.end_links}
         self.joint_data = {}
         
         for joint in robot.joints:
             # Joint must have parent or child
             self.link_parent_joint[joint.child] = joint
+            child_joint_set = self.link_child_joints.get(joint.parent, set())
+            child_joint_set.add(joint)
+            self.link_child_joints[joint.parent] = child_joint_set
             
             # Get the index
             try:

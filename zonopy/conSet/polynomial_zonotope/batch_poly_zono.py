@@ -493,6 +493,17 @@ class batchPolyZonotope:
         Z = self.Z[self.batch_idx_all+(slice(None),dim)]
         return batchPolyZonotope(Z,self.n_dep_gens,self.expMat,self.id,copy_Z=False).compress(1)
     
+    def split_dep_indep(self, center_on_dep=True):
+        Z_dep = torch.clone(self.Z[...,:self.n_dep_gens+1,:])
+        Z_indep = torch.clone(self.Z[...,-(self.n_indep_gens+1):,:])
+        Z_indep[...,0,:] *= 0
+        if not center_on_dep:
+            Z_indep[...,0,:] += Z_dep[...,0,:]
+            Z_dep[...,0,:] += 0
+        deps = batchPolyZonotope(Z_dep,self.n_dep_gens,self.expMat,self.id,copy_Z=False)
+        indeps = zp.batchZonotope(Z_indep)
+        return deps, indeps
+
     @staticmethod
     def from_pzlist(pzlist, batch_shape=None):
         assert len(pzlist) > 0, "Expected at least 1 element input!"
