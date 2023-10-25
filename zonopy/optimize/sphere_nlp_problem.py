@@ -96,13 +96,5 @@ class OfflineArmtdSphereConstraints:
         dist, dist_jac = self.NN_fun(self.centers)
         Cons_out[:] = -(dist - self.radii).cpu().numpy()
         Jac_out[:] = -(torch.einsum('sd,sdp->sp', dist_jac, self.center_jac) - self.radii_jac).cpu().numpy()
-        # Cons_out[:] = -(dist).cpu().numpy()
-        # Jac_out[:] = -(torch.einsum('sd,sdp->sp', dist_jac, self.center_jac)).cpu().numpy()
-        # print(torch.any(torch.isnan(self.centers)), torch.any(torch.isinf(self.centers)))
-        # print(torch.any(torch.isnan(self.radii)), torch.any(torch.isinf(self.radii)))
-        # print(torch.any(torch.isnan(self.center_jac)), torch.any(torch.isinf(self.center_jac)))
-        # print(torch.any(torch.isnan(self.radii_jac)), torch.any(torch.isinf(self.radii_jac)))
-        # print(np.max(Cons_out), np.min(Cons_out))
-        # print(np.max(Jac_out,axis=0), np.min(Jac_out,axis=0))
         
         return Cons_out, Jac_out
