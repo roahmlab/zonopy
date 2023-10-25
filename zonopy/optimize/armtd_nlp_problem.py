@@ -69,6 +69,7 @@ class ArmtdNlpProblem():
         'qvel',
         'qgoal',
         '_FO_constraint',
+        '_cons_val',
         'M',
         '_qpos_masked',
         '_qvel_masked',
@@ -117,13 +118,14 @@ class ArmtdNlpProblem():
         self._grad_qvel_peak = np.diag(self.g_ka * self.t_plan)
         self._grad_qpos_brake = (0.5 * self._g_ka_masked * self.t_plan * self.t_full).reshape(-1,1) * self._masked_eye
 
-    def reset(self, qpos, qvel, qgoal, FO_constraint):
+    def reset(self, qpos, qvel, qgoal, FO_constraint, cons_val = 0):
         # Key parameters for optimization
         self.qpos = qpos
         self.qvel = qvel
         self.qgoal = qgoal
         # FO constraint holder & functional
         self._FO_constraint = FO_constraint
+        self._cons_val = cons_val
 
         self.M = self.M_limits
         if FO_constraint is not None:
@@ -164,7 +166,7 @@ class ArmtdNlpProblem():
             self._x_prev = np.copy(x)
 
             # zero out the underlying constraints and jacobians
-            self._Cons[...] = 0
+            self._Cons[...] = self._cons_val
             self._Jac[...] = 0
 
             # Joint limits

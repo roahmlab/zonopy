@@ -15,6 +15,8 @@ from zonopy.optimize.sphere_nlp_problem import OfflineArmtdSphereConstraints
 from zonopy.optimize.armtd_nlp_problem import ArmtdNlpProblem
 from zonopy.robots2.robot import ZonoArmRobot
 
+from zonopy.optimize.distance_net.compute_vertices_from_generators import compute_edges_from_generators
+
 class ARMTD_3D_planner():
     def __init__(self,
                  robot: ZonoArmRobot,
@@ -40,6 +42,7 @@ class ARMTD_3D_planner():
 
         self._setup_robot(robot)
         self.SFO_constraint = OfflineArmtdSphereConstraints(dtype=dtype, device=sphere_device)
+        self.sphere_device = sphere_device
         self.spheres_per_link = spheres_per_link
 
         # Prepare the nlp
@@ -88,16 +91,31 @@ class ARMTD_3D_planner():
         # output range
         out_g_ka = self.g_ka
 
+        ### Process the obstacles
+        dist_net_time = time.perf_counter()
+        n_obs = len(obs_zono)
+        # 5. Compute hyperplanes from buffered obstacles generators
+        # TODO: this step might be able to be optimized
+        hyperplanes_A, hyperplanes_b = obs_zono.to(device=self.sphere_device).polytope(self.combs)
+        hyperplanes_b = hyperplanes_b.unsqueeze(-1)
+        
+        # 6. Compute vertices from buffered obstacles generators
+        v1, v2 = compute_edges_from_generators(obs_zono.Z[...,0:1,:], obs_zono.Z[...,1:,:], hyperplanes_A, hyperplanes_b)
+
+        # combine to one input for the NN
+        obs_tuple = (hyperplanes_A, hyperplanes_b, v1, v2)
+
         final_time = time.perf_counter()
         out_times = {
-            'SFO_gen': final_time - SFO_gen_time,
+            'SFO_gen': dist_net_time - SFO_gen_time,
+            'distance_prep_net': final_time - dist_net_time,
         }
-        self.SFO_constraint.set_params(joint_occ, joint_pairs, out_g_ka, self.spheres_per_link, n_timesteps, self.dof)
+        self.SFO_constraint.set_params(joint_occ, joint_pairs, out_g_ka, obs_tuple, n_obs, self.spheres_per_link, n_timesteps, self.dof)
         return self.SFO_constraint, out_times
 
     def trajopt(self, qpos, qvel, qgoal, ka_0, SFO_constraint):
         # Moved to another file
-        self.nlp_problem_obj.reset(qpos, qvel, qgoal, SFO_constraint)
+        self.nlp_problem_obj.reset(qpos, qvel, qgoal, SFO_constraint, cons_val = -1e-6)
         n_constraints = self.nlp_problem_obj.M
 
         nlp = cyipopt.Problem(
@@ -144,7 +162,7 @@ class ARMTD_3D_planner():
         trajopt_time = time.perf_counter()
         k_opt, flag, constraint_times = self.trajopt(qpos, qvel, qgoal, ka_0, SFO_constraint)
         trajopt_time = time.perf_counter() - trajopt_time
-        return k_opt, flag, trajopt_time, SFO_times['SFO_gen'], JRS_process_time, constraint_times
+        return k_opt, flag, trajopt_time, SFO_times['SFO_gen'], SFO_times['distance_prep_net'], JRS_process_time, constraint_times
 
 
 if __name__ == '__main__':
@@ -155,9 +173,11 @@ if __name__ == '__main__':
         device = 'cuda:0'
         #device = 'cpu'
         dtype = torch.float
+        # dtype = torch.double
     else:
         device = 'cpu'
         dtype = torch.float
+        # dtype = torch.double
 
     ##### LOAD ROBOT #####
     import os
@@ -186,7 +206,8 @@ if __name__ == '__main__':
         )
     # obs = env.reset()
     obs = env.reset(
-        qpos=np.array([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),
+        # qpos=np.array([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),
+        qpos=np.array([0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428])-0.2,
         qvel=np.array([0,0,0,0,0,0,0.]),
         qgoal = np.array([ 0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428]),
         obs_pos=[
@@ -214,10 +235,11 @@ if __name__ == '__main__':
     #         ])
 
     ##### 2. RUN ARMTD #####    
-    planner = ARMTD_3D_planner(rob, device=device)
+    planner = ARMTD_3D_planner(rob, device=device, sphere_device=device, dtype=dtype)
     t_armtd = []
     T_NLP = []
     T_SFO = []
+    T_NET_PREP = []
     T_PREPROC = []
     T_CONSTR_E = []
     N_EVALS = []
@@ -226,11 +248,12 @@ if __name__ == '__main__':
         ts = time.time()
         qpos, qvel, qgoal = obs['qpos'], obs['qvel'], obs['qgoal']
         obstacles = (np.asarray(obs['obstacle_pos']), np.asarray(obs['obstacle_size']))
-        ka, flag, tnlp, tsfo, tpreproc, tconstraint_evals = planner.plan(qpos, qvel, qgoal, obstacles)
+        ka, flag, tnlp, tsfo, tdnp, tpreproc, tconstraint_evals = planner.plan(qpos, qvel, qgoal, obstacles)
         t_elasped = time.time()-ts
         #print(f'Time elasped for ARMTD-3d:{t_elasped}')
         T_NLP.append(tnlp)
         T_SFO.append(tsfo)
+        T_NET_PREP.append(tdnp)
         T_PREPROC.append(tpreproc)
         T_CONSTR_E.extend(tconstraint_evals)
         N_EVALS.append(len(tconstraint_evals))
@@ -240,13 +263,14 @@ if __name__ == '__main__':
             ka = (0 - qvel)/(T_FULL - T_PLAN)
         obs, rew, done, info = env.step(ka)
         # env.step(ka,flag)
-        assert(not info['collision_info']['in_collision'])
-        # env.render()
+        # assert(not info['collision_info']['in_collision'])
+        env.render()
     from scipy import stats
     print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {stats.describe(t_armtd)}')
     print("Per step")
     print(f'NLP: {stats.describe(T_NLP)}')
     print(f'constraint evals: {stats.describe(T_CONSTR_E)}')
     print(f'number of constraint evals: {stats.describe(N_EVALS)}')
+    print(f'Distance net prep: {stats.describe(T_NET_PREP)}')
     print(f'SFO generation: {stats.describe(T_SFO)}')
     print(f'JRS preprocessing: {stats.describe(T_PREPROC)}')

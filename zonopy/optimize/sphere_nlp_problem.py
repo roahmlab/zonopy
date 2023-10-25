@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from zonopy.kinematics.SO import make_spheres
+from zonopy.optimize.distance_net.distance_and_gradient_net import DistanceGradientNet
 
 class OfflineArmtdSphereConstraints:
     def __init__(self, dimension = 3, dtype = torch.float, device=None):
@@ -10,11 +11,15 @@ class OfflineArmtdSphereConstraints:
         if device is None:
             device = torch.empty(0,dtype=dtype).device
         self.device = device
+        self.distance_net = DistanceGradientNet().to(device)
     
-    def set_params(self, joint_occ, joint_pairs, g_ka, n_spheres_per_link, n_time, n_params):
+    def set_params(self, joint_occ, joint_pairs, g_ka, obs_tuple, n_obs, n_spheres_per_link, n_time, n_params):
         self.joint_occ = joint_occ
         self.joint_pairs = joint_pairs
         self.g_ka = g_ka
+
+        self.obs_tuple = obs_tuple
+        self.n_obs = n_obs
 
         n_joints = len(joint_occ)
         n_pairs = len(joint_pairs)
@@ -24,19 +29,32 @@ class OfflineArmtdSphereConstraints:
         self.joint_occ = joint_occ
         self.joint_pairs = joint_pairs
         self.total_spheres = n_joints*n_time + n_spheres_per_link*n_pairs*n_time
-        
+
         ### COMPAT
         self.M = self.total_spheres
         self.n_obs_in_FO = 1
         ###
 
+        ## process obs_tuple
+        hyp_A = self.obs_tuple[0].expand(self.total_spheres, -1, -1, -1).reshape(-1, *self.obs_tuple[0].shape[-2:])
+        hyp_b = self.obs_tuple[1].expand(self.total_spheres, -1, -1, -1).reshape(-1, *self.obs_tuple[1].shape[-2:])
+        v1 = self.obs_tuple[2].expand(self.total_spheres, -1, -1, -1).reshape(-1, *self.obs_tuple[2].shape[-2:])
+        v2 = self.obs_tuple[3].expand(self.total_spheres, -1, -1, -1).reshape(-1, *self.obs_tuple[3].shape[-2:])
+        self.obs_tuple = (hyp_A, hyp_b, v1, v2)
+
+        ## Preallocate vars
         self.centers = torch.empty((self.total_spheres, self.dimension), dtype=self.dtype, device=self.device)
         self.radii = torch.empty((self.total_spheres), dtype=self.dtype, device=self.device)
         self.center_jac = torch.empty((self.total_spheres, self.dimension, self.n_params), dtype=self.dtype, device=self.device)
         self.radii_jac = torch.empty((self.total_spheres, self.n_params), dtype=self.dtype, device=self.device)
 
     def NN_fun(self, points):
-        return torch.zeros(points.shape[0])+2, torch.zeros(points.shape).unsqueeze(-1)
+        points_in = points.expand(self.n_obs, -1, -1).transpose(0,1).reshape(-1, self.dimension)
+        dist_out, grad_out = self.distance_net(points_in, *self.obs_tuple)
+        dists = dist_out.reshape(self.total_spheres, self.n_obs)
+        grads = grad_out.reshape(self.total_spheres, self.n_obs, 3)
+        min_dists, idxs = dists.min(dim=-1)
+        return min_dists, grads.gather(1, idxs.reshape(-1, 1, 1).expand(-1, -1, 3)).squeeze(1)
 
     def __call__(self, x, Cons_out=None, Jac_out=None):
         x = torch.as_tensor(x, dtype=self.dtype)
@@ -77,6 +95,14 @@ class OfflineArmtdSphereConstraints:
         # D_k(r) has shape (n_spheres, n_params)
         dist, dist_jac = self.NN_fun(self.centers)
         Cons_out[:] = -(dist - self.radii).cpu().numpy()
-        Jac_out[:] = -(torch.einsum('sdi,sdp->sp', dist_jac, self.center_jac) - self.radii_jac).cpu().numpy()
+        Jac_out[:] = -(torch.einsum('sd,sdp->sp', dist_jac, self.center_jac) - self.radii_jac).cpu().numpy()
+        # Cons_out[:] = -(dist).cpu().numpy()
+        # Jac_out[:] = -(torch.einsum('sd,sdp->sp', dist_jac, self.center_jac)).cpu().numpy()
+        # print(torch.any(torch.isnan(self.centers)), torch.any(torch.isinf(self.centers)))
+        # print(torch.any(torch.isnan(self.radii)), torch.any(torch.isinf(self.radii)))
+        # print(torch.any(torch.isnan(self.center_jac)), torch.any(torch.isinf(self.center_jac)))
+        # print(torch.any(torch.isnan(self.radii_jac)), torch.any(torch.isinf(self.radii_jac)))
+        # print(np.max(Cons_out), np.min(Cons_out))
+        # print(np.max(Jac_out,axis=0), np.min(Jac_out,axis=0))
         
         return Cons_out, Jac_out

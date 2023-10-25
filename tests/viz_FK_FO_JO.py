@@ -53,7 +53,7 @@ fk = kin.forward_kinematics(joints, rob)
 fo, _ = kin.forward_occupancy(joints, rob)
 jo, _ = kin.joint_occupancy(joints, rob)
 jo_bzlike, _ = kin.joint_occupancy(joints, rob, use_outer_bb=True)
-jo_sphere, _ = kin.joint_occupancy(joints, rob, return_sphere=True)
+jo_sphere, _, _ = kin.sphere_occupancy(joints, rob)
 
 
 # Plot
@@ -162,10 +162,9 @@ for i in range(100):
             except:
                 pos = pos
             if slice_zonos:
-                pos = pos.slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype())).to_interval()
+                pos = pos.center_slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype()))
                 # assert torch.allclose(pos.inf, pos.sup)
-                radius = radius + pos.rad().max()*np.sqrt(3)
-                pos = pos.center()
+                # pos = pos.center()
                 # occupancy = occupancy.slice_all_dep(torch.as_tensor(k, dtype=torch.get_default_dtype()).view(1,7).repeat(100,1))
             else:
                 # no op
