@@ -54,7 +54,7 @@ class TestFSO(unittest.TestCase):
             jac2 = jso_serial[t_idx][j2][0].grad_center_slice_all_dep(k)
             r1 = jso_serial[t_idx][j1][1]
             r2 = jso_serial[t_idx][j2][1]
-            _, _, jacc, jacr = make_spheres(p1, p2, r1, r2, jac1=jac1, jac2=jac2, n_spheres=n_spheres)
+            _, _, jacc, jacr = make_spheres(p1, p2, r1, r2, center_jac_1=jac1, center_jac_2=jac2, n_spheres=n_spheres)
             return (jacc, jacr)
         
         for k in test_k_list:
@@ -93,7 +93,7 @@ class TestFSO(unittest.TestCase):
             jac2 = jso[j2][0].grad_center_slice_all_dep(k)
             r1 = jso[j1][1]
             r2 = jso[j2][1]
-            _, _, jacc, jacr = make_spheres(p1, p2, r1, r2, jac1=jac1, jac2=jac2, n_spheres=n_spheres)
+            _, _, jacc, jacr = make_spheres(p1, p2, r1, r2, center_jac_1=jac1, center_jac_2=jac2, n_spheres=n_spheres)
             return (jacc, jacr)
         
         for k in test_k_list:

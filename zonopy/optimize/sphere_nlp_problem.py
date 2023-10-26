@@ -57,7 +57,7 @@ class OfflineArmtdSphereConstraints:
         return min_dists, grads.gather(1, idxs.reshape(-1, 1, 1).expand(-1, -1, 3)).squeeze(1)
 
     def __call__(self, x, Cons_out=None, Jac_out=None):
-        x = torch.as_tensor(x, dtype=self.dtype)
+        x = torch.as_tensor(x, dtype=self.dtype, device=self.device)
         if Cons_out is None:
             Cons_out = np.empty(self.total_spheres, dtype=self.np_dtype)
         if Jac_out is None:

@@ -14,7 +14,7 @@ T_PLAN, T_FULL = 0.5, 1
 
 from urchin import URDF
 # robots2.DEBUG_VIZ = False
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 import numpy as np
 import trimesh
@@ -50,6 +50,7 @@ class KinematicUrdfBase:
             use_bb_collision: bool = True,
             collision_discretization: int = 500,     # these are values per t_step, if self_collision is False, this is ignored.
             collision_use_visual: bool = True,
+            collision_links: List[str] = None,
             check_joint_limits: bool = True,
             enforce_joint_pos_limit: bool = True,
             verbose_joint_limits: bool = False,
@@ -117,10 +118,15 @@ class KinematicUrdfBase:
         self.use_bb_collision = use_bb_collision
         self.collision_discretization = collision_discretization
         self.collision_use_visual = collision_use_visual
+        if collision_links is None:
+            collision_links = [link.name for link in self.robot.links]
+        self.collision_links = set(collision_links)
         # Add each of the bodies from the robot to a collision manager internal to this object.
         self.robot_collision_manager = trimesh.collision.CollisionManager()
         self.robot_collision_objs = set()
         for link in self.robot.links:
+            if link not in self.collision_links:
+                continue
             if not self.collision_use_visual and link.collision_mesh is not None:
                 mesh = link.collision_mesh.bounding_box if use_bb_collision else link.collision_mesh
                 self.robot_collision_manager.add_object(link.name, mesh)

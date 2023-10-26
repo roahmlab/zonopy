@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 import zonopy as zp
-from zonopy.kinematics.SO import sphere_occupancy
+from zonopy.kinematics.SO import sphere_occupancy, make_spheres
 import cyipopt
 
 import time
@@ -78,19 +78,6 @@ class ARMTD_3D_planner():
                                 JRS_R: zp.batchMatPolyZonotope,
                                 obs_zono: zp.batchZonotope,
                                 ):
-        ### get the forward occupancy
-        SFO_gen_time = time.perf_counter()
-        joint_occ, link_joint_pairs, _ = sphere_occupancy(JRS_R, self.robot, self.zono_order)
-        
-        # Flatten out all link joint pairs so we can just process that
-        joint_pairs = []
-        for pairs in link_joint_pairs.values():
-            joint_pairs.extend(pairs)
-        n_timesteps = JRS_R[0].batch_shape[0]
-
-        # output range
-        out_g_ka = self.g_ka
-
         ### Process the obstacles
         dist_net_time = time.perf_counter()
         n_obs = len(obs_zono)
@@ -105,12 +92,50 @@ class ARMTD_3D_planner():
         # combine to one input for the NN
         obs_tuple = (hyperplanes_A, hyperplanes_b, v1, v2)
 
+        ### get the forward occupancy
+        SFO_gen_time = time.perf_counter()
+        joint_occ, link_joint_pairs, _ = sphere_occupancy(JRS_R, self.robot, self.zono_order)
+        
+        # Flatten out all link joint pairs so we can just process that
+        joint_pairs = []
+        for pairs in link_joint_pairs.values():
+            joint_pairs.extend(pairs)
+        n_timesteps = JRS_R[0].batch_shape[0]
+
+        ## Discard pairs that are too far to be a problem
+        hyp_A = obs_tuple[0].expand(self.spheres_per_link*n_timesteps, -1, -1, -1).reshape(-1, *obs_tuple[0].shape[-2:])
+        hyp_b = obs_tuple[1].expand(self.spheres_per_link*n_timesteps, -1, -1, -1).reshape(-1, *obs_tuple[1].shape[-2:])
+        v1 = obs_tuple[2].expand(self.spheres_per_link*n_timesteps, -1, -1, -1).reshape(-1, *obs_tuple[2].shape[-2:])
+        v2 = obs_tuple[3].expand(self.spheres_per_link*n_timesteps, -1, -1, -1).reshape(-1, *obs_tuple[3].shape[-2:])
+
+        joints = {}
+        for name, (pz, r) in joint_occ.items():
+            joint_int = pz.to_interval()
+            centers = joint_int.center()
+            joints[name] = (centers, r + joint_int.rad().max(-1)[0]*np.sqrt(3))
+
+        def keep_pair(pair):
+            p1, r1 = joints[pair[0]]
+            p2, r2 = joints[pair[1]]
+            spheres = make_spheres(p1, p2, r1, r2, n_spheres=self.spheres_per_link)
+            points = spheres[0].expand(n_obs, -1, -1, -1).transpose(0,1).reshape(-1, self.SFO_constraint.dimension)
+            radii = spheres[1].expand(n_obs, -1, -1).transpose(0,1).reshape(-1)
+            dist_out, _ = self.SFO_constraint.distance_net(points, hyp_A, hyp_b, v1, v2)
+            return torch.any(dist_out < radii)
+        joint_pairs = [pair for pair in joint_pairs if keep_pair(pair)]
+        ## End discard pairs
+
+        # output range
+        out_g_ka = self.g_ka
+
+        # Build the constraint
+        self.SFO_constraint.set_params(joint_occ, joint_pairs, out_g_ka, obs_tuple, n_obs, self.spheres_per_link, n_timesteps, self.dof)
+
         final_time = time.perf_counter()
         out_times = {
-            'SFO_gen': dist_net_time - SFO_gen_time,
-            'distance_prep_net': final_time - dist_net_time,
+            'SFO_gen': final_time - SFO_gen_time,
+            'distance_prep_net': SFO_gen_time - dist_net_time,
         }
-        self.SFO_constraint.set_params(joint_occ, joint_pairs, out_g_ka, obs_tuple, n_obs, self.spheres_per_link, n_timesteps, self.dof)
         return self.SFO_constraint, out_times
 
     def trajopt(self, qpos, qvel, qgoal, ka_0, SFO_constraint):
@@ -173,11 +198,9 @@ if __name__ == '__main__':
         device = 'cuda:0'
         #device = 'cpu'
         dtype = torch.float
-        # dtype = torch.double
     else:
         device = 'cpu'
         dtype = torch.float
-        # dtype = torch.double
 
     ##### LOAD ROBOT #####
     import os
@@ -192,11 +215,18 @@ if __name__ == '__main__':
     # rob = robots2.ArmRobot('/home/adamli/rtd-workspace/urdfs/panda_arm/panda_arm_proc.urdf')
 
     ##### SET ENVIRONMENT #####
+    # Make a list of all links except the base and effector for collision checks (match SO)
+    links = rob.urdf.links.copy()
+    links.remove(rob.urdf.base_link)
+    for el in rob.urdf.end_links:
+        links.remove(el)
+    links = [link.name for link in links]
     env = KinematicUrdfWithObstacles(
         robot=rob.urdf,
         step_type='integration',
         check_joint_limits=True,
         check_self_collision=False,
+        collision_links=links,
         use_bb_collision=True,
         render_mesh=True,
         reopen_on_close=False,
@@ -206,8 +236,8 @@ if __name__ == '__main__':
         )
     # obs = env.reset()
     obs = env.reset(
-        # qpos=np.array([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),
-        qpos=np.array([0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428])-0.2,
+        qpos=np.array([-1.3030, -1.9067,  2.0375, -1.5399, -1.4449,  1.5094,  1.9071]),
+        # qpos=np.array([0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428])-0.2,
         qvel=np.array([0,0,0,0,0,0,0.]),
         qgoal = np.array([ 0.7234,  1.6843,  2.5300, -1.0317, -3.1223,  1.2235,  1.3428]),
         obs_pos=[
@@ -235,7 +265,7 @@ if __name__ == '__main__':
     #         ])
 
     ##### 2. RUN ARMTD #####    
-    planner = ARMTD_3D_planner(rob, device=device, sphere_device=device, dtype=dtype)
+    planner = ARMTD_3D_planner(rob, device=device, sphere_device=device, dtype=dtype, spheres_per_link=4)
     t_armtd = []
     T_NLP = []
     T_SFO = []
@@ -263,8 +293,8 @@ if __name__ == '__main__':
             ka = (0 - qvel)/(T_FULL - T_PLAN)
         obs, rew, done, info = env.step(ka)
         # env.step(ka,flag)
-        # assert(not info['collision_info']['in_collision'])
-        env.render()
+        assert(not info['collision_info']['in_collision'])
+        # env.render()
     from scipy import stats
     print(f'Total time elasped for ARMTD-3D with {n_steps} steps: {stats.describe(t_armtd)}')
     print("Per step")
