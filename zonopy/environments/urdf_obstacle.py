@@ -11,6 +11,7 @@ class KinematicUrdfWithObstacles(KinematicUrdfBase):
                  obs_size_min = [0.1,0.1,0.1], # minimum size of randomized obstacle in xyz
                  obs_gen_buffer = 1e-4, # buffer around obstacles generated
                  goal_threshold = 0.1, # goal threshold
+                 velocity_threshold = 0.1, # velocity threshold
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -20,6 +21,7 @@ class KinematicUrdfWithObstacles(KinematicUrdfBase):
             self.obs_size_range = np.broadcast_to(np.expand_dims(self.obs_size_range,1), (2, self.n_obs, 3))
         self.obs_gen_buffer = obs_gen_buffer
         self.goal_threshold = goal_threshold
+        self.velocity_threshold = velocity_threshold
         self.qgoal = np.zeros(self.dof)
 
         self.obstacle_collision_manager = None
@@ -119,7 +121,7 @@ class KinematicUrdfWithObstacles(KinematicUrdfBase):
         # Get the position and goal then calculate distance to goal
         collision = self.info['collision_info']['in_collision']
         dist = np.linalg.norm(self._wrap_cont_joints(self.qpos - self.qgoal))
-        success = (dist < self.goal_threshold) and (not collision) and (np.linalg.norm(self.qvel) < 0)
+        success = (dist < self.goal_threshold) and (not collision) and (np.linalg.norm(self.qvel) < self.velocity_threshold)
 
         self.done = self.done or success or collision
 
