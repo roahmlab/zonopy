@@ -63,30 +63,61 @@ class OfflineArmtdSphereConstraints:
         if Jac_out is None:
             Jac_out = np.empty((self.total_spheres, self.n_params), dtype=self.np_dtype)
 
+        # # First process with all the joints
+        # joints = {}
+        # eidx = 0
+        # for name, (pz, r) in self.joint_occ.items():
+        #     sidx = eidx
+        #     eidx = sidx + self.n_time
+        #     self.centers[sidx:eidx] = pz.center_slice_all_dep(x)
+        #     self.center_jac[sidx:eidx] = pz.grad_center_slice_all_dep(x)
+        #     self.radii[sidx:eidx] = r
+        #     self.radii_jac[sidx:eidx] = 0
+        #     joints[name] = (self.centers[sidx:eidx], r, self.center_jac[sidx:eidx])
+
+        # # Now process all inbetweens
+        # for joint1, joint2 in self.joint_pairs:
+        #     sidx = eidx
+        #     eidx = sidx + self.n_spheres*self.n_time
+        #     p1, r1, jac1 = joints[joint1]
+        #     p2, r2, jac2 = joints[joint2]
+        #     spheres = make_spheres(p1, p2, r1, r2, jac1, jac2, self.n_spheres)
+        #     self.centers[sidx:eidx] = spheres[0].reshape(-1,self.dimension)
+        #     self.radii[sidx:eidx] = spheres[1].reshape(-1)
+        #     self.center_jac[sidx:eidx] = spheres[2].reshape(-1,self.dimension,self.n_params)
+        #     self.radii_jac[sidx:eidx] = spheres[3].reshape(-1,self.n_params)
+
         # First process with all the joints
         joints = {}
         eidx = 0
-        for name, (pz, r) in self.joint_occ.items():
+        for i, (name, (pz, r)) in enumerate(self.joint_occ.items()):
             sidx = eidx
             eidx = sidx + self.n_time
             self.centers[sidx:eidx] = pz.center_slice_all_dep(x)
             self.center_jac[sidx:eidx] = pz.grad_center_slice_all_dep(x)
             self.radii[sidx:eidx] = r
             self.radii_jac[sidx:eidx] = 0
-            joints[name] = (self.centers[sidx:eidx], r, self.center_jac[sidx:eidx])
+            joints[name] = i
 
         # Now process all inbetweens
-        for joint1, joint2 in self.joint_pairs:
-            sidx = eidx
-            eidx = sidx + self.n_spheres*self.n_time
-            p1, r1, jac1 = joints[joint1]
-            p2, r2, jac2 = joints[joint2]
-            spheres = make_spheres(p1, p2, r1, r2, jac1, jac2, self.n_spheres)
-            self.centers[sidx:eidx] = spheres[0].reshape(-1,self.dimension)
-            self.radii[sidx:eidx] = spheres[1].reshape(-1)
-            self.center_jac[sidx:eidx] = spheres[2].reshape(-1,self.dimension,self.n_params)
-            self.radii_jac[sidx:eidx] = spheres[3].reshape(-1,self.n_params)
-        
+        sidx = eidx
+        p1_idx = np.empty(len(self.joint_pairs), dtype=np.int)
+        p2_idx = np.empty(len(self.joint_pairs), dtype=np.int)
+        for i, (joint1, joint2) in enumerate(self.joint_pairs):
+            p1_idx[i] = joints[joint1]
+            p2_idx[i] = joints[joint2]
+        p1 = self.centers[:sidx].view(-1, self.n_time, self.dimension)[p1_idx]
+        p2 = self.centers[:sidx].view(-1, self.n_time, self.dimension)[p2_idx]
+        r1 = self.radii[:sidx].view(-1, self.n_time)[p1_idx]
+        r2 = self.radii[:sidx].view(-1, self.n_time)[p2_idx]
+        jac1 = self.center_jac[:sidx].view(-1, self.n_time, self.dimension, self.n_params)[p1_idx]
+        jac2 = self.center_jac[:sidx].view(-1, self.n_time, self.dimension, self.n_params)[p2_idx]
+        spheres = make_spheres(p1, p2, r1, r2, jac1, jac2, self.n_spheres)
+        self.centers[sidx:] = spheres[0].reshape(-1,self.dimension)
+        self.radii[sidx:] = spheres[1].reshape(-1)
+        self.center_jac[sidx:] = spheres[2].reshape(-1,self.dimension,self.n_params)
+        self.radii_jac[sidx:] = spheres[3].reshape(-1,self.n_params)
+
         # Do what you need with the centers and radii
         # NN(centers) - r > 0
         # D_NN(c(k)) -> D_c(NN) * D_k(c) - D_k(r)
