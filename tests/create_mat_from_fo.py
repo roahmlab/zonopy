@@ -1,13 +1,12 @@
 import torch
 import numpy as np
-import zonopy.robots2.robot as robots2
-from scipy.io import savemat
-from zonopy.joint_reachable_set.gen_jrs import JrsGenerator
 import zonopy as zp
-import zonopy.kinematics as kin
+import zonopyrobots as zpr
+from zonopyext.forwardsets.FO import forward_occupancy
+from zonopyext.forwardsets.JO import joint_occupancy
+from scipy.io import savemat
 import os
-basedirname = os.path.dirname(zp.__file__)
-
+basedirname = os.path.dirname(zpr.__file__)
 
 # Settings
 robot_file = 'robots/assets/robots/kinova_arm/gen3.urdf'
@@ -33,14 +32,12 @@ if use_cuda:
 
 # Load robot
 print('Loading Robot')
-# make sure not to show any debug vizualizations
-robots2.DEBUG_VIZ = False
-rob = robots2.ZonoArmRobot.load(os.path.join(basedirname, robot_file), create_joint_occupancy=True)
+rob = zpr.ZonoArmRobot.load(os.path.join(basedirname, robot_file), create_joint_occupancy=True)
 
 
 print('Starting JRS Generation')
-traj_class=zp.trajectories.BernsteinArmTrajectory if use_bernstein else zp.trajectories.PiecewiseArmTrajectory
-generator = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
+traj_class=zpr.trajectory.BernsteinArmTrajectory if use_bernstein else zp.trajectories.PiecewiseArmTrajectory
+generator = zpr.JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
 jrs_out = generator.gen_JRS(q, qd, qdd, only_R=only_generate_R_online)
 print('Finished JRS Generation')
 
@@ -51,9 +48,9 @@ else:
 
 print("Perform forward operations")
 # fk = kin.forward_kinematics(joints, rob.robot)
-fo, _ = kin.forward_occupancy(joints, rob)
-jo, _ = kin.joint_occupancy(joints, rob)
-jobz, _ = kin.joint_occupancy(joints, rob, use_outer_bb=True)
+fo, _ = forward_occupancy(joints, rob)
+jo, _ = joint_occupancy(joints, rob)
+jobz, _ = joint_occupancy(joints, rob, use_outer_bb=True)
 
 
 print("Exporting")

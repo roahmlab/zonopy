@@ -1,10 +1,10 @@
 import torch
 import numpy as np
-import zonopy.robots2.robot as robots2
-import zonopy.transformations.rotation as rot
-from zonopy.joint_reachable_set.gen_jrs import JrsGenerator
 import zonopy as zp
-import zonopy.kinematics as kin
+import zonopyrobots as zpr
+from zonopyext.forwardsets.FO import forward_occupancy
+from zonopyext.forwardsets.JO import joint_occupancy
+from zonopyext.forwardsets.SO import sphere_occupancy, make_spheres
 
 # Set cuda if desired and available
 use_cuda = True
@@ -14,19 +14,18 @@ if use_cuda:
 
 # Load robot
 import os
-basedirname = os.path.dirname(zp.__file__)
-robots2.DEBUG_VIZ = False
+basedirname = os.path.dirname(zpr.__file__)
 print('Loading Robot')
 # This is hardcoded for now
-rob = robots2.ZonoArmRobot.load(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'), create_joint_occupancy=True)
+rob = zpr.ZonoArmRobot.load(os.path.join(basedirname, 'robots/assets/robots/kinova_arm/gen3.urdf'), create_joint_occupancy=True)
 q = np.array([0.624819195837238,-1.17185521197975,-2.04687142485692,1.69686054456768,-2.28521956398477,0.151194251967712,1.54233217035569])
 qd = np.array([-0.0218762290685389,-0.0972760750895341,0.118467026460654,0.00255072010498519,0.118466729140505,-0.118467364612488,-0.0533775122637854])*2
 qdd = np.array([0.0249296393119391,0.110843270840544,-0.133003332695036,-0.00290896919579042,-0.133005741757336,0.133000561712863,0.0608503609673116])*2
 
 print('Starting JRS Generation')
-traj_class=zp.trajectories.BernsteinArmTrajectory
+traj_class=zpr.trajectory.BernsteinArmTrajectory
 # traj_class=zp.trajectories.PiecewiseArmTrajectory
-a = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, unique_tid=False)
+a = zpr.JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, unique_tid=False)
 b = a.gen_JRS(q, qd, qdd)
 print('Finished JRS Generation')
 
@@ -35,25 +34,25 @@ print('Finished JRS Generation')
 serial_forward = []
 for Rs in b['R']:
     Rs = list(Rs)
-    fk = kin.forward_kinematics(Rs, rob)
-    fo, _ = kin.forward_occupancy(Rs, rob)
-    jo, _ = kin.joint_occupancy(Rs, rob)
-    jo_bzlike, _ = kin.joint_occupancy(Rs, rob, use_outer_bb=True)
+    fk = zpr.kinematics.forward_kinematics(Rs, rob)
+    fo, _ = forward_occupancy(Rs, rob)
+    jo, _ = joint_occupancy(Rs, rob)
+    jo_bzlike, _ = joint_occupancy(Rs, rob, use_outer_bb=True)
     serial_forward.append((fk, fo, jo, jo_bzlike))
 
 
 # Do batched forward operations
 print('Testing batched JRS Generation')
-c = JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
+c = zpr.JrsGenerator(rob, traj_class=traj_class, ultimate_bound=0.0191, k_r=10, batched=True, unique_tid=False)
 d = c.gen_JRS(q, qd, qdd)
 print('Finished batched JRS Generation')
 joints = list(d['R'])
 
-fk = kin.forward_kinematics(joints, rob)
-fo, _ = kin.forward_occupancy(joints, rob)
-jo, _ = kin.joint_occupancy(joints, rob)
-jo_bzlike, _ = kin.joint_occupancy(joints, rob, use_outer_bb=True)
-jo_sphere, _, _ = kin.sphere_occupancy(joints, rob)
+fk = zpr.kinematics.forward_kinematics(joints, rob)
+fo, _ = forward_occupancy(joints, rob)
+jo, _ = joint_occupancy(joints, rob)
+jo_bzlike, _ = joint_occupancy(joints, rob, use_outer_bb=True)
+jo_sphere, _, _ = sphere_occupancy(joints, rob)
 
 
 # Plot

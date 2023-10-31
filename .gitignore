@@ -1,5 +1,6 @@
 __pycache__/
-zonopy.egg-info/
+build/
+*.egg-info/
 test/training/results/
 video_test/
 .vscode/
