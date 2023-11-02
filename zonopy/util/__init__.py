@@ -9,8 +9,11 @@ from .collision import (
     traj_safety_check,
     obstacle_collison_free_check,
 )
+
+# TODO: Review the above functions
 from .compress import (
     remove_dependence_and_compress,
 )
-
-# TODO: Review these functions
+from .batching import (
+    stack,
+)
