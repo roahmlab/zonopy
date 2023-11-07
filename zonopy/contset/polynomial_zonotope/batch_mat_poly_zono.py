@@ -340,7 +340,9 @@ class batchMatPolyZonotope():
     @staticmethod
     def zeros(batch_size, dim1, dim2=None, dtype=None, device=None):
         dim2 = dim1 if dim2 is not None else dim2
-        Z = torch.zeros((batch_size, 1, dim1, dim2), dtype=dtype, device=device)
+        if not isinstance(batch_size, tuple):
+            batch_size = (batch_size,)
+        Z = torch.zeros((1, dim1, dim2), dtype=dtype, device=device).expand(*batch_size, -1, -1, -1)
         expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
@@ -348,14 +350,18 @@ class batchMatPolyZonotope():
     @staticmethod
     def ones(batch_size, dim1, dim2=None, dtype=None, device=None):
         dim2 = dim1 if dim2 is not None else dim2
-        Z = torch.zeros((batch_size, 1, dim1, dim2), dtype=dtype, device=device)
+        if not isinstance(batch_size, tuple):
+            batch_size = (batch_size,)
+        Z = torch.zeros((1, dim1, dim2), dtype=dtype, device=device).expand(*batch_size, -1, -1, -1)
         expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
     def eye(batch_size, dim, dtype=None, device=None):
-        Z = torch.eye(dim, dtype=dtype, device=device).unsqueeze(0).expand(batch_size, -1, -1, -1)
+        if not isinstance(batch_size, tuple):
+            batch_size = (batch_size,)
+        Z = torch.eye(dim, dtype=dtype, device=device).unsqueeze(0).expand(*batch_size, -1, -1, -1)
         expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchMatPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)

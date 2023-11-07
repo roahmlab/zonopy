@@ -15,8 +15,16 @@ def stack(bpzlist, dim=0):
     assert len(bpzlist) > 0, "Expected at least 1 element input!"
 
     # Dispatch to specialized version for polyZonotopes if needed (these functions can be merged later)
-    if isinstance(bpzlist[0], zp.polyZonotope):
+    promotion = np.array([isinstance(pz, zp.polyZonotope) for pz in bpzlist])
+    if np.all(promotion):
         return zp.batchPolyZonotope.from_pzlist(bpzlist)
+
+    # Promote any polynomial zonotopes to bpz's as needed
+    for idx, tf in enumerate(promotion):
+        if not tf:
+            batch_shape = bpzlist[idx].batch_shape
+            break
+    bpzlist = [expand(pz, batch_shape) if promote else pz for pz, promote in zip(bpzlist, promotion)]
     
     # Check type
     assert np.all([isinstance(bpz, zp.batchPolyZonotope) for bpz in bpzlist]), "Expected all elements to be of type batchPolyZonotope"
@@ -75,3 +83,7 @@ def stack(bpzlist, dim=0):
         Z = Z.transpose(0, dim)
     out = zp.batchPolyZonotope(Z, all_dep_gens, all_expMat, all_ids, copy_Z=False).compress(2)
     return out
+
+def expand(pz, shape):
+    new_Z = pz.Z.expand(*shape, *pz.Z.shape)
+    return zp.batchPolyZonotope(new_Z, pz.n_dep_gens, pz.expMat, pz.id, copy_Z=False)

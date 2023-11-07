@@ -461,7 +461,7 @@ class polyZonotope:
         val_slc = val_slc[..., None, self.id] # Batch dims, ..., 1, n_ids
         # Exponentiate by exponent matrix, reduce the product for each term, then multiply by each dep gen
         # offset = torch.prod(val_slc**self.expMat, dim=-1).unsqueeze(-2)@self.G
-        # Torch einsum accomplishes the above with better accuracy and arbitrary dimensions
+        # In this case, torch einsum accomplishes the above with better accuracy and arbitrary dimensions
         alpha_coeffs = torch.prod(val_slc**self.expMat, dim=-1)
         offset = torch.einsum('...g,...gd->...d',
                               alpha_coeffs,
@@ -475,13 +475,15 @@ class polyZonotope:
 
         # get all values in order
         val_slc = val_slc[..., None, None, self.id] # Batch dims, ..., 1, 1, n_ids
-        expMat_red = self.expMat.expand(n_ids, -1, -1) - torch.eye(n_ids, dtype=self.expMat.dtype).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
+        expMat_red = self.expMat.expand(n_ids, -1, -1) - torch.eye(n_ids, dtype=self.expMat.dtype, device=self.device).unsqueeze(-2) # a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids
         # grad[..., self.id] = ((self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
-        # Torch einsum accomplishes the above with better accuracy and arbitrary dimensions
+        # In this case, torch einsum accomplishes the above with better accuracy and arbitrary dimensions
         alpha_coeffs = self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num()
-        grad[..., self.id] = torch.einsum('...ig,...gd->...di',
-                                          alpha_coeffs,
-                                          self.G) # b1, b2,..., dim, n_ids
+        # grad[..., self.id] = torch.einsum('...ig,...gd->...di',
+        #                                   alpha_coeffs,
+        #                                   self.G) # b1, b2,..., dim, n_ids
+        # Actually, in this case, manually writing it is faster
+        grad[..., self.id] = (alpha_coeffs@self.G).transpose(-1,-2)
         return grad
     
     # TODO Unverified since update

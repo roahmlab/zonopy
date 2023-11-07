@@ -439,9 +439,11 @@ class batchPolyZonotope:
         # grad[..., self.id] = ((self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids
         # Torch einsum accomplishes the above with better accuracy and arbitrary dimensions
         alpha_coeffs = self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num()
-        grad[..., self.id] = torch.einsum('...ig,...gd->...di',
-                                          alpha_coeffs,
-                                          self.G) # b1, b2,..., dim, n_ids
+        # grad[..., self.id] = torch.einsum('...ig,...gd->...di',
+        #                                   alpha_coeffs,
+        #                                   self.G) # b1, b2,..., dim, n_ids
+        # Actually, in this case, manually writing it is faster
+        grad[..., self.id] = (alpha_coeffs@self.G).transpose(-1,-2)
         return grad
 
     # TODO Unverified since update
@@ -572,14 +574,18 @@ class batchPolyZonotope:
     
     @staticmethod
     def zeros(batch_size, dims, dtype=None, device=None):
-        Z = torch.zeros((batch_size, 1, dims), dtype=dtype, device=device)
+        if not isinstance(batch_size, tuple):
+            batch_size = (batch_size,)
+        Z = torch.zeros((1, dims), dtype=dtype, device=device).expand(*batch_size, -1, -1)
         expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
     
     @staticmethod
     def ones(batch_size, dims, dtype=None, device=None):
-        Z = torch.ones((batch_size, 1, dims), dtype=dtype, device=device)
+        if not isinstance(batch_size, tuple):
+            batch_size = (batch_size,)
+        Z = torch.ones((1, dims), dtype=dtype, device=device).expand(*batch_size, -1, -1)
         expMat = torch.empty((0,0),dtype=torch.int64, device=device)
         id = np.empty(0,dtype=np.int64)
         return zp.batchPolyZonotope(Z, 0, expMat=expMat, id=id, copy_Z=False)
