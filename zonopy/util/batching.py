@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import zonopy as zp
+import zonopy.internal as zpi
 
 def stack(bpzlist, dim=0):
     """Stack a list of polyZonotopes or batchPolyZonotopes along a given dimension.
@@ -26,17 +27,18 @@ def stack(bpzlist, dim=0):
             break
     bpzlist = [expand(pz, batch_shape) if promote else pz for pz, promote in zip(bpzlist, promotion)]
     
-    # Check type
-    assert np.all([isinstance(bpz, zp.batchPolyZonotope) for bpz in bpzlist]), "Expected all elements to be of type batchPolyZonotope"
+    # Check type (Should be fine after above)
+    # assert np.all([isinstance(bpz, zp.batchPolyZonotope) for bpz in bpzlist]), "Expected all elements to be of type batchPolyZonotope"
     # Validate dimensions match
     n_bpz = len(bpzlist)
     dimension = bpzlist[0].dimension
     dtype = bpzlist[0].dtype
     device = bpzlist[0].device
     batch_shape = bpzlist[0].batch_shape
-    assert dim <= len(batch_shape), "Expected dim to be less than or equal to the number of batch dimensions!"
-    assert [bpz.dimension for bpz in bpzlist].count(dimension) == n_bpz, "Expected all elements to have the same dimensions!"
-    assert [bpz.batch_shape for bpz in bpzlist].count(batch_shape) == n_bpz, "Expected all elements to have the same batch shape!"
+    if zpi.__debug_extra__:
+        assert dim <= len(batch_shape), "Expected dim to be less than or equal to the number of batch dimensions!"
+        assert [bpz.dimension for bpz in bpzlist].count(dimension) == n_bpz, "Expected all elements to have the same dimensions!"
+        assert [bpz.batch_shape for bpz in bpzlist].count(batch_shape) == n_bpz, "Expected all elements to have the same batch shape!"
 
     # First loop to extract key parts
     all_ids = [None]*n_bpz
