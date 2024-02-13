@@ -19,34 +19,39 @@ from ..gen_ops import (
 import zonopy.internal as zpi
 
 class batchPolyZonotope:
-    '''
-    pZ: <polyZonotope>
-    
-    c: <torch.Tensor> center of the polyonmial zonotope
-    , shape: [B1, B2, .. , Bb, nx]
-    G: <torch.Tensor> generator matrix containing the dependent generators
-    , shape: [B1, B2, .. , Bb, N, nx]
-    Grest: <torch.Tensor> generator matrix containing the independent generators
-    , shape: [B1, B2, .. , Bb, M, nx]
-    expMat: <troch.Tensor> matrix containing the exponents for the dependent generators
-    , shape: [N, p]
-    id: <torch.Tensor> vector containing the integer identifiers for the dependent factors
-    , shape: [p]
-    compress: <int> level for compressing dependent generators with expodent
-    0: no compress, 1: compress zero dependent generators, 2: compress zero dependent generators and remove redundant expodent
+    r''' Batched 1D polynomial zonotope
 
-    Eq. (coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1])
-    G = [gd1,gd2,...,gdN]
-    Grest = [gi1,gi2,...,giM]
-    expMat = [[i11,i12,...,i1N],[i21,i22,...,i2N],...,[ip1,ip2,...,ipN]]
-    id = [0,1,2,...,p-1]
+    Batched form of the :class:`polyZonotope` class.
+    This class is used to represent a batch of polynomial zonotopes over the same domain
+    with arbitrary batch dimensions.
+    It follows a similar formulation from the :class:`polyZonotope` class as the
+    :class:`batchZonotope` class did from :class:`zonotope`.
 
-    pZ = c + a1*gi1 + a2*gi2 + ... + aN*giN + b1^i11*b2^i21*...*bp^ip1*gd1 + b1^i12*b2^i22*...*bp^ip2*gd2 + ... 
-    + b1^i1M*b2^i2M*...*bp^ipM*gdM
-     
+    This results in a :math:`\mathbf{Z} \in \mathbb{R}^{B_1 \times B_2 \times \cdots \times B_b \times (N+M+1) \times d}` tensor
+
+    Refer to the :class:`polyZonotope` class for more information polynomial zonotops.
     '''
     # NOTE: property for mat pz
     def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True, dtype=None, device=None):
+        r''' Constructor for the batchPolyZonotope class
+        
+        Args:
+            Z (torch.Tensor): The center and generator matrix of the polynomial zonotope.
+                The shape of Z should be :math:`(B_1, B_2, \cdots, B_b, N+M+1, d)` where :math:`B_1, B_2, \cdots, B_b` are the batch dimensions,
+                :math:`N` is the number of dependent generators, :math:`M` is the number of independent generators, and :math:`d` is the dimension of the zonotope.
+            n_dep_gens (int, optional): The number of dependent generators in the polynomial zonotope. Default is 0.
+            expMat (torch.Tensor, optional): The exponent matrix of the dependent generators. If ``None``, it will be the identity matrix. Default: None
+            id (torch.Tensor, optional): The integer identifiers for the dependent generators. If ``None``, it will be the range of the number of dependent generators. Default: None
+            copy_Z (bool, optional): If ``True``, it will copy the input ``Z`` value. Default: ``True``
+            dtype (torch.dtype, optional): The data type of the polynomial zonotope. If ``None``, it will be inferred. Default: ``None``
+            device (torch.device, optional): The device of the polynomial zonotope. If ``None``, it will be inferred. Default: ``None``
+
+        Raises:
+            AssertionError: If the dimension of Z input is not 3 or more.
+            AssertionError: If the exponent matrix does not seem to be valid for the given dependent generators or ids.
+            AssertionError: If the number of dependent generators does not match the number of ids.
+            AssertionError: If the exponent matrix is not a non-negative integer matrix.
+        '''
         # If compress=2, it will always copy.
 
         # Make sure Z is a tensor and shaped right

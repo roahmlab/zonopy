@@ -12,32 +12,43 @@ from ..gen_ops import (
     _matmul_genmpz_impl,
     )
 
-class batchMatPolyZonotope():
+class batchMatPolyZonotope:
+    r''' Batched 2D Matrix Polynomial Zonotopes
+
+    Batched form of the :class:`matPolyZonotope` class.
+    This class is designed to represent a batch of 2D matrix polynomial zonotopes over the same domain
+    with arbitrary batch dimensions, extending the concept of polynomial zonotopes to matrix forms and allowing for batch processing.
+    It adheres to a formulation similar to the :class:`polyZonotope` and :class:`batchPolyZonotope` classes,
+    enabling efficient representation and manipulation of sets of matrix polynomial zonotopes.
+
+    This results in a :math:`\mathbf{Z} \in \mathbb{R}^{B_1 \times B_2 \times \cdots \times B_b \times (N+M+1) \times dx \times dy}` tensor,
+    where :math:`dx` and :math:`dy` are the dimensions of the matrices.
+
+    Refer to the :class:`matPolyZonotope` class for more detailed information on matrix polynomial zonotopes.
     '''
-    <matPolyZonotope>
+    def __init__(self, Z, n_dep_gens=0, expMat=None, id=None, copy_Z=True, dtype=None, device=None):
+        r''' Constructor for the batchMatPolyZonotope class
 
-    c: <torch.Tensor> center maxtrix of the matrix polyonmial zonotope
-    , shape: [nx,ny] 
-    G: <torch.tensor> generator tensor containing the dependent generators 
-    , shape: [N, nx, ny] 
-    Grest: <torch.Tensor> generator tensor containing the independent generators
-    , shape: [M, nx, ny]
-    expMat: <troch.Tensor> matrix containing the exponents for the dependent generators
-    , shape: [N, p]
-    id: <torch.Tensor> vector containing the integer identifiers for the dependent factors
-    , shape: [p]
+        Initializes a batch of 2D matrix polynomial zonotopes with specified characteristics.
 
-    Eq. (coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1])
-    G = [[Gd1],[Gd2],...,[GdN]]
-    Grest = [[Gi1],[Gi2],...,[GiM]]
-    (Gd1,Gd2,...,GdN,Gi1,Gi2,...,GiM \in R^(nx,ny), matrix)
-    expMat = [[i11,i12,...,i1p],[i21,i22,...,i2p],...,[iN1,iN2,...,iNp]]
-    id = [0,1,2,...,p-1]
+        Args:
+            Z (torch.Tensor): The center and generator tensor for the batch of matrix polynomial zonotopes.
+                The shape of Z should be :math:`(B_1, B_2, \cdots, B_b, N+M+1, dx, dy)`, where :math:`B_1, B_2, \cdots, B_b` are the batch dimensions,
+                :math:`N` is the number of dependent generators, :math:`M` is the number of independent generators,
+                and :math:`dx, dy` are the dimensions of the matrices.
+            n_dep_gens (int, optional): The number of dependent generators in the matrix polynomial zonotope. Default: 0.
+            expMat (torch.Tensor, optional): The exponent matrix for the dependent generators. If `None`, it will be assumed to be the identity matrix. Default: None.
+            id (torch.Tensor, optional): The integer identifiers for the dependent generators. If `None`, it will be the range of the number of dependent generators. Default: None.
+            copy_Z (bool, optional): If `True`, a copy of the input `Z` tensor will be made. Default: `True`.
+            dtype (torch.dtype, optional): The data type for the elements of the matrix polynomial zonotope. If `None`, it will be inferred from `Z`. Default: `None`.
+            device (torch.device, optional): The device on which the matrix polynomial zonotope is to be stored. If `None`, it will be inferred from `Z`. Default: `None`.
 
-    pZ = c + a1*Gi1 + a2*Gi2 + ... + aN*GiN + b1^i11*b2^i21*...*bp^ip1*Gd1 + b1^i12*b2^i22*...*bp^ip2*Gd2 + ... 
-    + b1^i1M*b2^i2M*...*bp^ipM*GdM
-    '''
-    def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True, device=None, dtype=None):
+        Raises:
+            AssertionError: If the dimension of the `Z` input is not 5 or more, indicating incorrect batch dimensions or matrix dimensions.
+            AssertionError: If the exponent matrix does not seem to be valid for the given number of dependent generators or ids.
+            AssertionError: If the number of dependent generators does not match the number of ids provided.
+            AssertionError: If the exponent matrix is not a non-negative integer matrix.
+        '''
         # If compress=2, it will always copy.
 
         # Make sure Z is a tensor and shaped right
