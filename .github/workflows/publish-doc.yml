@@ -5,7 +5,9 @@ on:
   push:
     branches:
       - main
-      - develop
+      # - develop
+  release:
+    types: [published]
 
 jobs:
   build_docs:
@@ -19,14 +21,23 @@ jobs:
         # Workaround to keep tty working
         # https://github.com/gfx/example-github-actions-with-tty
         shell: 'script -q -e -c "bash {0}"'
-        run: ./docs/build-docs.sh ${{ fromJSON('{"main":"html","develop":"html-dev"}')[github.ref_name] }}
+        run: ./docs/build-docs.sh ${{ fromJSON('{"tag":"html","branch":"html-dev"}')[github.ref_type] }}
       
       # Cache the build so we can deploy it
       - name: 'cache built docs'
         id: cache-build
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: ${{ github.workspace }}/docs/build/html
+          key: ${{ github.sha }}-docs
+
+      # Cache version generation script if we are on a tag
+      - name: 'cache version generation script'
+        id: cache-version-script
+        uses: actions/cache/save@v4
+        if: github.ref_type == 'tag'
+        with:
+          path: ${{ github.workspace }}/docs/generate_versions.sh
           key: ${{ github.sha }}-docs
 
   deploy_main_docs:
@@ -36,10 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     name: 'Publish latest docs to github pages'
     needs: build_docs
-    if: endsWith(github.ref, '/main')
+    if: github.ref_type == 'branch' && github.ref == 'refs/heads/main'
     steps:
       - name: 'Restore built docs cache'
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         id: restore-build
         with:
           path: ${{ github.workspace }}/docs/build/html
@@ -51,31 +62,86 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/build/html
           publish_branch: gh-pages
-          destination_dir: latest
+          destination_dir: dev
 
-  deploy_develop_docs:
+  deploy_version_docs:
     permissions:
       contents: write
       pages: write
     runs-on: ubuntu-latest
-    name: 'Publish development documentation to github pages'
+    name: 'Publish versioned documentation to github pages'
     needs: build_docs
-    if: endsWith(github.ref, '/develop')
+    if: github.ref_type == 'tag'
     steps:
-      - name: 'Restore built docs cache'
-        uses: actions/cache/restore@v3
-        id: restore-build
+      - name: 'Checkout the repo'
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: ./public
+
+      - name: 'Get cached version script'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/docs/generate_versions.sh
+          key: ${{ github.sha }}-docs
+
+      - name: 'Get cached version build'
+        uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}/docs/build/html
           key: ${{ github.sha }}-docs
 
-      - name: 'Deploy to gh-pages'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build/html
-          publish_branch: gh-pages
-          destination_dir: develop
+      - name: 'Move file & directories & run version update script'
+        shell: 'script -q -e -c "bash {0}"'
+        run: >
+          mv ./docs/generate_versions.sh ./public/generate_versions.sh
+          && mv ./docs/build/html ./public/${{ github.ref_name }}
+          && rm -rf ./docs/
+          && ./public/generate_versions.sh
+          && rm -f ./public/generate_versions.sh
+      
+      - name: 'Update latest symlink and kill git'
+        shell: 'script -q -e -c "bash {0}"'
+        run: cd ./public/ && ln -sfn ./${{ github.ref_name }} ./latest && ls -la
+
+      # - name: 'Deploy to gh-pages'
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./public
+      #     publish_branch: gh-pages
+      - name: 'Manually deploy to gh-pages'
+        run: |
+          git config --global user.email "${{github.actor}}@users.noreply.github.com"
+          git config --global user.name "${{github.actor}}"
+          cd ./public
+          git add .
+          git commit -m "deploy: ${{ github.sha }}" && git push origin gh-pages
+
+  # deploy_develop_docs:
+  #   permissions:
+  #     contents: write
+  #     pages: write
+  #   runs-on: ubuntu-latest
+  #   name: 'Publish development documentation to github pages'
+  #   needs: build_docs
+  #   if: endsWith(github.ref, '/develop')
+  #   steps:
+  #     - name: 'Restore built docs cache'
+  #       uses: actions/cache/restore@v3
+  #       id: restore-build
+  #       with:
+  #         path: ${{ github.workspace }}/docs/build/html
+  #         key: ${{ github.sha }}-docs
+
+  #     - name: 'Deploy to gh-pages'
+  #       uses: peaceiris/actions-gh-pages@v3
+  #       with:
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         publish_dir: ./docs/build/html
+  #         publish_branch: gh-pages
+  #         destination_dir: develop
+  
 
   # Probably not necesary with cache
   # cleanup:

@@ -36,7 +36,7 @@ autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'furo'
+html_theme = 'pydata_sphinx_theme'
 # html_static_path = ['_static']
 
 # -- Project information -----------------------------------------------------
@@ -53,11 +53,24 @@ DEVELOP = os.environ.get("DEVELOP", False)
 if DEVELOP:
     project = 'zonopy (development)'
     version = f"{main_ns['__version__']}-dev"
+    version_match = "dev"
 else:
     project = 'zonopy'
     version = main_ns['__version__']
+    version_match = f"v{version}"
 
 
 copyright = '2024, ROAHM Lab'
 author = 'ROAHM Lab'
 release = version
+html_title = project
+
+# Version switcher code
+json_url = "https://roahmlab.github.io/zonopy/versions.json"
+
+html_theme_options = {
+    "switcher": {
+        "json_url": json_url,
+        "version_match": version_match,
+    },
+}
