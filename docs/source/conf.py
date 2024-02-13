@@ -63,7 +63,7 @@ else:
 copyright = '2024, ROAHM Lab'
 author = 'ROAHM Lab'
 release = version
-html_title = project
+html_title = f"{project} v{version}"
 
 # Version switcher code
 json_url = "https://roahmlab.github.io/zonopy/versions.json"
@@ -73,4 +73,5 @@ html_theme_options = {
         "json_url": json_url,
         "version_match": version_match,
     },
+    "navbar_center": ["version-switcher", "navbar-nav"],
 }
