@@ -13,22 +13,28 @@ from ..gen_ops import (
     )
 
 class batchMatZonotope():
-    '''
-    matZono: <matZonotope>, <torch.float64>
+    r""" Batched 2D Matrix Zonotope class
 
-    Z: <torch.Tensor> center vector and generator matrix Z = [c,G]
-    , shape [N+1, nx, ny]
-    center: <torch.Tensor> center matrix
-    , shape [nx,ny] 
-    generators: <torch.Tensor> generator tensor
-    , shape [N, nx, ny]
-    
-    
-    Eq. (coeff. a1,a2,...,aN \in [0,1])
-    G = [[G1],[G2],...,[GN]]
-    zono = C + a1*G1 + a2*G2 + ... + aN*GN
-    '''
-    def __init__(self,Z, dtype=None, device=None):
+    Batched version of the :class:`matZonotope` class for representing a zonotope in matrix form.
+    This class represents a batch of matrix zonotopes similarly to how the :class:`batchZonotope`
+    class represents a batch of zonotopes over arbitrary batch dimensions.
+
+    This similarly results in a :math:`\mathbf{Z}` tensor of shape
+    :math:`B_1 \times B_2 \times \ldots \times (N+1) \times dx \times dy`.
+
+    Refer to the :class:`matZonotope` class for more details.
+    """
+    def __init__(self, Z, dtype=None, device=None):
+        r''' Initialize the batch matrix zonotope
+
+        Args:
+            Z (torch.Tensor): The :math:`\mathbf{Z}` tensor of shape :math:`B_1 \times B_2 \times \ldots \times (N+1) \times dx \times dy`.
+            dtype (torch.dtype, optional): The data type of the batch matrix zonotope. If ``None``, it will be inferred. Default: ``None``
+            device (torch.device, optional): The device of the batch matrix zonotope. If ``None``, it will be inferred. Default: ``None``
+
+        Raises:
+            AssertionError: If the dimension of the input :math:`\mathbf{Z}` is not greater than 3.
+        '''
         # Make sure Z is a tensor
         if not isinstance(Z, torch.Tensor) and dtype is None:
             dtype = torch.get_default_dtype()

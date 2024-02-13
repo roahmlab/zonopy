@@ -51,11 +51,13 @@ with open(ver_path) as ver_file:
 
 DEVELOP = os.environ.get("DEVELOP", False)
 if DEVELOP:
+    project = 'zonopy (development)'
     version = f"{main_ns['__version__']}-dev"
 else:
+    project = 'zonopy'
     version = main_ns['__version__']
 
-project = 'zonopy'
+
 copyright = '2024, ROAHM Lab'
 author = 'ROAHM Lab'
 release = version

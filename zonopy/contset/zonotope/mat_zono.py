@@ -11,22 +11,33 @@ from ..gen_ops import (
     )
 
 class matZonotope():
-    '''
-    matZono: <matZonotope>, <torch.float64>
+    r""" 2D Matrix Zonotope class for representing a zonotope in matrix form.
 
-    Z: <torch.Tensor> center vector and generator matrix Z = [c,G]
-    , shape [N+1, nx, ny]
-    center: <torch.Tensor> center matrix
-    , shape [nx,ny] 
-    generators: <torch.Tensor> generator tensor
-    , shape [N, nx, ny]
-    
-    
-    Eq. (coeff. a1,a2,...,aN \in [0,1])
-    G = [[G1],[G2],...,[GN]]
-    zono = C + a1*G1 + a2*G2 + ... + aN*GN
-    '''
-    def __init__(self,Z, dtype=None, device=None):
+    The matrix zonotope is defined as a set of linear combinations of a center vector and generator matrix.
+    Similar to the :class:`zonotope` class, the matrix zonotope is defined as a set of linear combinations of
+    a center vector and generator matrix.
+    In this case, it is a set of the form:
+
+    .. math::
+        \mathcal{Z} = \{ C + \sum_{i=1}^{N} a_i G_i \mid a_i \in [0,1] \}
+
+    where :math:`C` is the center matrix and :math:`G_i` are the generator matrices.
+
+    Here, we define :math:`\mathbf{Z}` as a tensor of shape :math:`(N+1) \times dx \times dy` where :math:`dx` and :math:`dy` are the
+    number of rows and columns of all matrices, respectively.
+    That is, :math:`\mathbf{Z} = [C, G_1, G_2, \ldots, G_N]`.
+    """
+    def __init__(self, Z, dtype=None, device=None):
+        r''' Initialize the matrix zonotope with a center and generator matrix.
+        
+        Args:
+            Z (torch.Tensor): The center and generator matrix of the matrix zonotope :math:`\mathbf{Z} = [C, G_1, G_2, \ldots, G_N]`
+            dtype (torch.dtype, optional): The data type of the matrix zonotope. If ``None``, it will be inferred. Default: ``None``
+            device (torch.device, optional): The device of the matrix zonotope. If ``None``, it will be inferred. Default: ``None``
+
+        Raises:
+            AssertionError: If the dimension of the input :math:`\mathbf{Z}` is not 3.
+        '''
         # Make sure Z is a tensor
         if not isinstance(Z, torch.Tensor) and dtype is None:
             dtype = torch.get_default_dtype()

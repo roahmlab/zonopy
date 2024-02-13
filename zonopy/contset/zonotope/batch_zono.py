@@ -16,21 +16,27 @@ from ..gen_ops import (
     )
 
 class batchZonotope:
-    '''
-    b-zono: <batchZonotope>
+    r''' Batched 1D zonotope class
 
-    Z: <torch.Tensor> batch of center vector and generator matrix Z = [[C],[G]]
-    , shape [B1, B2, .. , Bb, N+1, nx]
-    center: <torch.Tensor> batch of center vector
-    , shape [B1, B2, .. , Bb, nx] 
-    generators: <torch.Tensor> batch of generator matrix
-    , shape [B1, B2, .. , Bb, N, nx]
-    
-    Eq.
-    G = [[g1],[g2],...,[gN]]
-    b-zono = {c + a1*g1 + a2*g2 + ... + aN*gN | coeff. a1,a2,...,aN \in [-1,1] }
+    Batched form of the :class:`zonotope` class.
+    This class is used to represent a batch of zonotopes over arbitrary batch dimensions,
+    where each zonotope in the batch is expanded to have the same number of generators.
+
+    This results in a :math:`\mathbf{Z}` tensor of shape :math:`B_1 \times B_2 \times \ldots \times (N+1) \times d`.
+
+    Refer to the :class:`zonotope` class for more details on zonotopes.
     '''
-    def __init__(self,Z, dtype=None, device=None):
+    def __init__(self, Z, dtype=None, device=None):
+        r""" Initialize a batch zonotope
+
+        Args:
+            Z (torch.Tensor): The :math:`\mathbf{Z}` tensor of shape :math:`B_1 \times B_2 \times \ldots \times (N+1) \times d`.
+            dtype (torch.dtype, optional): The data type of the batch zonotope. If None, the data type is inferred. Defaults to None.
+            device (str, optional): The device of the batch zonotope. If None, the device is inferred. Defaults to None.
+        
+        Raises:
+            AssertionError: If the rank of Z is less than 3.
+        """
         ################ may not need these for speed ################ 
         # Make sure Z is a tensor
         if not isinstance(Z, torch.Tensor) and dtype is None:
@@ -42,6 +48,7 @@ class batchZonotope:
         self.Z = Z
         self.batch_dim = len(Z.shape) - 2
         self.batch_idx_all = tuple([slice(None) for _ in range(self.batch_dim)])
+
     def __getitem__(self,idx):
         Z = self.Z[idx]
         if len(Z.shape) > 2:

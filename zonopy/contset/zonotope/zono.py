@@ -17,28 +17,39 @@ from ..gen_ops import (
 
 
 class zonotope:
-    '''
-    zono: <zonotope>
+    r""" 1D Zonotope class
 
-    Z: <torch.Tensor> center vector and generator matrix Z = [c,G]
-    , shape [N+1, nx]
-    center: <torch.Tensor> center vector
-    , shape [nx] 
-    generators: <torch.Tensor> generator matrix
-    , shape [N, nx]
-    
-    Eq.
-    G = [[g1],[g2],...,[gN]]
-    zono = {c + a1*g1 + a2*g2 + ... + aN*gN | coeff. a1,a2,...,aN \in [-1,1] }
-    '''
+    A Zonotope is a set of the form
+
+    .. math::
+        \mathcal{Z} = \left\{c + \sum_{i=1}^{N} a_i g_i \; \middle\vert \; a_i \in [-1,1]\right\}
+
+    where :math:`c` is the center and :math:`g_i` are the generators, each of which is a vector in the same space as :math:`c`.
+
+    This class defines a basic zonotope and its operations.
+    :math:`\mathbf{Z}` is a tensor of shape :math:`(N+1) \times d` where :math:`N` is the number of generators
+    and :math:`d` is the dimension of the zonotope.
+    The first row of :math:`Z` is the center and the rest are the generators, such that :math:`\mathbf{Z} = [c,G]^T`.
+    :math:`G = [g_1, g_2, \ldots, g_N]` is a matrix of shape :math:`N \times d`.
+    """
     def __init__(self,Z, dtype=None, device=None):
+        r""" Initialize a zonotope
+        
+        Args:
+            Z (torch.Tensor): center vector and generator matrix :math:`\mathbf{Z} = [c,G]^T`
+            dtype (torch.dtype, optional): data type of :math:`\mathbf{Z}`. If ``None``, the data type is inferred. Defaults to ``None``.
+            device (str, optional): device of :math:`\mathbf{Z}`. If ``None``, the device is inferred. Defaults to ``None``.
+        
+        Raises:
+            AssertionError: If the dimension of :math:`\mathbf{Z}` is not 2
+        """
         ################ may not need these for speed ################ 
         # Make sure Z is a tensor
         if not isinstance(Z, torch.Tensor) and dtype is None:
             dtype = torch.get_default_dtype()
         Z = torch.as_tensor(Z, dtype=dtype, device=device)
         
-        assert len(Z.shape) == 2, f'The dimension of Z input should be either 1 or 2, not {len(Z.shape)}.'
+        assert len(Z.shape) == 2, f'The dimension of Z input should be 2, not {len(Z.shape)}.'
         ############################################################## 
         self.Z = Z
     @property
