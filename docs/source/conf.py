@@ -49,8 +49,13 @@ ver_path = os.path.join(os.path.abspath('../..'), ('zonopy/properties.py'))
 with open(ver_path) as ver_file:
     exec(ver_file.read(), main_ns)
 
+DEVELOP = os.environ.get("DEVELOP", False)
+if DEVELOP:
+    version = f"{main_ns['__version__']}-dev"
+else:
+    version = main_ns['__version__']
+
 project = 'zonopy'
 copyright = '2024, ROAHM Lab'
 author = 'ROAHM Lab'
-version = main_ns['__version__']
 release = version

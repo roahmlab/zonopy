@@ -19,7 +19,7 @@ jobs:
         # Workaround to keep tty working
         # https://github.com/gfx/example-github-actions-with-tty
         shell: 'script -q -e -c "bash {0}"'
-        run: ./docs/build-docs.sh html
+        run: ./docs/build-docs.sh ${{ fromJSON('{"main":"html","develop":"html-dev"}')[github.ref_name] }}
       
       # Cache the build so we can deploy it
       - name: 'cache built docs'
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     name: 'Publish latest docs to github pages'
     needs: build_docs
-    if: github.ref == 'refs/heads/main'
+    if: endsWith(github.ref, '/main')
     steps:
       - name: 'Restore built docs cache'
         uses: actions/cache/restore@v3
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     name: 'Publish development documentation to github pages'
     needs: build_docs
-    if: github.ref == 'refs/heads/develop'
+    if: endsWith(github.ref, '/develop')
     steps:
       - name: 'Restore built docs cache'
         uses: actions/cache/restore@v3
