@@ -1,7 +1,8 @@
 sphinx==7.1.2
 # Theme
 # furo==2024.1.29
-pydata-sphinx-theme==0.15.2
+# pydata-sphinx-theme==0.15.2
+sphinx-book-theme==1.1.1
 # Extensions
 sphinxcontrib.katex==0.9.9
 matplotlib==3.8.2

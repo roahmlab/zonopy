@@ -18,12 +18,17 @@ extensions = [
     "sphinxcontrib.katex",
     "sphinx.ext.autosectionlabel",
     "sphinx_copybutton",
-    "sphinx_design",
     "myst_parser",
+    "sphinx_design",
 ]
 myst_enable_extensions = [
     "colon_fence",
+    "deflist",
+    "substitution",
+    "html_image",
 ]
+
+sd_fontawesome_latex = True
 
 katex_prerender = True
 
@@ -36,8 +41,8 @@ autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'pydata_sphinx_theme'
-# html_static_path = ['_static']
+html_theme = 'sphinx_book_theme'
+html_static_path = ['_static']
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -69,9 +74,25 @@ html_title = f"{project} v{version}"
 json_url = "https://roahmlab.github.io/zonopy/versions.json"
 
 html_theme_options = {
+    "path_to_docs": version_match,
+    "repository_url": "https://github.com/roahmlab/zonopy",
+    "repository_branch": "gh-pages",
+    "use_repository_button": True,
     "switcher": {
         "json_url": json_url,
         "version_match": version_match,
     },
-    "navbar_center": ["version-switcher", "navbar-nav"],
+    "article_header_end": ["version-switcher", "article-header-buttons"],
 }
+
+html_css_files = [
+    "css/custom.css",
+]
+
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "torch": ('https://pytorch.org/docs/master/', None),
+}
+
