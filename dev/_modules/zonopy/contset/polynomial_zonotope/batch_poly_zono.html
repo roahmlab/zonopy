@@ -1,0 +1,991 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zonopy.contset.polynomial_zonotope.batch_poly_zono &#8212; zonopy (development)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/katex-math.css?v=91adb8b6" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=3939e066"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../../_static/design-tabs.js?v=36754332"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/zonopy/contset/polynomial_zonotope/batch_poly_zono';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://roahmlab.github.io/zonopy/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy (development)</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../zonopy.html">
+                        Continuous Set Types
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../flags.html">
+                        Internal Flags
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../zonopy.html">
+                        Continuous Set Types
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../flags.html">
+                        Internal Flags
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">zonopy.conts...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for zonopy.contset.polynomial_zonotope.batch_poly_zono</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Define class for matrix polynomial zonotope</span>
+<span class="sd">Author: Yongseok Kwon</span>
+<span class="sd">Reference: CORA, Patrick Holme&#39;s implementation</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">zonopy.contset.polynomial_zonotope.utils</span> <span class="kn">import</span> <span class="n">removeRedundantExponentsBatch</span><span class="p">,</span> <span class="n">mergeExpMatrix</span>
+<span class="kn">from</span> <span class="nn">zonopy.contset.polynomial_zonotope.poly_zono</span> <span class="kn">import</span> <span class="n">polyZonotope</span>
+<span class="kn">import</span> <span class="nn">zonopy</span> <span class="k">as</span> <span class="nn">zp</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">..gen_ops</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_add_genpz_impl</span><span class="p">,</span>
+    <span class="n">_add_genzono_num_impl</span><span class="p">,</span>
+    <span class="n">_add_genpz_zono_impl</span><span class="p">,</span>
+    <span class="n">_mul_genpz_impl</span><span class="p">,</span>
+    <span class="n">_mul_genzono_num_impl</span><span class="p">,</span>
+    <span class="n">_matmul_genmpz_impl</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="kn">import</span> <span class="nn">zonopy.internal</span> <span class="k">as</span> <span class="nn">zpi</span>
+
+<div class="viewcode-block" id="batchPolyZonotope"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope">[docs]</a><span class="k">class</span> <span class="nc">batchPolyZonotope</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    pZ: &lt;polyZonotope&gt;</span>
+<span class="sd">    </span>
+<span class="sd">    c: &lt;torch.Tensor&gt; center of the polyonmial zonotope</span>
+<span class="sd">    , shape: [B1, B2, .. , Bb, nx]</span>
+<span class="sd">    G: &lt;torch.Tensor&gt; generator matrix containing the dependent generators</span>
+<span class="sd">    , shape: [B1, B2, .. , Bb, N, nx]</span>
+<span class="sd">    Grest: &lt;torch.Tensor&gt; generator matrix containing the independent generators</span>
+<span class="sd">    , shape: [B1, B2, .. , Bb, M, nx]</span>
+<span class="sd">    expMat: &lt;troch.Tensor&gt; matrix containing the exponents for the dependent generators</span>
+<span class="sd">    , shape: [N, p]</span>
+<span class="sd">    id: &lt;torch.Tensor&gt; vector containing the integer identifiers for the dependent factors</span>
+<span class="sd">    , shape: [p]</span>
+<span class="sd">    compress: &lt;int&gt; level for compressing dependent generators with expodent</span>
+<span class="sd">    0: no compress, 1: compress zero dependent generators, 2: compress zero dependent generators and remove redundant expodent</span>
+
+<span class="sd">    Eq. (coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1])</span>
+<span class="sd">    G = [gd1,gd2,...,gdN]</span>
+<span class="sd">    Grest = [gi1,gi2,...,giM]</span>
+<span class="sd">    expMat = [[i11,i12,...,i1N],[i21,i22,...,i2N],...,[ip1,ip2,...,ipN]]</span>
+<span class="sd">    id = [0,1,2,...,p-1]</span>
+
+<span class="sd">    pZ = c + a1*gi1 + a2*gi2 + ... + aN*giN + b1^i11*b2^i21*...*bp^ip1*gd1 + b1^i12*b2^i22*...*bp^ip2*gd2 + ... </span>
+<span class="sd">    + b1^i1M*b2^i2M*...*bp^ipM*gdM</span>
+<span class="sd">     </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># NOTE: property for mat pz</span>
+<div class="viewcode-block" id="batchPolyZonotope.__init__"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span><span class="n">n_dep_gens</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">expMat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># If compress=2, it will always copy.</span>
+
+        <span class="c1"># Make sure Z is a tensor and shaped right</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_default_dtype</span><span class="p">()</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;The dimension of Z input should be either 1 or 2, not </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s1">.&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_dim</span><span class="p">)])</span>
+
+        <span class="c1"># Make an expMat and id if not given</span>
+        <span class="k">if</span> <span class="n">expMat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="n">Z</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="c1"># if G is EMPTY_TENSOR, it will be EMPTY_TENSOR, size = (0,0)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+            
+        <span class="c1"># Otherwise make sure expMat is right</span>
+        <span class="k">elif</span> <span class="n">expMat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">#check correctness of user input</span>
+            <span class="n">expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">expMat</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="n">Z</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">expMat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">n_dep_gens</span><span class="p">,</span> <span class="s1">&#39;Invalid exponent matrix.&#39;</span>
+            <span class="k">if</span> <span class="n">zpi</span><span class="o">.</span><span class="n">__debug_extra__</span><span class="p">:</span> <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">expMat</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="s1">&#39;Invalid exponent matrix.&#39;</span> 
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span> <span class="o">=</span> <span class="n">expMat</span>
+            
+            <span class="c1"># Make sure ID is right</span>
+            <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+                
+        <span class="c1"># Otherwise ID is given, but not the expMat, so make identity</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_dep_gens</span><span class="p">,</span> <span class="s1">&#39;Number of dependent generators must match number of id</span><span class="se">\&#39;</span><span class="s1">s!&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="n">Z</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># Copy the Z if requested</span>
+        <span class="k">if</span> <span class="n">copy_Z</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+        <span class="c1"># Or save it itself</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span> <span class="o">=</span> <span class="n">n_dep_gens</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.compress"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.compress">[docs]</a>    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compression_level</span><span class="p">):</span>
+        <span class="c1"># Remove zero generators</span>
+        <span class="k">if</span> <span class="n">compression_level</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">nonzero_g</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">!=</span><span class="mi">0</span><span class="p">,</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_dim</span><span class="p">))</span><span class="o">+</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,))</span><span class="o">!=</span><span class="mi">0</span> <span class="c1"># non-zero generator index</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="n">nonzero_g</span><span class="p">,:]</span>
+            <span class="n">expMat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">[</span><span class="n">nonzero_g</span><span class="p">]</span>
+
+        <span class="c1"># Remove generators related to redundant exponents</span>
+        <span class="k">elif</span> <span class="n">compression_level</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span> 
+            <span class="n">expMat</span><span class="p">,</span> <span class="n">G</span> <span class="o">=</span> <span class="n">removeRedundantExponentsBatch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can only compress to 1 or 2!&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span> <span class="n">G</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span> <span class="o">=</span> <span class="n">expMat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="c1"># For chaining</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">batch_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">itype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">dtype</span> 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">device</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="mi">0</span><span class="p">,)]</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">G</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="o">+</span><span class="mi">1</span><span class="p">),)]</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">Grest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="kc">None</span><span class="p">),)]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_generators</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_indep_gens</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">input_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">id_sorted</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">expMat_sorted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">[:,</span><span class="n">order</span><span class="p">]</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">expMat_sorted</span><span class="p">,</span> <span class="n">id_sorted</span>
+
+<div class="viewcode-block" id="batchPolyZonotope.to"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.to">[docs]</a>    <span class="k">def</span> <span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">itype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">non_blocking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">expMat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">itype</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">non_blocking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># id = self.id.to(device=device)</span>
+        <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.cpu"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.cpu">[docs]</a>    <span class="k">def</span> <span class="nf">cpu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="n">expMat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="c1"># id = self.id.cpu()</span>
+        <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+    <span class="k">def</span>  <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded &#39;+&#39; operator for Minkowski sum</span>
+<span class="sd">        self: &lt;polyZonotope&gt;</span>
+<span class="sd">        other: &lt;torch.tensor&gt; OR &lt;zonotope&gt; OR &lt;polyZonotope&gt;</span>
+<span class="sd">        return &lt;polyZonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># if other is a vector</span>
+        <span class="k">if</span>  <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="n">_add_genzono_num_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># if other is a polynomial zonotope</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">polyZonotope</span><span class="p">,</span> <span class="n">batchPolyZonotope</span><span class="p">)):</span> <span class="c1"># exact Plus</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">_add_genpz_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="c1"># if other is a zonotope</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">zp</span><span class="o">.</span><span class="n">zonotope</span><span class="p">,</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchZonotope</span><span class="p">)):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">_add_genpz_zono_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        
+    <span class="fm">__radd__</span> <span class="o">=</span> <span class="fm">__add__</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="o">-</span><span class="n">other</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__rsub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="fm">__sub__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__pos__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+    
+    <span class="k">def</span> <span class="fm">__neg__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded unary &#39;-&#39; operator for negation</span>
+<span class="sd">        self: &lt;polyZonotope&gt;</span>
+<span class="sd">        return &lt;polyZonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[:</span><span class="mi">1</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="p">)),</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="c1"># if other is a vector</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="n">_mul_genzono_num_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># if other is a polynomial zonotope or batch polynomial zonotope</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,(</span><span class="n">polyZonotope</span><span class="p">,</span><span class="n">batchPolyZonotope</span><span class="p">)):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">_mul_genpz_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="fm">__rmul__</span> <span class="o">=</span> <span class="fm">__mul__</span>
+
+    <span class="k">def</span> <span class="fm">__rmatmul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded &#39;@&#39; operator for the multiplication of a matrix or an interval matrix with a polyZonotope</span>
+<span class="sd">        self: &lt;polyZonotope&gt;</span>
+<span class="sd">        other: &lt;torch.tensor&gt; OR &lt;intervals&gt;</span>
+<span class="sd">        return &lt;polyZonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
+        <span class="c1"># if other is a matrix</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>            
+            <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="nd">@other</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># TODO IS THIS RIGHT?</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">zp</span><span class="o">.</span><span class="n">matPolyZonotope</span><span class="p">):</span>
+            <span class="c1"># Shim self to batchMatPolyZono and return that matmul</span>
+            <span class="n">shim_self</span> <span class="o">=</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchMatPolyZonotope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">Z</span><span class="p">,</span> <span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">expMat</span><span class="p">,</span> <span class="nb">id</span> <span class="o">=</span> <span class="n">_matmul_genmpz_impl</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">shim_self</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">expMat</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        
+    <span class="c1"># def __len__(self):</span>
+    <span class="c1">#     return self.Z.shape[0]</span>
+
+    <span class="c1"># NOTE - this is a shim for reducing each individual pz in the batch</span>
+<div class="viewcode-block" id="batchPolyZonotope.reduce"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.reduce">[docs]</a>    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">option</span><span class="o">=</span><span class="s1">&#39;girard&#39;</span><span class="p">):</span>
+        <span class="c1"># Reduce by iterating over all</span>
+        <span class="c1"># Shim to batchPolyZonotope</span>
+        <span class="n">len_ents</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">))</span>
+        <span class="n">idx_tuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">len_ents</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span>
+        <span class="n">pzlist</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">len_ents</span>
+        <span class="k">for</span> <span class="n">out_i</span><span class="p">,</span> <span class="n">idxs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">idx_tuple</span><span class="p">)):</span>
+            <span class="n">pzlist</span><span class="p">[</span><span class="n">out_i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">option</span><span class="o">=</span><span class="n">option</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="o">.</span><span class="n">from_pzlist</span><span class="p">(</span><span class="n">pzlist</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span><span class="p">)</span></div>
+    
+    <span class="c1"># TODO Inspect for speedup?</span>
+<div class="viewcode-block" id="batchPolyZonotope.reduce_indep"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.reduce_indep">[docs]</a>    <span class="k">def</span> <span class="nf">reduce_indep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">option</span><span class="o">=</span><span class="s1">&#39;girard&#39;</span><span class="p">):</span>
+        <span class="c1"># extract dimensions</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_indep_gens</span>
+            
+        <span class="c1"># number of gens kept (N gens will be added back after reudction)</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="n">order</span><span class="o">-</span><span class="n">N</span><span class="p">)</span>
+        <span class="c1"># check if the order need to be reduced</span>
+        <span class="k">if</span> <span class="n">Q</span> <span class="o">&gt;</span> <span class="n">N</span><span class="o">*</span><span class="n">order</span> <span class="ow">and</span> <span class="n">K</span> <span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Grest</span>
+            <span class="c1"># caculate the length of the gens with a special metric</span>
+            <span class="nb">len</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">G</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># NOTE -1</span>
+            <span class="c1"># determine the smallest gens to remove            </span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">descending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_dim</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">ind_rem</span><span class="p">,</span> <span class="n">ind_red</span> <span class="o">=</span> <span class="n">ind</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="n">K</span><span class="p">),)],</span> <span class="n">ind</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="n">K</span><span class="p">,</span><span class="kc">None</span><span class="p">),)]</span>
+            <span class="c1"># reduce the generators with the reducetion techniques for linear zonotopes</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="n">ind_red</span><span class="p">)),</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">Gbox</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag_embed</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+            <span class="c1"># add the reduced gens as new indep gens</span>
+            <span class="n">ZRed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span><span class="n">G</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="n">ind_rem</span><span class="p">),</span><span class="n">Gbox</span><span class="p">),</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ZRed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span>
+        <span class="n">n_dg_red</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">n_dg_red</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>            
+            <span class="n">ZRed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">ZRed</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="mi">0</span><span class="p">,)],</span><span class="n">ZRed</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">n_dg_red</span><span class="o">+</span><span class="mi">1</span><span class="p">),)]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span><span class="n">ZRed</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="n">n_dg_red</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="kc">None</span><span class="p">),)]),</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">n_dg_red</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">ZRed</span><span class="p">,</span><span class="n">n_dg_red</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.exactCartProd"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.exactCartProd">[docs]</a>    <span class="k">def</span> <span class="nf">exactCartProd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        self: &lt;polyZonotope&gt;</span>
+<span class="sd">        other: &lt;polyZonotope&gt;</span>
+<span class="sd">        return &lt;polyZonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># Get the relevant center</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span><span class="n">polyZonotope</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span><span class="n">other</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">dimension</span><span class="p">,))])</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span><span class="n">batchPolyZonotope</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span><span class="n">other</span><span class="o">.</span><span class="n">c</span><span class="p">))</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+        
+        <span class="c1"># Update the expMat</span>
+        <span class="nb">id</span><span class="p">,</span><span class="n">expMat1</span><span class="p">,</span> <span class="n">expMat2</span> <span class="o">=</span> <span class="n">mergeExpMatrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">other</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="n">other</span><span class="o">.</span><span class="n">expMat</span><span class="p">)</span>
+        <span class="n">expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">expMat1</span><span class="p">,</span><span class="n">expMat2</span><span class="p">))</span>
+
+        <span class="c1"># Construct the new G</span>
+        <span class="n">new_G_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">g1_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]),</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">g2_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span><span class="kc">None</span><span class="p">),</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="kc">None</span><span class="p">))</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">new_G_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">G</span><span class="p">[</span><span class="n">g1_slice</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span>
+        <span class="n">G</span><span class="p">[</span><span class="n">g2_slice</span><span class="p">]</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">G</span>
+
+        <span class="c1"># Construct the new Grest</span>
+        <span class="n">new_Grest_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">g1_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]),</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">g2_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span><span class="kc">None</span><span class="p">),</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="kc">None</span><span class="p">))</span>
+        <span class="n">Grest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">new_Grest_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">Grest</span><span class="p">[</span><span class="n">g1_slice</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Grest</span>
+        <span class="n">Grest</span><span class="p">[</span><span class="n">g2_slice</span><span class="p">]</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">Grest</span>
+
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">c</span><span class="p">,</span><span class="n">G</span><span class="p">,</span><span class="n">Grest</span><span class="p">),</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">n_dep_gens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="o">+</span><span class="n">other</span><span class="o">.</span><span class="n">n_dep_gens</span>
+        <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="n">expMat</span><span class="p">,</span><span class="nb">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.to_batchZonotope"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.to_batchZonotope">[docs]</a>    <span class="k">def</span> <span class="nf">to_batchZonotope</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">%</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">Gquad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="o">~</span><span class="n">ind</span><span class="p">,)]</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Gquad</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="n">ind</span><span class="p">,)],</span><span class="mf">0.5</span><span class="o">*</span><span class="n">Gquad</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="p">),</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span>
+        <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.to_interval"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.to_interval">[docs]</a>    <span class="k">def</span> <span class="nf">to_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;interval&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;interval&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_batchZonotope</span><span class="p">()</span><span class="o">.</span><span class="n">to_interval</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;Not implemented&#39;</span></div>
+
+    <span class="c1"># TODO Inspect for speedup?</span>
+<div class="viewcode-block" id="batchPolyZonotope.slice_dep"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.slice_dep">[docs]</a>    <span class="k">def</span> <span class="nf">slice_dep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">id_slc</span><span class="p">,</span><span class="n">val_slc</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Slice polynomial zonotpe in depdent generators</span>
+<span class="sd">        id_slc: id to dlice</span>
+<span class="sd">        val_slc: indeterminant to slice</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">id_slc</span><span class="p">,(</span><span class="nb">int</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">id_slc</span><span class="p">,</span><span class="nb">int</span><span class="p">):</span>
+                <span class="n">id_slc</span> <span class="o">=</span> <span class="p">[</span><span class="n">id_slc</span><span class="p">]</span>
+            <span class="n">id_slc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">id_slc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val_slc</span><span class="p">,(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val_slc</span><span class="p">,(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+                <span class="n">val_slc</span> <span class="o">=</span> <span class="p">[</span><span class="n">val_slc</span><span class="p">]</span>
+            <span class="n">val_slc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">val_slc</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">val_slc</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">):</span>
+            <span class="kn">import</span> <span class="nn">pdb</span><span class="p">;</span> <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+        <span class="c1">#assert all(val_slc&lt;=1) and all(val_slc&gt;=-1), &#39;Indereminant should be in [-1,1].&#39;</span>
+        
+        <span class="n">id_slc</span><span class="p">,</span> <span class="n">val_slc</span> <span class="o">=</span> <span class="n">id_slc</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">val_slc</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">id_slc</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">id_slc</span><span class="p">,</span> <span class="n">val_slc</span>  <span class="o">=</span> <span class="n">id_slc</span><span class="p">[</span><span class="n">order</span><span class="p">],</span> <span class="n">val_slc</span><span class="p">[:,</span><span class="n">order</span><span class="p">]</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="o">==</span><span class="n">id_slc</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="c1"># corresponding id for self.id  </span>
+        <span class="n">ind2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="o">==</span><span class="n">id_slc</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="c1"># corresponding id for id_slc</span>
+        <span class="c1">#assert ind.numel()==len(id_slc), &#39;Some specidied IDs do not exist!&#39;</span>
+        <span class="k">if</span> <span class="n">ind</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">val_slc</span><span class="p">[:,</span><span class="n">ind2</span><span class="p">]</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">[:,</span><span class="n">ind</span><span class="p">],</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">expMat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">[:,</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">[:,</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span>
+            <span class="n">expMat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+
+        <span class="c1">#expMat, G = removeRedundantExponents(expMat,G)</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">expMat</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">G</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+            <span class="n">expMat</span> <span class="o">=</span> <span class="n">expMat</span><span class="p">[</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        id = self.id</span>
+<span class="sd">        ind = torch.sum(expMat,0) == 0</span>
+<span class="sd">        if torch.any(ind):</span>
+<span class="sd">            expMat = expMat[:,~ind]</span>
+<span class="sd">            id = id[:,~ind]</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
+        <span class="k">if</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">expMat</span><span class="p">,</span><span class="nb">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">c</span><span class="p">,</span><span class="n">G</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="p">)),</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">expMat</span><span class="p">,</span><span class="nb">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></div>
+    
+
+<div class="viewcode-block" id="batchPolyZonotope.center_slice_all_dep"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.center_slice_all_dep">[docs]</a>    <span class="k">def</span> <span class="nf">center_slice_all_dep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">val_slc</span><span class="p">):</span>
+        <span class="c1"># get all values in order</span>
+        <span class="n">val_slc</span> <span class="o">=</span> <span class="n">val_slc</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="c1"># Batch dims, ..., 1, n_ids</span>
+        <span class="c1"># Exponentiate by exponent matrix, reduce the product for each term, then multiply by each dep gen</span>
+        <span class="c1"># offset = torch.prod(val_slc**self.expMat, dim=-1).unsqueeze(-2)@self.G</span>
+        <span class="c1"># Torch einsum accomplishes the above with better accuracy and arbitrary dimensions</span>
+        <span class="n">alpha_coeffs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">val_slc</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;...g,...gd-&gt;...d&#39;</span><span class="p">,</span>
+                              <span class="n">alpha_coeffs</span><span class="p">,</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">)</span> <span class="c1"># b1, b2,..., dim</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">offset</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.grad_center_slice_all_dep"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.grad_center_slice_all_dep">[docs]</a>    <span class="k">def</span> <span class="nf">grad_center_slice_all_dep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">val_slc</span><span class="p">):</span>
+        <span class="c1"># prepare output</span>
+        <span class="n">grad</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="n">val_slc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">n_ids</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="c1"># get all values in order</span>
+        <span class="n">val_slc</span> <span class="o">=</span> <span class="n">val_slc</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="c1"># Batch dims, ..., 1, 1, n_ids</span>
+        <span class="n">expMat_red</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># a tensor of reduced order expMat for each column, n_ids,  n_dep_gens, n_ids</span>
+        <span class="c1"># grad[..., self.id] = ((self.expMat.T*torch.prod(val_slc**expMat_red,dim=-1).nan_to_num())@self.G).transpose(-1,-2) # b1, b2,..., dim, n_ids</span>
+        <span class="c1"># Torch einsum accomplishes the above with better accuracy and arbitrary dimensions</span>
+        <span class="n">alpha_coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">val_slc</span><span class="o">**</span><span class="n">expMat_red</span><span class="p">,</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">()</span>
+        <span class="c1"># grad[..., self.id] = torch.einsum(&#39;...ig,...gd-&gt;...di&#39;,</span>
+        <span class="c1">#                                   alpha_coeffs,</span>
+        <span class="c1">#                                   self.G) # b1, b2,..., dim, n_ids</span>
+        <span class="c1"># Actually, in this case, manually writing it is faster</span>
+        <span class="n">grad</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">alpha_coeffs</span><span class="nd">@self</span><span class="o">.</span><span class="n">G</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">grad</span></div>
+
+    <span class="c1"># TODO Unverified since update</span>
+<div class="viewcode-block" id="batchPolyZonotope.hess_center_slice_all_dep"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.hess_center_slice_all_dep">[docs]</a>    <span class="k">def</span> <span class="nf">hess_center_slice_all_dep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">val_slc</span><span class="p">):</span>
+        <span class="n">n_ids</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">n_vals</span> <span class="o">=</span> <span class="n">val_slc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">val_slc</span> <span class="o">=</span> <span class="n">val_slc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="n">n_ids</span><span class="p">),)]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span><span class="o">+</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n_ids</span><span class="p">))</span> <span class="c1"># b1, b2,..., 1, 1, 1, n_ids</span>
+        <span class="n">expMat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">[:,</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)]</span> <span class="c1"># n_dep_gens, n_ids</span>
+        <span class="n">expMat_red</span> <span class="o">=</span> <span class="n">expMat</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># a tensor of reduced order expMat for each column</span>
+        <span class="n">expMat_twice_red</span> <span class="o">=</span> <span class="n">expMat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="n">expMat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span><span class="n">n_ids</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_ids</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n_ids</span><span class="p">)</span>
+        <span class="n">expMat_first</span> <span class="o">=</span> <span class="n">expMat</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">n_ids</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">hess</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_shape</span><span class="o">+</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimension</span><span class="p">,</span><span class="n">n_vals</span><span class="p">,</span><span class="n">n_vals</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">hess</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span><span class="nb">slice</span><span class="p">(</span><span class="n">n_ids</span><span class="p">),</span><span class="nb">slice</span><span class="p">(</span><span class="n">n_ids</span><span class="p">))]</span> <span class="o">=</span> <span class="p">((</span><span class="n">expMat_first</span><span class="o">*</span><span class="n">expMat_red</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">val_slc</span><span class="o">**</span><span class="n">expMat_twice_red</span><span class="p">,</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">())</span><span class="nd">@self</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hess</span></div>
+
+
+<div class="viewcode-block" id="batchPolyZonotope.slice_all_dep"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.slice_all_dep">[docs]</a>    <span class="k">def</span> <span class="nf">slice_all_dep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">val_slc</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Slice polynomial zonotpe in depdent generators</span>
+<span class="sd">        id_slc: id to slice</span>
+<span class="sd">        val_slc: indeterminant to slice</span>
+<span class="sd">        c: &lt;torch.Tensor&gt;, shape [b1,b2,...,nx]</span>
+<span class="sd">        grad_c: &lt;torch.Tensor&gt;, d c/d val_slc</span>
+<span class="sd">        shape [b1,b2,...,nx,n_ids]</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1">##################################</span>
+        <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchZonotope</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">center_slice_all_dep</span><span class="p">(</span><span class="n">val_slc</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="p">),</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="batchPolyZonotope.deleteZerosGenerators"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.deleteZerosGenerators">[docs]</a>    <span class="k">def</span> <span class="nf">deleteZerosGenerators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eps</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">expMat</span><span class="p">,</span> <span class="n">G</span> <span class="o">=</span> <span class="n">removeRedundantExponentsBatch</span><span class="p">(</span><span class="n">expMat</span><span class="p">,</span><span class="n">G</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="p">)</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">expMat</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">G</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+            <span class="n">expMat</span> <span class="o">=</span> <span class="n">expMat</span><span class="p">[</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        
+        <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">expMat</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
+            <span class="n">expMat</span> <span class="o">=</span> <span class="n">expMat</span><span class="p">[:,</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">[:,</span><span class="o">~</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">c</span><span class="p">,</span><span class="n">G</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Grest</span><span class="p">)),</span><span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">expMat</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.project"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.project">[docs]</a>    <span class="k">def</span> <span class="nf">project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_idx_all</span><span class="o">+</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span><span class="n">dim</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="batchPolyZonotope.split_dep_indep"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.split_dep_indep">[docs]</a>    <span class="k">def</span> <span class="nf">split_dep_indep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center_on_dep</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">Z_dep</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="o">...</span><span class="p">,:</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="o">+</span><span class="mi">1</span><span class="p">,:])</span>
+        <span class="n">Z_indep</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_indep_gens</span><span class="o">+</span><span class="mi">1</span><span class="p">):,:])</span>
+        <span class="n">Z_indep</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">*=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">center_on_dep</span><span class="p">:</span>
+            <span class="n">Z_indep</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">+=</span> <span class="n">Z_dep</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,:]</span>
+            <span class="n">Z_dep</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">+=</span> <span class="mi">0</span>
+        <span class="n">deps</span> <span class="o">=</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z_dep</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">indeps</span> <span class="o">=</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchZonotope</span><span class="p">(</span><span class="n">Z_indep</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">deps</span><span class="p">,</span> <span class="n">indeps</span></div>
+
+<div class="viewcode-block" id="batchPolyZonotope.from_pzlist"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.from_pzlist">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_pzlist</span><span class="p">(</span><span class="n">pzlist</span><span class="p">,</span> <span class="n">batch_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pzlist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Expected at least 1 element input!&quot;</span>
+        <span class="c1"># Check type</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">pz</span><span class="p">,</span> <span class="n">polyZonotope</span><span class="p">)</span> <span class="k">for</span> <span class="n">pz</span> <span class="ow">in</span> <span class="n">pzlist</span><span class="p">]),</span> <span class="s2">&quot;Expected all elements to be of type polyZonotope&quot;</span>
+        <span class="c1"># Validate dimensions match</span>
+        <span class="n">n_pz</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pzlist</span><span class="p">)</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">pzlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dimension</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">pzlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="n">pzlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span>
+        <span class="p">[</span><span class="n">pz</span><span class="o">.</span><span class="n">dimension</span> <span class="k">for</span> <span class="n">pz</span> <span class="ow">in</span> <span class="n">pzlist</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_pz</span><span class="p">,</span> <span class="s2">&quot;Expected all elements to have the same dimensions!&quot;</span>
+
+        <span class="c1"># First loop to extract key parts</span>
+        <span class="n">all_ids</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_pz</span>
+        <span class="n">dep_gens</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_pz</span>
+        <span class="n">all_c</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_pz</span>
+        <span class="n">n_grest</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_pz</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pz</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pzlist</span><span class="p">):</span>
+            <span class="n">all_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pz</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">dep_gens</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pz</span><span class="o">.</span><span class="n">n_dep_gens</span>
+            <span class="n">all_c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">n_grest</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pz</span><span class="o">.</span><span class="n">n_indep_gens</span>
+        
+        <span class="c1"># Combine</span>
+        <span class="n">all_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">all_ids</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+        <span class="n">all_dep_gens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dep_gens</span><span class="p">)</span>
+        <span class="n">dep_gens_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">dep_gens</span><span class="p">)</span>
+        <span class="n">n_grest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">n_grest</span><span class="p">)</span>
+        <span class="n">all_c</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">all_c</span><span class="p">)</span>
+
+        <span class="c1"># Preallocate</span>
+        <span class="n">all_G</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_pz</span><span class="p">,</span> <span class="n">all_dep_gens</span><span class="p">,</span> <span class="n">dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">all_grest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_pz</span><span class="p">,</span> <span class="n">n_grest</span><span class="p">,</span> <span class="n">dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">all_expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">all_dep_gens</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_ids</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">last_expMat_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># expand remaining values</span>
+        <span class="k">for</span> <span class="n">pzid</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pz</span><span class="p">):</span>
+            <span class="c1"># Expand ExpMat (replace any with nonzero to fix order bug!)</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">pzlist</span><span class="p">[</span><span class="n">pzid</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">all_ids</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">end_idx</span> <span class="o">=</span> <span class="n">last_expMat_idx</span> <span class="o">+</span> <span class="n">pzlist</span><span class="p">[</span><span class="n">pzid</span><span class="p">]</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">all_expMat</span><span class="p">[</span><span class="n">last_expMat_idx</span><span class="p">:</span><span class="n">end_idx</span><span class="p">,</span><span class="n">matches</span><span class="p">]</span> <span class="o">=</span> <span class="n">pzlist</span><span class="p">[</span><span class="n">pzid</span><span class="p">]</span><span class="o">.</span><span class="n">expMat</span>
+            <span class="n">last_expMat_idx</span> <span class="o">=</span> <span class="n">end_idx</span>
+        
+            <span class="c1"># expand out all G matrices</span>
+            <span class="n">all_G</span><span class="p">[</span><span class="n">pzid</span><span class="p">,</span><span class="n">dep_gens_idxs</span><span class="p">[</span><span class="n">pzid</span><span class="p">]:</span><span class="n">dep_gens_idxs</span><span class="p">[</span><span class="n">pzid</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pzlist</span><span class="p">[</span><span class="n">pzid</span><span class="p">]</span><span class="o">.</span><span class="n">G</span>
+
+            <span class="c1"># Expand out all grest</span>
+            <span class="n">grest</span> <span class="o">=</span> <span class="n">pzlist</span><span class="p">[</span><span class="n">pzid</span><span class="p">]</span><span class="o">.</span><span class="n">Grest</span>
+            <span class="n">all_grest</span><span class="p">[</span><span class="n">pzid</span><span class="p">,:</span><span class="n">grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">grest</span>
+        
+        <span class="c1"># Combine, reduce, output.</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">all_c</span><span class="p">,</span> <span class="n">all_G</span><span class="p">,</span> <span class="n">all_grest</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">batch_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">batch_shape</span> <span class="o">+</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:])</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">all_dep_gens</span><span class="p">,</span> <span class="n">all_expMat</span><span class="p">,</span> <span class="n">all_ids</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+    
+<div class="viewcode-block" id="batchPolyZonotope.combine_bpz"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.combine_bpz">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">combine_bpz</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">,</span> <span class="n">idxs</span><span class="p">):</span>
+        <span class="c1"># Takes a list of bpz and respective idxs for them and combines them appropriately</span>
+        <span class="n">out_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">idxs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">locations</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">idxs</span><span class="p">):</span>
+            <span class="n">out_list</span><span class="p">[</span><span class="n">locations</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">bpzlist</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">locations</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="o">.</span><span class="n">from_pzlist</span><span class="p">(</span><span class="n">out_list</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="batchPolyZonotope.zeros"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.zeros">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">zeros</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">dims</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">batch_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">dims</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">*</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">expMat</span><span class="o">=</span><span class="n">expMat</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="batchPolyZonotope.ones"><a class="viewcode-back" href="../../../../generated/zonopy.batchPolyZonotope.html#zonopy.batchPolyZonotope.ones">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ones</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">dims</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">batch_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">dims</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">*</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">expMat</span><span class="o">=</span><span class="n">expMat</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div></div>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
