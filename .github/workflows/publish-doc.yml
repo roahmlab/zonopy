@@ -1,0 +1,58 @@
+# action.yml
+name: 'Build Docs'
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    name: 'Build Sphinx documentation'
+    steps:
+      - name: 'Checkout the repo'
+        uses: actions/checkout@v4
+
+      - name: 'Run the buildscript'
+        # Workaround to keep tty working
+        # https://github.com/gfx/example-github-actions-with-tty
+        shell: 'script -q -e -c "bash {0}"'
+        run: ./docs/build-docs.sh html
+
+  deploy_main_docs:
+    permissions:
+      contents: write
+      pages: write
+    runs-on: ubuntu-latest
+    name: 'Publish latest docs to github pages'
+    needs: build_docs
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: 'Deploy to gh-pages'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
+          publish_branch: gh-pages
+          keep_files: true
+
+  deploy_develop_docs:
+    permissions:
+      contents: write
+      pages: write
+    runs-on: ubuntu-latest
+    name: 'Publish development documentation to github pages'
+    needs: build_docs
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: 'Deploy to gh-pages'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
+          publish_branch: gh-pages
+          destination_dir: develop
+
+# TODO Versioned docs (look into the release event)

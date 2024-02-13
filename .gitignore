@@ -7,3 +7,14 @@ video_test/
 trace.json
 pyprof.out
 /render/
+
+# Generated documentation
+docs/source/generated/
+docs/_site
+_site
+docs/dev
+
+# MACOS
+.ds_store
+.DS_Store
+.DS_STORE

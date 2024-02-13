@@ -4,15 +4,7 @@ from zonopy.math import *
 
 import zonopy.internal as internal
 
-__version__ = "0.1.0"
-__logo__ = """
-*** ZONO-PY ***
-  _____
- |     |__
- |_____|  |__
-    |_____|  |
-       |_____|
-"""
+from .properties import __version__, __logo__
 
 def setup_cuda():
    if not internal.__hide_deprecation__:

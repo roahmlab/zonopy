@@ -8,18 +8,44 @@ import torch
 import zonopy.internal as zpi
 
 class interval:
-    '''
-    I: <interval>
+    r""" N-rank tensor intervals
 
-    inf: <torch.Tensor> infimum
-    , shape [n,m]
-    sup: <torch.Tensor> supremum
-    , shape [n,m]
+    An interval is a set of real numbers that includes all numbers between two given numbers.
+    Here, we define an interval as a set of real numbers given infinum and supremum tensors
+    :math:`\underbar{X}` and :math:`\overline{\text{X}}` such that
+    :math:`\underbar{X} \leq X \leq \overline{\text{X}}`.
+    
+    .. math::
 
-    Eq.
-    I = { inf*(1-a)/2 + sup*(1+a)/2 | coef. a \in [-1,1] }
-    '''
+        \mathcal{I} := \left\{
+            x \in \mathbb{R}^{n,m,...} 
+            \; \middle\vert \;
+            \begin{array}{c}
+                \underbar{x}_{i,j,\ldots} \leq x_{i,j,\ldots} \leq \overline{\text{x}}_{i,j,\ldots} \\
+                \forall{i=1,\ldots,n} \\
+                \forall{j=1,\ldots,m} \\
+                \vdots
+            \end{array}
+            \right\}
+    
+    """
     def __init__(self, inf=None, sup=None, dtype=None, device=None):
+        """ Create an interval
+
+        If ``inf`` and ``sup`` are both ``None``, an empty interval is created.
+        If only one of ``inf`` or ``sup`` is ``None``, the interval is created as a point interval where ``inf = sup``.
+
+        Args:
+            inf (torch.Tensor, optional): infimum of the interval. Defaults to None.
+            sup (torch.Tensor, optional): supremum of the interval. Defaults to None.
+            dtype (torch.dtype, optional): data type of the interval. If None, the data type is inferred from the input tensors. Defaults to None.
+            device (torch.device, optional): device of the interval. If None, the device is inferred from the input tensors. Defaults to None.
+        
+        Raises:
+            AssertionError: If the shapes of ``inf`` and ``sup`` do not match.
+            AssertionError: If the devices of ``inf`` and ``sup`` do not match.
+            AssertionError: If ``inf`` is not less than or equal to ``sup`` entry-wise and :const:`zonopy.internal.__debug_extra__` is True.
+        """
         if inf is None and sup is None:
             inf = torch.empty(0, dtype=dtype, device=device)
             sup = torch.empty(0, dtype=dtype, device=device)
@@ -28,11 +54,19 @@ class interval:
         elif sup is None:
             sup = inf
         
+        # Make sure that the input is a tensor
+        inf = torch.as_tensor(inf)
+        sup = torch.as_tensor(sup)
         
-        inf = torch.as_tensor(inf, dtype=dtype, device=device)
-        sup = torch.as_tensor(sup, dtype=dtype, device=device)
+        # Promote the data type if necessary
+        if dtype is None:
+            dtype = torch.promote_types(inf.dtype, sup.dtype)
         
-        assert inf.shape == sup.shape, "inf and sup is expected to be of the same shape"
+        inf = inf.to(dtype=dtype, device=device)
+        sup = sup.to(dtype=dtype, device=device)
+        
+        assert inf.shape == sup.shape, "inf and sup are expected to be of the same shape"
+        assert inf.device == sup.device, "inf and sup are expected to be on the same device"
         if zpi.__debug_extra__: assert torch.all(inf <= sup), "inf should be less than sup entry-wise"
 
         self.__inf = inf
@@ -243,20 +277,57 @@ class interval:
             self.__inf[pos] = value
             self.__sup[pos] = value
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """ Returns the length of the interval
+
+        Returns:
+            int: length of the interval (same as the first tensor dimension)
+        """
         return len(self.__inf)
 
-    def dim(self):
+    def dim(self) -> int:
+        """ Returns the number of dimensions of the interval
+        
+        Returns:
+            int: number of dimensions of the interval
+        """
         return self.__inf.dim()
 
     def t(self):
+        """ Transposes the interval
+        
+        Returns:
+            interval: transposed interval
+        """
         return interval(self.__inf.t(), self.__sup.t())
 
-    def numel(self):
+    def numel(self) -> int:
+        """ Returns the total number of elements in the interval
+
+        Returns:
+            int: number of elements in the interval
+        """
         return self.__inf.numel()
-    def center(self):
+    
+    def center(self) -> torch.Tensor:
+        """ Compute the center of the interval
+
+        The center of the interval is the midpoint of the infimum and supremum.
+
+        Returns:
+            torch.Tensor: center of the interval
+        """
         return (self.inf+self.sup)/2
-    def rad(self):
+    
+    def rad(self) -> torch.Tensor:
+        """ Compute the radius of the interval
+        
+        The radius of the interval is half of the difference between the supremum and infimum.
+        It can be viewed as the distance from the center to the infimum or supremum.
+
+        Returns:
+            torch.Tensor: radius of the interval
+        """
         return (self.sup-self.inf)/2
 
 

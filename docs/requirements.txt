@@ -1,0 +1,14 @@
+sphinx==7.1.2
+# Theme
+furo==2024.1.29
+# Extensions
+sphinxcontrib.katex==0.9.9
+matplotlib==3.8.2
+sphinx-copybutton==0.5.2
+sphinx_design==0.5.0
+myst-parser==2.0.0
+
+# External packages
+# torch==2.0.0
+numpy==1.24
+# scipy==1.9.0
