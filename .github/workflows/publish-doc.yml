@@ -51,7 +51,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/build/html
           publish_branch: gh-pages
-          keep_files: true
+          destination_dir: latest
 
   deploy_develop_docs:
     permissions:
