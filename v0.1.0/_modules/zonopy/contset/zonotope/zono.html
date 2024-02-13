@@ -1,0 +1,894 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zonopy.contset.zonotope.zono &#8212; zonopy v0.1.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/katex-math.css?v=91adb8b6" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=64fd42a1" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=c88f2e48"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script src="../../../../_static/design-tabs.js?v=36754332"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/zonopy/contset/zonotope/zono';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://roahmlab.github.io/zonopy/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy v0.1.0</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zonopy.html">Continuous Set Types</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.interval.html">zonopy.interval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.zonotope.html">zonopy.zonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.matZonotope.html">zonopy.matZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.matPolyZonotope.html">zonopy.matPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../math.html">Math Operations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.cross.html">zonopy.cross</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.cos.html">zonopy.cos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.sin.html">zonopy.sin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.cos_sin_cartprod.html">zonopy.cos_sin_cartprod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.rot_mat.html">zonopy.rot_mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.dot.html">zonopy.dot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.close.html">zonopy.close</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.gen_batch_rotatotope_from_jrs_trig.html">zonopy.gen_batch_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.gen_rotatotope_from_jrs_trig.html">zonopy.gen_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.get_pz_rotations_from_q.html">zonopy.get_pz_rotations_from_q</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../utils.html">Utility Functions</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.remove_dependence_and_compress.html">zonopy.remove_dependence_and_compress</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.stack.html">zonopy.stack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.plot_JRSs.html">zonopy.plot_JRSs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.plot_polyzonos_xy.html">zonopy.plot_polyzonos_xy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.plot_polyzonos.html">zonopy.plot_polyzonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.plot_zonos.html">zonopy.plot_zonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.config_safety_check.html">zonopy.config_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.traj_safety_check.html">zonopy.traj_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/zonopy.obstacle_collison_free_check.html">zonopy.obstacle_collison_free_check</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flags.html">Internal Flags</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/roahmlab/zonopy" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for zonopy.contset.zonotope.zono</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Define class for zonotope</span>
+<span class="sd">Author: Yongseok Kwon</span>
+<span class="sd">Reference: CORA</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
+<span class="kn">from</span> <span class="nn">zonopy.contset.polynomial_zonotope.poly_zono</span> <span class="kn">import</span> <span class="n">polyZonotope</span>
+<span class="kn">from</span> <span class="nn">zonopy.contset.interval.interval</span> <span class="kn">import</span> <span class="n">interval</span>
+<span class="kn">from</span> <span class="nn">zonopy.contset.zonotope.utils</span> <span class="kn">import</span> <span class="n">pickedGenerators</span><span class="p">,</span> <span class="n">ndimCross</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">ConvexHull</span>
+<span class="kn">from</span> <span class="nn">..gen_ops</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_add_genzono_impl</span><span class="p">,</span>
+    <span class="n">_add_genzono_num_impl</span><span class="p">,</span>
+    <span class="n">_mul_genzono_num_impl</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="zonotope"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope">[docs]</a><span class="k">class</span> <span class="nc">zonotope</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; 1D Zonotope class</span>
+
+<span class="sd">    A Zonotope is a set of the form</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathcal{Z} := \left\{c + \sum_{i=1}^{N} a_i g_i \; \middle\vert \; a_i \in [-1,1]\right\}</span>
+
+<span class="sd">    where :math:`c` is the center and :math:`g_i` are the generators, each of which is a vector in the same space as :math:`c`.</span>
+
+<span class="sd">    This class defines a basic zonotope and its operations.</span>
+<span class="sd">    :math:`\mathbf{Z}` is a tensor of shape :math:`(N+1) \times d` where :math:`N` is the number of generators</span>
+<span class="sd">    and :math:`d` is the dimension of the zonotope.</span>
+<span class="sd">    The first row of :math:`Z` is the center and the rest are the generators, such that :math:`\mathbf{Z} = [c,G]^T`.</span>
+<span class="sd">    :math:`G = [g_1, g_2, \ldots, g_N]` is a matrix of shape :math:`N \times d`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="zonotope.__init__"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Initialize a zonotope</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            Z (torch.Tensor): center vector and generator matrix :math:`\mathbf{Z} = [c,G]^T`</span>
+<span class="sd">            dtype (torch.dtype, optional): data type of :math:`\mathbf{Z}`. If ``None``, the data type is inferred. Defaults to ``None``.</span>
+<span class="sd">            device (str, optional): device of :math:`\mathbf{Z}`. If ``None``, the device is inferred. Defaults to ``None``.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: If the dimension of :math:`\mathbf{Z}` is not 2</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">################ may not need these for speed ################ </span>
+        <span class="c1"># Make sure Z is a tensor</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_default_dtype</span><span class="p">()</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;The dimension of Z input should be 2, not </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s1">.&#39;</span>
+        <span class="c1">############################################################## </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The data type of a zonotope properties</span>
+<span class="sd">        return torch.float or torch.double        </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The device of a zonotope properties</span>
+<span class="sd">        return &#39;cpu&#39;, &#39;cuda:0&#39;, or ...</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">device</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The center of a zonotope</span>
+<span class="sd">        return &lt;torch.Tensor&gt;</span>
+<span class="sd">        , shape [nx] </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="nd">@center</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set value of the center</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">generators</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Generators of a zonotope</span>
+<span class="sd">        return &lt;torch.Tensor&gt;</span>
+<span class="sd">        , shape [N, nx]</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="nd">@generators</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">generators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set value of generators</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The shape of vector elements (ex. center) of a zonotope</span>
+<span class="sd">        return &lt;tuple&gt;, (nx,)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The dimension of a zonotope</span>
+<span class="sd">        return &lt;int&gt;, nx</span>
+<span class="sd">        &#39;&#39;&#39;</span>        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_generators</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The number of generators of a zonotope</span>
+<span class="sd">        return &lt;int&gt;, N</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+<div class="viewcode-block" id="zonotope.to"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.to">[docs]</a>    <span class="k">def</span> <span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Change the device and data type of a zonotope</span>
+<span class="sd">        dtype: torch.float or torch.double</span>
+<span class="sd">        device: &#39;cpu&#39;, &#39;gpu&#39;, &#39;cuda:0&#39;, ...</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">non_blocking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span></div>
+<div class="viewcode-block" id="zonotope.cpu"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.cpu">[docs]</a>    <span class="k">def</span> <span class="nf">cpu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Change the device of a zonotope to CPU</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Representation of a zonotope as a text</span>
+<span class="sd">        return &lt;str&gt;, </span>
+<span class="sd">        ex. zonotope([[0., 0., 0.],[1., 0., 0.]])</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;tensor&#39;</span><span class="p">,</span><span class="s1">&#39;zonotope&#39;</span><span class="p">)</span>
+    <span class="k">def</span>  <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded &#39;+&#39; operator for addition or Minkowski sum</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        other: &lt;torch.Tensor&gt; OR &lt;zonotope&gt;</span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>   
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="n">_add_genzono_num_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+        
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">zonotope</span><span class="p">):</span> 
+            <span class="n">Z</span> <span class="o">=</span> <span class="n">_add_genzono_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="fm">__radd__</span> <span class="o">=</span> <span class="fm">__add__</span> <span class="c1"># &#39;+&#39; operator is commutative.</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded &#39;-&#39; operator for substraction or Minkowski difference</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        other: &lt;torch.Tensor&gt; OR &lt;zonotope&gt;</span>
+<span class="sd">        return &lt;zonotope&gt;        </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="o">-</span><span class="n">other</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__rsub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span> 
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded reverted &#39;-&#39; operator for substraction or Minkowski difference</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        other: &lt;torch.Tensor&gt; OR &lt;zonotope&gt;</span>
+<span class="sd">        return &lt;zonotope&gt;                </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;PZ subtraction as addition of negative is deprecated and will be removed to reduce confusion!&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="fm">__sub__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__pos__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded unary &#39;+&#39; operator for a zonotope ifself</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>   
+        <span class="k">return</span> <span class="bp">self</span>    
+    
+    <span class="k">def</span> <span class="fm">__neg__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded unary &#39;-&#39; operator for negation of a zonotope</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>   
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+        <span class="n">Z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>    
+    
+    <span class="k">def</span> <span class="fm">__rmatmul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded reverted &#39;@&#39; operator for matrix multiplication on vector elements of a zonotope</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        other: &lt;torch.Tensor&gt;</span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>   
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">),</span> <span class="sa">f</span><span class="s1">&#39;The other object should be torch tensor, but </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="si">}</span><span class="s1">.&#39;</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="nd">@other</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Overloaded reverted &#39;*&#39; operator for scaling a zonotope</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        other: &lt;int&gt; or &lt;float&gt;</span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>   
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="n">_mul_genzono_num_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="fm">__rmul__</span> <span class="o">=</span> <span class="fm">__mul__</span> <span class="c1"># &#39;*&#39; operator is commutative.</span>
+
+<div class="viewcode-block" id="zonotope.slice"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.slice">[docs]</a>    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">slice_dim</span><span class="p">,</span><span class="n">slice_pt</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        slice zonotope on specified point in a certain dimension</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        slice_dim: &lt;torch.Tensor&gt; or &lt;list&gt; or &lt;int&gt;</span>
+<span class="sd">        , shape  []</span>
+<span class="sd">        slice_pt: &lt;torch.Tensor&gt; or &lt;list&gt; or &lt;float&gt; or &lt;int&gt;</span>
+<span class="sd">        , shape  []</span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">slice_dim</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">slice_dim</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">slice_dim</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">slice_dim</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_pt</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">slice_pt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">slice_pt</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_pt</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_pt</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_pt</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">slice_pt</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">slice_pt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">slice_pt</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slice_pt</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">),</span> <span class="s1">&#39;Invalid type of input&#39;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">slice_dim</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;slicing dimension should be 1-dim component.&#39;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">slice_pt</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;slicing point should be 1-dim component.&#39;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">slice_pt</span><span class="p">),</span> <span class="sa">f</span><span class="s1">&#39;The number of slicing dimension (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">)</span><span class="si">}</span><span class="s1">) and the number of slicing point (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">)</span><span class="si">}</span><span class="s1">) should be the same.&#39;</span>
+
+        <span class="n">slice_dim</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">slice_dim</span><span class="p">)</span>
+        <span class="n">slice_pt</span> <span class="o">=</span> <span class="n">slice_pt</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generators</span>
+
+        <span class="n">non_zero_idx</span> <span class="o">=</span> <span class="n">G</span><span class="p">[:,</span><span class="n">slice_dim</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">non_zero_idx</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;There should be one generator for each slice index.&#39;</span>
+        <span class="n">slice_idx</span> <span class="o">=</span> <span class="n">non_zero_idx</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[:,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">slice_c</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="n">slice_dim</span><span class="p">]</span>
+        <span class="n">slice_g</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="n">slice_idx</span><span class="p">,</span><span class="n">slice_dim</span><span class="p">]</span>
+        <span class="n">slice_lambda</span> <span class="o">=</span> <span class="p">(</span><span class="n">slice_pt</span><span class="o">-</span><span class="n">slice_c</span><span class="p">)</span><span class="o">/</span><span class="n">slice_g</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">slice_lambda</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="s1">&#39;slice point is ouside bounds of reach set, and therefore is not verified&#39;</span>
+        
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">c</span> <span class="o">+</span> <span class="n">slice_lambda</span><span class="nd">@G</span><span class="p">[</span><span class="n">slice_idx</span><span class="p">],</span><span class="n">G</span><span class="p">[</span><span class="o">~</span><span class="n">non_zero_idx</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)]))</span>
+        <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="zonotope.project"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.project">[docs]</a>    <span class="k">def</span> <span class="nf">project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The projection of a zonotope onto the specified dimensions</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        dim: &lt;int&gt; or &lt;list&gt; or &lt;torch.Tensor&gt; dimensions for prjection </span>
+<span class="sd">        </span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[:,</span><span class="n">dim</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="zonotope.polygon"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.polygon">[docs]</a>    <span class="k">def</span> <span class="nf">polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Vertice representation as a polygon from a 2-dimensional zonotope</span>
+
+<span class="sd">        return &lt;torch.Tensor&gt;, &lt;torch.float&gt; or &lt;torch.double&gt;</span>
+<span class="sd">        , shape [P,2], where P is the number of vertices</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteZerosGenerators</span><span class="p">()</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">center</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">generators</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">n_generators</span>
+        <span class="n">x_max</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">G</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">y_max</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">G</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]))</span>
+        
+        <span class="n">G</span><span class="p">[</span><span class="n">z</span><span class="o">.</span><span class="n">generators</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">z</span><span class="o">.</span><span class="n">generators</span><span class="p">[</span><span class="n">z</span><span class="o">.</span><span class="n">generators</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,:</span><span class="mi">2</span><span class="p">]</span> <span class="c1"># make all y components as positive</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span><span class="n">G</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">G</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ang_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span>
+                
+        <span class="n">vertices_half</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span><span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="p">[</span><span class="n">ang_idx</span><span class="p">]</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)))</span>
+        <span class="n">vertices_half</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">x_max</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">vertices_half</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">vertices_half</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">y_max</span>
+
+        <span class="n">full_vertices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">vertices_half</span><span class="p">,</span><span class="o">-</span><span class="n">vertices_half</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">vertices_half</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span> <span class="n">vertices_half</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="o">+</span> <span class="n">c</span>
+        <span class="k">return</span> <span class="n">full_vertices</span></div>
+        
+<div class="viewcode-block" id="zonotope.polyhedron"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.polyhedron">[docs]</a>    <span class="k">def</span> <span class="nf">polyhedron</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Vertice representation as a polygon from a 3-dimensional zonotope</span>
+
+<span class="sd">        return &lt;torch.Tensor&gt;, &lt;torch.float&gt; or &lt;torch.double&gt;</span>
+<span class="sd">        , shape [P,3], where P is the number of vertices</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_generators</span><span class="p">):</span>
+            <span class="n">translation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,:</span><span class="n">dim</span><span class="p">]</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">V</span><span class="o">+</span><span class="n">translation</span><span class="p">,</span><span class="n">V</span><span class="o">-</span><span class="n">translation</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">dim</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">K</span> <span class="o">=</span> <span class="n">ConvexHull</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+                    <span class="n">V</span> <span class="o">=</span> <span class="n">V</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">vertices</span><span class="p">]</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">V</span> <span class="o">=</span> <span class="n">V</span>
+        <span class="k">return</span> <span class="n">V</span></div>
+
+
+<div class="viewcode-block" id="zonotope.polytope"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.polytope">[docs]</a>    <span class="k">def</span> <span class="nf">polytope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">combs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Half-plane representation of zonotope</span>
+<span class="sd">        return,</span>
+<span class="sd">        A: &lt;torch.tensor&gt;, </span>
+<span class="sd">        shape [*,nx]</span>
+<span class="sd">        b: &lt;torch.tensor&gt;, </span>
+<span class="sd">        shape [*]</span>
+
+<span class="sd">        A point, x (torch.Tensor, shape (nx,)), is at outside of a zonotope</span>
+<span class="sd">        &lt;-&gt; max(A@x-b)&gt;=0 (you might wanna use 1e-6 as a threshold instead for numerical stability)</span>
+
+<span class="sd">        A point, x, is inside of a zonotope</span>
+<span class="sd">        &lt;-&gt; max(A@x-b)&lt;0</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">generators</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">vector_norm</span><span class="p">(</span><span class="n">G</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">h_sort</span><span class="p">,</span> <span class="n">indicies</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="n">descending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">h_zero</span> <span class="o">=</span> <span class="n">h_sort</span> <span class="o">&lt;</span> <span class="mf">1e-6</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">h_zero</span><span class="p">):</span>
+            <span class="n">first_reduce_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">h_zero</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">Gunred</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="n">indicies</span><span class="p">[:</span><span class="n">first_reduce_idx</span><span class="p">]]</span>
+            <span class="c1"># Gred = G[indicies[first_reduce_idx:]]</span>
+            <span class="c1"># d = torch.sum(abs(Gred),0)</span>
+            <span class="c1"># G = torch.vstack((Gunred,torch.diag(d)))</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">Gunred</span>
+
+        <span class="n">n_gens</span><span class="p">,</span> <span class="n">dim</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span>
+                        
+        <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">C</span> <span class="o">=</span> <span class="n">G</span><span class="o">/</span><span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">vector_norm</span><span class="p">(</span><span class="n">G</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">C</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="o">-</span><span class="n">G</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span><span class="n">G</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">C</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">vector_norm</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># not complete for example when n_gens &lt; dim-1; n_gens =0 or n_gens =1 </span>
+            <span class="k">if</span> <span class="n">combs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">n_gens</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">combs</span><span class="p">):</span>
+                <span class="n">comb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_gens</span><span class="p">),</span><span class="n">r</span><span class="o">=</span><span class="n">dim</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">comb</span> <span class="o">=</span> <span class="n">combs</span><span class="p">[</span><span class="n">n_gens</span><span class="p">]</span>
+            
+            <span class="n">Q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">G</span><span class="p">[</span><span class="n">comb</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]],</span><span class="n">G</span><span class="p">[</span><span class="n">comb</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]]))</span>
+            <span class="n">C</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">5</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">-</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">2</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">4</span><span class="p">:</span><span class="mi">5</span><span class="p">],</span><span class="o">-</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">5</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">2</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">4</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">Q</span><span class="p">[:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">]))</span>
+            <span class="n">C</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">vector_norm</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dim</span> <span class="o">&gt;=</span><span class="mi">4</span> <span class="ow">and</span> <span class="n">dim</span><span class="o">&lt;=</span><span class="mi">7</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="kc">False</span>
+        
+        <span class="n">index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">C</span><span class="p">),</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">C</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">deltaD</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">C</span><span class="nd">@self</span><span class="o">.</span><span class="n">generators</span><span class="o">.</span><span class="n">T</span><span class="p">),</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">(</span><span class="n">C</span><span class="nd">@c</span><span class="p">)</span>
+        <span class="n">PA</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">C</span><span class="p">,</span><span class="o">-</span><span class="n">C</span><span class="p">))</span>
+        <span class="n">Pb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">d</span><span class="o">+</span><span class="n">deltaD</span><span class="p">,</span><span class="o">-</span><span class="n">d</span><span class="o">+</span><span class="n">deltaD</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">PA</span><span class="p">,</span> <span class="n">Pb</span></div>
+
+<div class="viewcode-block" id="zonotope.deleteZerosGenerators"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.deleteZerosGenerators">[docs]</a>    <span class="k">def</span> <span class="nf">deleteZerosGenerators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eps</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Delete zero vector generators</span>
+<span class="sd">        return &lt;zonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">non_zero_idxs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">generators</span><span class="p">)</span><span class="o">&gt;</span><span class="n">eps</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">generators</span><span class="p">[</span><span class="n">non_zero_idxs</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="zonotope.polygon_patch"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.polygon_patch">[docs]</a>    <span class="k">def</span> <span class="nf">polygon_patch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">.5</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">polygon</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">patches</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span><span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="zonotope.polyhedron_patch"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.polyhedron_patch">[docs]</a>    <span class="k">def</span> <span class="nf">polyhedron_patch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">.5</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="mf">.2</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="mi">0</span><span class="p">,:</span><span class="n">dim</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_generators</span><span class="p">):</span>
+            <span class="n">translation</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,:</span><span class="n">dim</span><span class="p">]</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">V</span><span class="o">+</span><span class="n">translation</span><span class="p">,</span><span class="n">V</span><span class="o">-</span><span class="n">translation</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">dim</span> <span class="o">&lt;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_generators</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">K</span> <span class="o">=</span> <span class="n">ConvexHull</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+                    <span class="n">V</span> <span class="o">=</span> <span class="n">V</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">vertices</span><span class="p">]</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">V</span> <span class="o">=</span> <span class="n">V</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="n">ConvexHull</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">V</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>        
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">V</span><span class="p">[:,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">K</span><span class="o">.</span><span class="n">simplices</span><span class="p">])</span></div>
+ 
+<div class="viewcode-block" id="zonotope.plot"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        plot 2 dimensional projection of a zonotope</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        ax: &lt;Axes&gt; axes oject of a figure to plot</span>
+<span class="sd">        facecolor: &lt;string&gt; color of face</span>
+<span class="sd">        edgecolor: &lt;string&gt; color of edges</span>
+
+<span class="sd">        ex.</span>
+<span class="sd">        import matplotlib.pyplot as plt</span>
+<span class="sd">        fig = plt.figure()</span>
+<span class="sd">        ax = fig.gca()</span>
+<span class="sd">        zono.plot(ax)</span>
+<span class="sd">        plt.show()</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">polygon</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patches</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">.5</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span><span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="zonotope.reduce"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.reduce">[docs]</a>    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">option</span><span class="o">=</span><span class="s1">&#39;girard&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">option</span> <span class="o">==</span> <span class="s1">&#39;girard&#39;</span><span class="p">:</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteZerosGenerators</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">center</span><span class="p">,</span> <span class="n">G</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">center</span><span class="p">,</span><span class="n">Z</span><span class="o">.</span><span class="n">generators</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">G</span><span class="p">),</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">Gbox</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="n">ZRed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">center</span><span class="p">,</span><span class="n">Gbox</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">center</span><span class="p">,</span> <span class="n">Gunred</span><span class="p">,</span> <span class="n">Gred</span> <span class="o">=</span> <span class="n">pickedGenerators</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">center</span><span class="p">,</span><span class="n">Z</span><span class="o">.</span><span class="n">generators</span><span class="p">,</span><span class="n">order</span><span class="p">)</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">Gred</span><span class="p">),</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">Gbox</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="n">ZRed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">center</span><span class="p">,</span><span class="n">Gunred</span><span class="p">,</span><span class="n">Gbox</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">zonotope</span><span class="p">(</span><span class="n">ZRed</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;Invalid reduction option&#39;</span></div>
+
+<div class="viewcode-block" id="zonotope.to_polyZonotope"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.to_polyZonotope">[docs]</a>    <span class="k">def</span> <span class="nf">to_polyZonotope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Convert zonotope to polynomial zonotope</span>
+<span class="sd">        self: &lt;zonotope&gt;</span>
+<span class="sd">        dim: &lt;int&gt;, dimension to take as sliceable</span>
+<span class="sd">        return &lt;polyZonotope&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generators</span><span class="p">[:,</span><span class="n">dim</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="nb">sum</span><span class="p">(</span><span class="o">~</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;sliceable generator should be one for the dimension.&#39;</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">generators</span><span class="p">[</span><span class="o">~</span><span class="n">idx</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">generators</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="zonotope.to_interval"><a class="viewcode-back" href="../../../../generated/zonopy.zonotope.html#zonopy.zonotope.to_interval">[docs]</a>    <span class="k">def</span> <span class="nf">to_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Convert zonotope to interval</span>
+<span class="sd">        return &lt;interval&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">),</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">leftLimit</span><span class="p">,</span> <span class="n">rightLimit</span> <span class="o">=</span> <span class="n">c</span> <span class="o">-</span><span class="n">delta</span><span class="p">,</span> <span class="n">c</span> <span class="o">+</span> <span class="n">delta</span>
+        <span class="k">return</span> <span class="n">interval</span><span class="p">(</span><span class="n">leftLimit</span><span class="p">,</span><span class="n">rightLimit</span><span class="p">)</span></div></div>
+
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By ROAHM Lab
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

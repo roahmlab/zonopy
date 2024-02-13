@@ -1,0 +1,504 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zonopy.util.batching &#8212; zonopy v0.1.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/katex-math.css?v=91adb8b6" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=64fd42a1" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=c88f2e48"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script src="../../../_static/design-tabs.js?v=36754332"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/zonopy/util/batching';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://roahmlab.github.io/zonopy/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy v0.1.0</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../zonopy.html">Continuous Set Types</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.interval.html">zonopy.interval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.zonotope.html">zonopy.zonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.matZonotope.html">zonopy.matZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.matPolyZonotope.html">zonopy.matPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../math.html">Math Operations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.cross.html">zonopy.cross</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.cos.html">zonopy.cos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.sin.html">zonopy.sin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.cos_sin_cartprod.html">zonopy.cos_sin_cartprod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.rot_mat.html">zonopy.rot_mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.dot.html">zonopy.dot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.close.html">zonopy.close</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.gen_batch_rotatotope_from_jrs_trig.html">zonopy.gen_batch_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.gen_rotatotope_from_jrs_trig.html">zonopy.gen_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.get_pz_rotations_from_q.html">zonopy.get_pz_rotations_from_q</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils.html">Utility Functions</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.remove_dependence_and_compress.html">zonopy.remove_dependence_and_compress</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.stack.html">zonopy.stack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_JRSs.html">zonopy.plot_JRSs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_polyzonos_xy.html">zonopy.plot_polyzonos_xy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_polyzonos.html">zonopy.plot_polyzonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_zonos.html">zonopy.plot_zonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.config_safety_check.html">zonopy.config_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.traj_safety_check.html">zonopy.traj_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.obstacle_collison_free_check.html">zonopy.obstacle_collison_free_check</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flags.html">Internal Flags</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/roahmlab/zonopy" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for zonopy.util.batching</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">zonopy</span> <span class="k">as</span> <span class="nn">zp</span>
+<span class="kn">import</span> <span class="nn">zonopy.internal</span> <span class="k">as</span> <span class="nn">zpi</span>
+
+<div class="viewcode-block" id="stack"><a class="viewcode-back" href="../../../generated/zonopy.stack.html#zonopy.stack">[docs]</a><span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stack a list of polyZonotopes or batchPolyZonotopes along a given dimension.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        bpzlist (list): List of polyZonotopes or batchPolyZonotopes to stack</span>
+<span class="sd">        dim (int, optional): Dimension to stack along. Defaults to 0.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        batchPolyZonotope: Stacked batchPolyZonotope</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Expected at least 1 element input!&quot;</span>
+
+    <span class="c1"># Dispatch to specialized version for polyZonotopes if needed (these functions can be merged later)</span>
+    <span class="n">promotion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">pz</span><span class="p">,</span> <span class="n">zp</span><span class="o">.</span><span class="n">polyZonotope</span><span class="p">)</span> <span class="k">for</span> <span class="n">pz</span> <span class="ow">in</span> <span class="n">bpzlist</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">promotion</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="o">.</span><span class="n">from_pzlist</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">)</span>
+
+    <span class="c1"># Promote any polynomial zonotopes to bpz&#39;s as needed</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">tf</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">promotion</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tf</span><span class="p">:</span>
+            <span class="n">batch_shape</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">batch_shape</span>
+            <span class="k">break</span>
+    <span class="n">bpzlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">expand</span><span class="p">(</span><span class="n">pz</span><span class="p">,</span> <span class="n">batch_shape</span><span class="p">)</span> <span class="k">if</span> <span class="n">promote</span> <span class="k">else</span> <span class="n">pz</span> <span class="k">for</span> <span class="n">pz</span><span class="p">,</span> <span class="n">promote</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">,</span> <span class="n">promotion</span><span class="p">)]</span>
+    
+    <span class="c1"># Check type (Should be fine after above)</span>
+    <span class="c1"># assert np.all([isinstance(bpz, zp.batchPolyZonotope) for bpz in bpzlist]), &quot;Expected all elements to be of type batchPolyZonotope&quot;</span>
+    <span class="c1"># Validate dimensions match</span>
+    <span class="n">n_bpz</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">)</span>
+    <span class="n">dimension</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dimension</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span>
+    <span class="n">batch_shape</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">batch_shape</span>
+    <span class="k">if</span> <span class="n">zpi</span><span class="o">.</span><span class="n">__debug_extra__</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">),</span> <span class="s2">&quot;Expected dim to be less than or equal to the number of batch dimensions!&quot;</span>
+        <span class="k">assert</span> <span class="p">[</span><span class="n">bpz</span><span class="o">.</span><span class="n">dimension</span> <span class="k">for</span> <span class="n">bpz</span> <span class="ow">in</span> <span class="n">bpzlist</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_bpz</span><span class="p">,</span> <span class="s2">&quot;Expected all elements to have the same dimensions!&quot;</span>
+        <span class="k">assert</span> <span class="p">[</span><span class="n">bpz</span><span class="o">.</span><span class="n">batch_shape</span> <span class="k">for</span> <span class="n">bpz</span> <span class="ow">in</span> <span class="n">bpzlist</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">batch_shape</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_bpz</span><span class="p">,</span> <span class="s2">&quot;Expected all elements to have the same batch shape!&quot;</span>
+
+    <span class="c1"># First loop to extract key parts</span>
+    <span class="n">all_ids</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_bpz</span>
+    <span class="n">dep_gens</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_bpz</span>
+    <span class="n">all_c</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_bpz</span>
+    <span class="n">n_grest</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">n_bpz</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bpz</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">):</span>
+        <span class="n">all_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">bpz</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">dep_gens</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">bpz</span><span class="o">.</span><span class="n">n_dep_gens</span>
+        <span class="n">all_c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">bpz</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">n_grest</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">bpz</span><span class="o">.</span><span class="n">n_indep_gens</span>
+    
+    <span class="c1"># Combine</span>
+    <span class="n">all_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">all_ids</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+    <span class="n">all_dep_gens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dep_gens</span><span class="p">)</span>
+    <span class="n">dep_gens_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">dep_gens</span><span class="p">)</span>
+    <span class="n">n_grest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">n_grest</span><span class="p">)</span>
+    <span class="n">all_c</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">all_c</span><span class="p">)</span>
+
+    <span class="c1"># Preallocate</span>
+    <span class="n">all_G</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_bpz</span><span class="p">,)</span> <span class="o">+</span> <span class="n">batch_shape</span> <span class="o">+</span> <span class="p">(</span><span class="n">all_dep_gens</span><span class="p">,</span> <span class="n">dimension</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">all_grest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_bpz</span><span class="p">,)</span> <span class="o">+</span> <span class="n">batch_shape</span> <span class="o">+</span> <span class="p">(</span><span class="n">n_grest</span><span class="p">,</span> <span class="n">dimension</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">all_expMat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">all_dep_gens</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_ids</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">last_expMat_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># expand remaining values</span>
+    <span class="k">for</span> <span class="n">bpzid</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_bpz</span><span class="p">):</span>
+        <span class="c1"># Expand ExpMat (replace any with nonzero to fix order bug!)</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">bpzlist</span><span class="p">[</span><span class="n">bpzid</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">all_ids</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">end_idx</span> <span class="o">=</span> <span class="n">last_expMat_idx</span> <span class="o">+</span> <span class="n">bpzlist</span><span class="p">[</span><span class="n">bpzid</span><span class="p">]</span><span class="o">.</span><span class="n">expMat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">all_expMat</span><span class="p">[</span><span class="n">last_expMat_idx</span><span class="p">:</span><span class="n">end_idx</span><span class="p">,</span><span class="n">matches</span><span class="p">]</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="n">bpzid</span><span class="p">]</span><span class="o">.</span><span class="n">expMat</span>
+        <span class="n">last_expMat_idx</span> <span class="o">=</span> <span class="n">end_idx</span>
+    
+        <span class="c1"># expand out all G matrices</span>
+        <span class="n">all_G</span><span class="p">[</span><span class="n">bpzid</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="n">dep_gens_idxs</span><span class="p">[</span><span class="n">bpzid</span><span class="p">]:</span><span class="n">dep_gens_idxs</span><span class="p">[</span><span class="n">bpzid</span><span class="o">+</span><span class="mi">1</span><span class="p">],:]</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="n">bpzid</span><span class="p">]</span><span class="o">.</span><span class="n">G</span>
+
+        <span class="c1"># Expand out all grest</span>
+        <span class="n">grest</span> <span class="o">=</span> <span class="n">bpzlist</span><span class="p">[</span><span class="n">bpzid</span><span class="p">]</span><span class="o">.</span><span class="n">Grest</span>
+        <span class="n">all_grest</span><span class="p">[</span><span class="n">bpzid</span><span class="p">,</span><span class="o">...</span><span class="p">,:</span><span class="n">grest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],:]</span> <span class="o">=</span> <span class="n">grest</span>
+    
+    <span class="c1"># Combine, reduce, output.</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">all_c</span><span class="p">,</span> <span class="n">all_G</span><span class="p">,</span> <span class="n">all_grest</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">all_dep_gens</span><span class="p">,</span> <span class="n">all_expMat</span><span class="p">,</span> <span class="n">all_ids</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+<span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="n">pz</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="n">new_Z</span> <span class="o">=</span> <span class="n">pz</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">*</span><span class="n">shape</span><span class="p">,</span> <span class="o">*</span><span class="n">pz</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">zp</span><span class="o">.</span><span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">new_Z</span><span class="p">,</span> <span class="n">pz</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">pz</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">pz</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By ROAHM Lab
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

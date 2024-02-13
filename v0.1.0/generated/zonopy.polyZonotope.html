@@ -1,0 +1,889 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>zonopy.polyZonotope &#8212; zonopy v0.1.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/katex-math.css?v=91adb8b6" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=64fd42a1" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=c88f2e48"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script src="../_static/design-tabs.js?v=36754332"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/zonopy.polyZonotope';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://roahmlab.github.io/zonopy/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zonopy.batchPolyZonotope" href="zonopy.batchPolyZonotope.html" />
+    <link rel="prev" title="zonopy.batchMatZonotope" href="zonopy.batchMatZonotope.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy v0.1.0</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../zonopy.html">Continuous Set Types</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="zonopy.interval.html">zonopy.interval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.zonotope.html">zonopy.zonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.matZonotope.html">zonopy.matZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">zonopy.polyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.matPolyZonotope.html">zonopy.matPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../math.html">Math Operations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.cross.html">zonopy.cross</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.cos.html">zonopy.cos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.sin.html">zonopy.sin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.cos_sin_cartprod.html">zonopy.cos_sin_cartprod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.rot_mat.html">zonopy.rot_mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.dot.html">zonopy.dot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.close.html">zonopy.close</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.gen_batch_rotatotope_from_jrs_trig.html">zonopy.gen_batch_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.gen_rotatotope_from_jrs_trig.html">zonopy.gen_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.get_pz_rotations_from_q.html">zonopy.get_pz_rotations_from_q</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../utils.html">Utility Functions</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.remove_dependence_and_compress.html">zonopy.remove_dependence_and_compress</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.stack.html">zonopy.stack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_JRSs.html">zonopy.plot_JRSs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_polyzonos_xy.html">zonopy.plot_polyzonos_xy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_polyzonos.html">zonopy.plot_polyzonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_zonos.html">zonopy.plot_zonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.config_safety_check.html">zonopy.config_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.traj_safety_check.html">zonopy.traj_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.obstacle_collison_free_check.html">zonopy.obstacle_collison_free_check</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../flags.html">Internal Flags</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/roahmlab/zonopy" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/generated/zonopy.polyZonotope.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>zonopy.polyZonotope</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope"><code class="docutils literal notranslate"><span class="pre">polyZonotope</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.__init__"><code class="docutils literal notranslate"><span class="pre">polyZonotope.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.G"><code class="docutils literal notranslate"><span class="pre">polyZonotope.G</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.Grest"><code class="docutils literal notranslate"><span class="pre">polyZonotope.Grest</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.c"><code class="docutils literal notranslate"><span class="pre">polyZonotope.c</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.center_slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.center_slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.compress"><code class="docutils literal notranslate"><span class="pre">polyZonotope.compress()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.cpu"><code class="docutils literal notranslate"><span class="pre">polyZonotope.cpu()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.deleteZerosGenerators"><code class="docutils literal notranslate"><span class="pre">polyZonotope.deleteZerosGenerators()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.device"><code class="docutils literal notranslate"><span class="pre">polyZonotope.device</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.dimension"><code class="docutils literal notranslate"><span class="pre">polyZonotope.dimension</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.dtype"><code class="docutils literal notranslate"><span class="pre">polyZonotope.dtype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.exactCartProd"><code class="docutils literal notranslate"><span class="pre">polyZonotope.exactCartProd()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.grad_center_slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.grad_center_slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.hess_center_slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.hess_center_slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.input_pairs"><code class="docutils literal notranslate"><span class="pre">polyZonotope.input_pairs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.itype"><code class="docutils literal notranslate"><span class="pre">polyZonotope.itype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.n_generators"><code class="docutils literal notranslate"><span class="pre">polyZonotope.n_generators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.n_indep_gens"><code class="docutils literal notranslate"><span class="pre">polyZonotope.n_indep_gens</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.ones"><code class="docutils literal notranslate"><span class="pre">polyZonotope.ones()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.project"><code class="docutils literal notranslate"><span class="pre">polyZonotope.project()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.reduce"><code class="docutils literal notranslate"><span class="pre">polyZonotope.reduce()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.reduce_indep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.reduce_indep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.slice_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.slice_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.split_dep_indep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.split_dep_indep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.to"><code class="docutils literal notranslate"><span class="pre">polyZonotope.to()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.to_interval"><code class="docutils literal notranslate"><span class="pre">polyZonotope.to_interval()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.to_zonotope"><code class="docutils literal notranslate"><span class="pre">polyZonotope.to_zonotope()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.zeros"><code class="docutils literal notranslate"><span class="pre">polyZonotope.zeros()</span></code></a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="zonopy-polyzonotope">
+<h1>zonopy.polyZonotope<a class="headerlink" href="#zonopy-polyzonotope" title="Permalink to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="zonopy.polyZonotope">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zonopy.</span></span><span class="sig-name descname"><span class="pre">polyZonotope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dep_gens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expMat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_Z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>1D Polynomial Zonotopes</p>
+<p>The Polynomial Zonotope (similar to Talyor model) is a non-convex set representation of a summation over multivariate polynomials multiplied with intervals.</p>
+<p>It is defined as a set of the following form:</p>
+<div class="math">
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mrow><mi mathvariant="script">P</mi><mi mathvariant="script">Z</mi></mrow><mo>:</mo><mo>=</mo><mrow><mo fence="true">{</mo><mi>c</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><mrow><mo fence="true">(</mo><munderover><mo>∏</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>p</mi></munderover><msubsup><mi>α</mi><mi>k</mi><msub><mi>E</mi><mrow><mo stretchy="false">(</mo><mi>k</mi><mo separator="true">,</mo><mi>i</mi><mo stretchy="false">)</mo></mrow></msub></msubsup><mo fence="true">)</mo></mrow><msub><mi>G</mi><mrow><mo stretchy="false">(</mo><mo>⋅</mo><mo separator="true">,</mo><mi>i</mi><mo stretchy="false">)</mo></mrow></msub><mo>+</mo><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><mi>M</mi></munderover><msub><mi>β</mi><mi>j</mi></msub><msub><mi>G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi><mo stretchy="false">(</mo><mo>⋅</mo><mo separator="true">,</mo><mi>j</mi><mo stretchy="false">)</mo></mrow></msub><mtext>  </mtext><mo fence="true" lspace="0.05em" rspace="0.05em">|</mo><mtext>  </mtext><mtable rowspacing="0.16em" columnalign="left" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><msub><mi>α</mi><mi>k</mi></msub><mo separator="true">,</mo><msub><mi>β</mi><mi>j</mi></msub><mo>∈</mo><mo stretchy="false">[</mo><mo>−</mo><mn>1</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi mathvariant="normal">∀</mi><mi>k</mi><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><mi>p</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi mathvariant="normal">∀</mi><mi>j</mi><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><mi>M</mi></mrow></mstyle></mtd></mtr></mtable><mo fence="true">}</mo></mrow></mrow><annotation encoding="application/x-tex">\mathcal{PZ} := \left\{
+    c + \sum_{i=1}^{N} \left( \prod_{k=1}^{p}\alpha_{k}^{E_{(k,i)}}\right) G_{(\cdot,i)}+\sum_{j=1}^{M}\beta_{j}G_{rest(\cdot,j)}
+    \; \middle\vert \;
+    \begin{array}{l}
+        \alpha_k, \beta_j \in [-1,1] \\
+        \forall k = 1,...,p \\
+        \forall j=1,...,M
+    \end{array}
+    \right\}
+
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord"><span class="mord mathcal" style="margin-right:0.08222em;">P</span><span class="mord mathcal" style="margin-right:0.07944em;">Z</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:3.6em;vertical-align:-1.55em;"></span><span class="minner"><span class="mopen"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-2.5em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎩</span></span></span><span style="top:-2.492em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-3.15em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎨</span></span></span><span style="top:-4.292em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-4.3em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎧</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8283em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.2777em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size4">(</span></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.6985em;"><span style="top:-1.8479em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∏</span></span></span><span style="top:-4.3471em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.3021em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0818em;"><span style="top:-2.3987em;margin-left:-0.0037em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span style="top:-3.3034em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05764em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3448em;margin-left:-0.0576em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5357em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3695em;"><span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013em;"><span></span></span></span></span></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size4">)</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mtight">⋅</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8283em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4138em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.05278em;">β</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0528em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span><span class="mopen mtight">(</span><span class="mord mtight">⋅</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-4.05em;"><span class="pstrut" style="height:5.6em;"></span><span style="width:0.333em;height:3.600em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.333em' height='3.600em' viewBox='0 0 333 3600'><path d='M145 15 v585 v2400 v585 c2.667,10,9.667,15,21,15
+c10,0,16.667,-5,20,-15 v-585 v-2400 v-585 c-2.667,-10,-9.667,-15,-21,-15
+c-10,0,-16.667,5,-20,15z M188 15 H145 v585 v2400 v585 h43z'/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord"><span class="mtable"><span class="arraycolsep" style="width:0.5em;"></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-4.21em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0037em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.05278em;">β</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0528em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mopen">[</span><span class="mord">−</span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span><span style="top:-3.01em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">∀</span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">...</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span></span></span><span style="top:-1.81em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">∀</span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">...</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">M</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:0.5em;"></span></span></span><span class="mclose"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-2.5em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎭</span></span></span><span style="top:-2.492em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-3.15em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎬</span></span></span><span style="top:-4.292em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-4.3em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎫</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span></span></span></span></span></span></span></div><p>where</p>
+<ul class="simple">
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>c</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mi>d</mi></msup></mrow><annotation encoding="application/x-tex">c\in\mathbb{R}^d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5782em;vertical-align:-0.0391em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span></span></span></span></span></span></span></span></span> is the center vector,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>G</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>d</mi><mo>×</mo><mi>N</mi></mrow></msup></mrow><annotation encoding="application/x-tex">G\in\mathbb{R}^{d\times N}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7224em;vertical-align:-0.0391em;"></span><span class="mord mathnormal">G</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mbin mtight">×</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span></span></span></span></span></span></span></span></span></span></span></span></span> is the dependent generator matrix,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi></mrow></msub><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>d</mi><mo>×</mo><mi>M</mi></mrow></msup></mrow><annotation encoding="application/x-tex">G_{rest}\in\mathbb{R}^{d\times M}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mbin mtight">×</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span></span></span></span></span></span></span></span></span></span></span></span></span> is the independent generator matrix,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>p</mi><mo>×</mo><mi>N</mi></mrow></msup></mrow><annotation encoding="application/x-tex">E\in\mathbb{R}^{p\times N}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7224em;vertical-align:-0.0391em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8413em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mbin mtight">×</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span></span></span></span></span></span></span></span></span></span></span></span></span> is the exponent matrix,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span></span></span></span></span> is the number of dependent generators,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi></mrow><annotation encoding="application/x-tex">M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">M</span></span></span></span></span> is the number of independent generators, and</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span></span> is the number of indeterminants.</p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dep_gens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expMat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_Z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.__init__" title="Permalink to this definition">#</a></dt>
+<dd><p>Initialize the polynomial zonotope</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a>) – The center and generator matrix of the polynomial zonotope <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi><mo>=</mo><mo stretchy="false">[</mo><mi>c</mi><mo separator="true">,</mo><mi>G</mi><mo separator="true">,</mo><msub><mi>G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi></mrow></msub><msup><mo stretchy="false">]</mo><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">\mathbf{Z} = [c, G, G_{rest}]^T</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0913em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord mathnormal">c</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">G</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose"><span class="mclose">]</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span></span></span></span></span></p></li>
+<li><p><strong>n_dep_gens</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>optional</em>) – The number of dependent generators. Default: 0</p></li>
+<li><p><strong>expMat</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a><em>, </em><em>optional</em>) – The exponent matrix of the dependent generators. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, it will be the identity matrix. Default: None</p></li>
+<li><p><strong>id</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a><em>, </em><em>optional</em>) – The integer identifiers for the dependent generators. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, it will be the range of the number of dependent generators. Default: None</p></li>
+<li><p><strong>copy_Z</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, it will copy the input <code class="docutils literal notranslate"><span class="pre">Z</span></code> value. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensor_attributes.html#torch.dtype" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.dtype</em></a><em>, </em><em>optional</em>) – The data type of the polynomial zonotope. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, it will be inferred. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensor_attributes.html#torch.device" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.device</em></a><em>, </em><em>optional</em>) – The device of the polynomial zonotope. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, it will be inferred. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the exponent matrix does not seem to be valid for the given dependent generators or ids.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the number of dependent generators does not match the number of ids.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the exponent matrix is not a non-negative integer matrix.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.__init__" title="zonopy.polyZonotope.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(Z[, n_dep_gens, expMat, id, ...])</p></td>
+<td><p>Initialize the polynomial zonotope</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.center_slice_all_dep" title="zonopy.polyZonotope.center_slice_all_dep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">center_slice_all_dep</span></code></a>(val_slc)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.compress" title="zonopy.polyZonotope.compress"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compress</span></code></a>(compression_level)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.cpu" title="zonopy.polyZonotope.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.deleteZerosGenerators" title="zonopy.polyZonotope.deleteZerosGenerators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deleteZerosGenerators</span></code></a>([eps])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.exactCartProd" title="zonopy.polyZonotope.exactCartProd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exactCartProd</span></code></a>(other)</p></td>
+<td><p>self: &lt;polyZonotope&gt; other: &lt;polyZonotope&gt; return &lt;polyZonotope&gt;</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.grad_center_slice_all_dep" title="zonopy.polyZonotope.grad_center_slice_all_dep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">grad_center_slice_all_dep</span></code></a>(val_slc)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.hess_center_slice_all_dep" title="zonopy.polyZonotope.hess_center_slice_all_dep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hess_center_slice_all_dep</span></code></a>(val_slc)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.ones" title="zonopy.polyZonotope.ones"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ones</span></code></a>(dims[, dtype, device])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.project" title="zonopy.polyZonotope.project"><code class="xref py py-obj docutils literal notranslate"><span class="pre">project</span></code></a>([dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.reduce" title="zonopy.polyZonotope.reduce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reduce</span></code></a>(order[, option])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.reduce_indep" title="zonopy.polyZonotope.reduce_indep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reduce_indep</span></code></a>(order[, option])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.slice_all_dep" title="zonopy.polyZonotope.slice_all_dep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_all_dep</span></code></a>(val_slc)</p></td>
+<td><p>Slice polynomial zonotpe in all depdent generators</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.slice_dep" title="zonopy.polyZonotope.slice_dep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_dep</span></code></a>(id_slc, val_slc)</p></td>
+<td><p>Slice polynomial zonotpe in depdent generators id_slc: id to slice val_slc: indeterminant to slice</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.split_dep_indep" title="zonopy.polyZonotope.split_dep_indep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_dep_indep</span></code></a>([center_on_dep])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.to" title="zonopy.polyZonotope.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>([dtype, itype, device])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.to_interval" title="zonopy.polyZonotope.to_interval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_interval</span></code></a>([method])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.to_zonotope" title="zonopy.polyZonotope.to_zonotope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_zonotope</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.zeros" title="zonopy.polyZonotope.zeros"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zeros</span></code></a>(dims[, dtype, device])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.G" title="zonopy.polyZonotope.G"><code class="xref py py-obj docutils literal notranslate"><span class="pre">G</span></code></a></p></td>
+<td><p>Dependent generators of a polynimal zonotope return &lt;torch.Tensor&gt; , shape [N, nx]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.Grest" title="zonopy.polyZonotope.Grest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Grest</span></code></a></p></td>
+<td><p>Independent generators of a polynimal zonotope return &lt;torch.Tensor&gt; , shape [M, nx]</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.c" title="zonopy.polyZonotope.c"><code class="xref py py-obj docutils literal notranslate"><span class="pre">c</span></code></a></p></td>
+<td><p>The center of a polynimal zonotope return &lt;torch.Tensor&gt; , shape [nx]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.device" title="zonopy.polyZonotope.device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">device</span></code></a></p></td>
+<td><p>The device of a polynomial zonotope properties return 'cpu', 'cuda:0', or ...</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.dimension" title="zonopy.polyZonotope.dimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimension</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.dtype" title="zonopy.polyZonotope.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a></p></td>
+<td><p>The data type of vector elements (ex.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.input_pairs" title="zonopy.polyZonotope.input_pairs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_pairs</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.itype" title="zonopy.polyZonotope.itype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">itype</span></code></a></p></td>
+<td><p>The data type of a polynomial zonotope exponent matrix return torch.short, torch.int, torch.long</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.polyZonotope.n_generators" title="zonopy.polyZonotope.n_generators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_generators</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.polyZonotope.n_indep_gens" title="zonopy.polyZonotope.n_indep_gens"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_indep_gens</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.G">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">G</span></span><a class="headerlink" href="#zonopy.polyZonotope.G" title="Permalink to this definition">#</a></dt>
+<dd><p>Dependent generators of a polynimal zonotope
+return &lt;torch.Tensor&gt;
+, shape [N, nx]</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.Grest">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Grest</span></span><a class="headerlink" href="#zonopy.polyZonotope.Grest" title="Permalink to this definition">#</a></dt>
+<dd><p>Independent generators of a polynimal zonotope
+return &lt;torch.Tensor&gt;
+, shape [M, nx]</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.c">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">c</span></span><a class="headerlink" href="#zonopy.polyZonotope.c" title="Permalink to this definition">#</a></dt>
+<dd><p>The center of a polynimal zonotope
+return &lt;torch.Tensor&gt;
+, shape [nx]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.center_slice_all_dep">
+<span class="sig-name descname"><span class="pre">center_slice_all_dep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val_slc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.center_slice_all_dep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.center_slice_all_dep" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.compress">
+<span class="sig-name descname"><span class="pre">compress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compression_level</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.compress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.compress" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.cpu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.cpu" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.deleteZerosGenerators">
+<span class="sig-name descname"><span class="pre">deleteZerosGenerators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.deleteZerosGenerators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.deleteZerosGenerators" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.device">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#zonopy.polyZonotope.device" title="Permalink to this definition">#</a></dt>
+<dd><p>The device of a polynomial zonotope properties
+return ‘cpu’, ‘cuda:0’, or …</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.dimension">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimension</span></span><a class="headerlink" href="#zonopy.polyZonotope.dimension" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#zonopy.polyZonotope.dtype" title="Permalink to this definition">#</a></dt>
+<dd><p>The data type of vector elements (ex. center) of a polynomial zonotope
+return torch.float or torch.double</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.exactCartProd">
+<span class="sig-name descname"><span class="pre">exactCartProd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.exactCartProd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.exactCartProd" title="Permalink to this definition">#</a></dt>
+<dd><p>self: &lt;polyZonotope&gt;
+other: &lt;polyZonotope&gt;
+return &lt;polyZonotope&gt;</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.grad_center_slice_all_dep">
+<span class="sig-name descname"><span class="pre">grad_center_slice_all_dep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val_slc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.grad_center_slice_all_dep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.grad_center_slice_all_dep" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.hess_center_slice_all_dep">
+<span class="sig-name descname"><span class="pre">hess_center_slice_all_dep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val_slc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.hess_center_slice_all_dep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.hess_center_slice_all_dep" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.input_pairs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_pairs</span></span><a class="headerlink" href="#zonopy.polyZonotope.input_pairs" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.itype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">itype</span></span><a class="headerlink" href="#zonopy.polyZonotope.itype" title="Permalink to this definition">#</a></dt>
+<dd><p>The data type of a polynomial zonotope exponent matrix
+return torch.short, torch.int, torch.long</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.n_generators">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_generators</span></span><a class="headerlink" href="#zonopy.polyZonotope.n_generators" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.n_indep_gens">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_indep_gens</span></span><a class="headerlink" href="#zonopy.polyZonotope.n_indep_gens" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.ones">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ones</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dims</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.ones"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.ones" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.project">
+<span class="sig-name descname"><span class="pre">project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">1]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.project"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.project" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.reduce">
+<span class="sig-name descname"><span class="pre">reduce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'girard'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.reduce"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.reduce" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.reduce_indep">
+<span class="sig-name descname"><span class="pre">reduce_indep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'girard'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.reduce_indep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.reduce_indep" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.slice_all_dep">
+<span class="sig-name descname"><span class="pre">slice_all_dep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val_slc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.slice_all_dep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.slice_all_dep" title="Permalink to this definition">#</a></dt>
+<dd><p>Slice polynomial zonotpe in all depdent generators</p>
+<p>id_slc: id to slice
+val_slc: indeterminant to slice
+return,
+c: &lt;torch.Tensor&gt;, shape [nx]
+grad_c: &lt;torch.Tensor&gt;, shape [n_ids,nx]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.slice_dep">
+<span class="sig-name descname"><span class="pre">slice_dep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_slc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_slc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.slice_dep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.slice_dep" title="Permalink to this definition">#</a></dt>
+<dd><p>Slice polynomial zonotpe in depdent generators
+id_slc: id to slice
+val_slc: indeterminant to slice</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.split_dep_indep">
+<span class="sig-name descname"><span class="pre">split_dep_indep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_on_dep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.split_dep_indep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.split_dep_indep" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">itype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.to" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.to_interval">
+<span class="sig-name descname"><span class="pre">to_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'interval'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.to_interval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.to_interval" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.to_zonotope">
+<span class="sig-name descname"><span class="pre">to_zonotope</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.to_zonotope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.to_zonotope" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.polyZonotope.zeros">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">zeros</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dims</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/poly_zono.html#polyZonotope.zeros"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.polyZonotope.zeros" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="zonopy.batchMatZonotope.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">zonopy.batchMatZonotope</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="zonopy.batchPolyZonotope.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">zonopy.batchPolyZonotope</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope"><code class="docutils literal notranslate"><span class="pre">polyZonotope</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.__init__"><code class="docutils literal notranslate"><span class="pre">polyZonotope.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.G"><code class="docutils literal notranslate"><span class="pre">polyZonotope.G</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.Grest"><code class="docutils literal notranslate"><span class="pre">polyZonotope.Grest</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.c"><code class="docutils literal notranslate"><span class="pre">polyZonotope.c</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.center_slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.center_slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.compress"><code class="docutils literal notranslate"><span class="pre">polyZonotope.compress()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.cpu"><code class="docutils literal notranslate"><span class="pre">polyZonotope.cpu()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.deleteZerosGenerators"><code class="docutils literal notranslate"><span class="pre">polyZonotope.deleteZerosGenerators()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.device"><code class="docutils literal notranslate"><span class="pre">polyZonotope.device</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.dimension"><code class="docutils literal notranslate"><span class="pre">polyZonotope.dimension</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.dtype"><code class="docutils literal notranslate"><span class="pre">polyZonotope.dtype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.exactCartProd"><code class="docutils literal notranslate"><span class="pre">polyZonotope.exactCartProd()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.grad_center_slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.grad_center_slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.hess_center_slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.hess_center_slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.input_pairs"><code class="docutils literal notranslate"><span class="pre">polyZonotope.input_pairs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.itype"><code class="docutils literal notranslate"><span class="pre">polyZonotope.itype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.n_generators"><code class="docutils literal notranslate"><span class="pre">polyZonotope.n_generators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.n_indep_gens"><code class="docutils literal notranslate"><span class="pre">polyZonotope.n_indep_gens</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.ones"><code class="docutils literal notranslate"><span class="pre">polyZonotope.ones()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.project"><code class="docutils literal notranslate"><span class="pre">polyZonotope.project()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.reduce"><code class="docutils literal notranslate"><span class="pre">polyZonotope.reduce()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.reduce_indep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.reduce_indep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.slice_all_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.slice_all_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.slice_dep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.slice_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.split_dep_indep"><code class="docutils literal notranslate"><span class="pre">polyZonotope.split_dep_indep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.to"><code class="docutils literal notranslate"><span class="pre">polyZonotope.to()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.to_interval"><code class="docutils literal notranslate"><span class="pre">polyZonotope.to_interval()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.to_zonotope"><code class="docutils literal notranslate"><span class="pre">polyZonotope.to_zonotope()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.polyZonotope.zeros"><code class="docutils literal notranslate"><span class="pre">polyZonotope.zeros()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By ROAHM Lab
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

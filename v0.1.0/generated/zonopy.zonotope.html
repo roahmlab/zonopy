@@ -1,0 +1,837 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>zonopy.zonotope &#8212; zonopy v0.1.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/katex-math.css?v=91adb8b6" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=64fd42a1" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=c88f2e48"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script src="../_static/design-tabs.js?v=36754332"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/zonopy.zonotope';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://roahmlab.github.io/zonopy/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'v0.1.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zonopy.batchZonotope" href="zonopy.batchZonotope.html" />
+    <link rel="prev" title="zonopy.interval" href="zonopy.interval.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy v0.1.0</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../zonopy.html">Continuous Set Types</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="zonopy.interval.html">zonopy.interval</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">zonopy.zonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.matZonotope.html">zonopy.matZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.matPolyZonotope.html">zonopy.matPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../math.html">Math Operations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.cross.html">zonopy.cross</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.cos.html">zonopy.cos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.sin.html">zonopy.sin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.cos_sin_cartprod.html">zonopy.cos_sin_cartprod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.rot_mat.html">zonopy.rot_mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.dot.html">zonopy.dot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.close.html">zonopy.close</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.gen_batch_rotatotope_from_jrs_trig.html">zonopy.gen_batch_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.gen_rotatotope_from_jrs_trig.html">zonopy.gen_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.get_pz_rotations_from_q.html">zonopy.get_pz_rotations_from_q</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../utils.html">Utility Functions</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.remove_dependence_and_compress.html">zonopy.remove_dependence_and_compress</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.stack.html">zonopy.stack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_JRSs.html">zonopy.plot_JRSs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_polyzonos_xy.html">zonopy.plot_polyzonos_xy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_polyzonos.html">zonopy.plot_polyzonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.plot_zonos.html">zonopy.plot_zonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.config_safety_check.html">zonopy.config_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.traj_safety_check.html">zonopy.traj_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.obstacle_collison_free_check.html">zonopy.obstacle_collison_free_check</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../flags.html">Internal Flags</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/roahmlab/zonopy" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/generated/zonopy.zonotope.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>zonopy.zonotope</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope"><code class="docutils literal notranslate"><span class="pre">zonotope</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.__init__"><code class="docutils literal notranslate"><span class="pre">zonotope.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.center"><code class="docutils literal notranslate"><span class="pre">zonotope.center</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.cpu"><code class="docutils literal notranslate"><span class="pre">zonotope.cpu()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.deleteZerosGenerators"><code class="docutils literal notranslate"><span class="pre">zonotope.deleteZerosGenerators()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.device"><code class="docutils literal notranslate"><span class="pre">zonotope.device</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.dimension"><code class="docutils literal notranslate"><span class="pre">zonotope.dimension</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.dtype"><code class="docutils literal notranslate"><span class="pre">zonotope.dtype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.generators"><code class="docutils literal notranslate"><span class="pre">zonotope.generators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.n_generators"><code class="docutils literal notranslate"><span class="pre">zonotope.n_generators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.plot"><code class="docutils literal notranslate"><span class="pre">zonotope.plot()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polygon"><code class="docutils literal notranslate"><span class="pre">zonotope.polygon()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polygon_patch"><code class="docutils literal notranslate"><span class="pre">zonotope.polygon_patch()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polyhedron"><code class="docutils literal notranslate"><span class="pre">zonotope.polyhedron()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polyhedron_patch"><code class="docutils literal notranslate"><span class="pre">zonotope.polyhedron_patch()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polytope"><code class="docutils literal notranslate"><span class="pre">zonotope.polytope()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.project"><code class="docutils literal notranslate"><span class="pre">zonotope.project()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.reduce"><code class="docutils literal notranslate"><span class="pre">zonotope.reduce()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.shape"><code class="docutils literal notranslate"><span class="pre">zonotope.shape</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.slice"><code class="docutils literal notranslate"><span class="pre">zonotope.slice()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.to"><code class="docutils literal notranslate"><span class="pre">zonotope.to()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.to_interval"><code class="docutils literal notranslate"><span class="pre">zonotope.to_interval()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.to_polyZonotope"><code class="docutils literal notranslate"><span class="pre">zonotope.to_polyZonotope()</span></code></a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="zonopy-zonotope">
+<h1>zonopy.zonotope<a class="headerlink" href="#zonopy-zonotope" title="Permalink to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="zonopy.zonotope">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zonopy.</span></span><span class="sig-name descname"><span class="pre">zonotope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>1D Zonotope class</p>
+<p>A Zonotope is a set of the form</p>
+<div class="math">
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="script">Z</mi><mo>:</mo><mo>=</mo><mrow><mo fence="true">{</mo><mi>c</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><msub><mi>a</mi><mi>i</mi></msub><msub><mi>g</mi><mi>i</mi></msub><mtext>  </mtext><mo fence="true" lspace="0.05em" rspace="0.05em">|</mo><mtext>  </mtext><msub><mi>a</mi><mi>i</mi></msub><mo>∈</mo><mo stretchy="false">[</mo><mo>−</mo><mn>1</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo><mo fence="true">}</mo></mrow></mrow><annotation encoding="application/x-tex">\mathcal{Z} := \left\{c + \sum_{i=1}^{N} a_i g_i \; \middle\vert \; a_i \in [-1,1]\right\}
+
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathcal" style="margin-right:0.07944em;">Z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:3.106em;vertical-align:-1.2777em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size4">{</span></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8283em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.2777em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.75em;"><span style="top:-3.75em;"><span class="pstrut" style="height:5em;"></span><span style="width:0.333em;height:3.000em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.333em' height='3.000em' viewBox='0 0 333 3000'><path d='M145 15 v585 v1800 v585 c2.667,10,9.667,15,21,15
+c10,0,16.667,-5,20,-15 v-585 v-1800 v-585 c-2.667,-10,-9.667,-15,-21,-15
+c-10,0,-16.667,5,-20,15z M188 15 H145 v585 v1800 v585 h43z'/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.25em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mopen">[</span><span class="mord">−</span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size4">}</span></span></span></span></span></span></span></div><p>where <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>c</mi></mrow><annotation encoding="application/x-tex">c</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">c</span></span></span></span></span> is the center and <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>g</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">g_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span> are the generators, each of which is a vector in the same space as <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>c</mi></mrow><annotation encoding="application/x-tex">c</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">c</span></span></span></span></span>.</p>
+<p>This class defines a basic zonotope and its operations.
+<span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi></mrow><annotation encoding="application/x-tex">\mathbf{Z}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span></span></span></span></span> is a tensor of shape <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">(</mo><mi>N</mi><mo>+</mo><mn>1</mn><mo stretchy="false">)</mo><mo>×</mo><mi>d</mi></mrow><annotation encoding="application/x-tex">(N+1) \times d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span></span></span></span></span> where <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span></span></span></span></span> is the number of generators
+and <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span></span></span></span></span> is the dimension of the zonotope.
+The first row of <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Z</mi></mrow><annotation encoding="application/x-tex">Z</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">Z</span></span></span></span></span> is the center and the rest are the generators, such that <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi><mo>=</mo><mo stretchy="false">[</mo><mi>c</mi><mo separator="true">,</mo><mi>G</mi><msup><mo stretchy="false">]</mo><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">\mathbf{Z} = [c,G]^T</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0913em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord mathnormal">c</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">G</span><span class="mclose"><span class="mclose">]</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span></span></span></span></span>.
+<span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>G</mi><mo>=</mo><mo stretchy="false">[</mo><msub><mi>g</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>g</mi><mn>2</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>g</mi><mi>N</mi></msub><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">G = [g_1, g_2, \ldots, g_N]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">G</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span> is a matrix of shape <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>×</mo><mi>d</mi></mrow><annotation encoding="application/x-tex">N \times d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span></span></span></span></span>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.__init__" title="Permalink to this definition">#</a></dt>
+<dd><p>Initialize a zonotope</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a>) – center vector and generator matrix <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi><mo>=</mo><mo stretchy="false">[</mo><mi>c</mi><mo separator="true">,</mo><mi>G</mi><msup><mo stretchy="false">]</mo><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">\mathbf{Z} = [c,G]^T</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0913em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord mathnormal">c</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">G</span><span class="mclose"><span class="mclose">]</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span></span></span></span></span></p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensor_attributes.html#torch.dtype" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.dtype</em></a><em>, </em><em>optional</em>) – data type of <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi></mrow><annotation encoding="application/x-tex">\mathbf{Z}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span></span></span></span></span>. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the data type is inferred. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>optional</em>) – device of <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi></mrow><annotation encoding="application/x-tex">\mathbf{Z}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span></span></span></span></span>. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the device is inferred. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the dimension of <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi></mrow><annotation encoding="application/x-tex">\mathbf{Z}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span></span></span></span></span> is not 2</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.__init__" title="zonopy.zonotope.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(Z[, dtype, device])</p></td>
+<td><p>Initialize a zonotope</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.cpu" title="zonopy.zonotope.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
+<td><p>Change the device of a zonotope to CPU</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.deleteZerosGenerators" title="zonopy.zonotope.deleteZerosGenerators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deleteZerosGenerators</span></code></a>([eps])</p></td>
+<td><p>Delete zero vector generators return &lt;zonotope&gt;</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.plot" title="zonopy.zonotope.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a>(ax[, facecolor, edgecolor, linewidth, dim])</p></td>
+<td><p>plot 2 dimensional projection of a zonotope self: &lt;zonotope&gt; ax: &lt;Axes&gt; axes oject of a figure to plot facecolor: &lt;string&gt; color of face edgecolor: &lt;string&gt; color of edges</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.polygon" title="zonopy.zonotope.polygon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polygon</span></code></a>()</p></td>
+<td><p>Vertice representation as a polygon from a 2-dimensional zonotope</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.polygon_patch" title="zonopy.zonotope.polygon_patch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polygon_patch</span></code></a>([alpha, facecolor, edgecolor, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.polyhedron" title="zonopy.zonotope.polyhedron"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polyhedron</span></code></a>()</p></td>
+<td><p>Vertice representation as a polygon from a 3-dimensional zonotope</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.polyhedron_patch" title="zonopy.zonotope.polyhedron_patch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polyhedron_patch</span></code></a>([alpha, facecolor, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.polytope" title="zonopy.zonotope.polytope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polytope</span></code></a>([combs])</p></td>
+<td><p>Half-plane representation of zonotope return, A: &lt;torch.tensor&gt;, shape [<em>,nx] b: &lt;torch.tensor&gt;, shape [</em>]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.project" title="zonopy.zonotope.project"><code class="xref py py-obj docutils literal notranslate"><span class="pre">project</span></code></a>([dim])</p></td>
+<td><p>The projection of a zonotope onto the specified dimensions self: &lt;zonotope&gt; dim: &lt;int&gt; or &lt;list&gt; or &lt;torch.Tensor&gt; dimensions for prjection</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.reduce" title="zonopy.zonotope.reduce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reduce</span></code></a>(order[, option])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.slice" title="zonopy.zonotope.slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice</span></code></a>(slice_dim, slice_pt)</p></td>
+<td><p>slice zonotope on specified point in a certain dimension self: &lt;zonotope&gt; slice_dim: &lt;torch.Tensor&gt; or &lt;list&gt; or &lt;int&gt; , shape  [] slice_pt: &lt;torch.Tensor&gt; or &lt;list&gt; or &lt;float&gt; or &lt;int&gt; , shape  [] return &lt;zonotope&gt;</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.to" title="zonopy.zonotope.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>([dtype, device])</p></td>
+<td><p>Change the device and data type of a zonotope dtype: torch.float or torch.double device: 'cpu', 'gpu', 'cuda:0', ...</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.to_interval" title="zonopy.zonotope.to_interval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_interval</span></code></a>()</p></td>
+<td><p>Convert zonotope to interval return &lt;interval&gt;</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.to_polyZonotope" title="zonopy.zonotope.to_polyZonotope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_polyZonotope</span></code></a>([dim, id])</p></td>
+<td><p>Convert zonotope to polynomial zonotope self: &lt;zonotope&gt; dim: &lt;int&gt;, dimension to take as sliceable return &lt;polyZonotope&gt;</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.center" title="zonopy.zonotope.center"><code class="xref py py-obj docutils literal notranslate"><span class="pre">center</span></code></a></p></td>
+<td><p>The center of a zonotope return &lt;torch.Tensor&gt; , shape [nx]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.device" title="zonopy.zonotope.device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">device</span></code></a></p></td>
+<td><p>The device of a zonotope properties return 'cpu', 'cuda:0', or ...</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.dimension" title="zonopy.zonotope.dimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimension</span></code></a></p></td>
+<td><p>The dimension of a zonotope return &lt;int&gt;, nx</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.dtype" title="zonopy.zonotope.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a></p></td>
+<td><p>The data type of a zonotope properties return torch.float or torch.double</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.generators" title="zonopy.zonotope.generators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generators</span></code></a></p></td>
+<td><p>Generators of a zonotope return &lt;torch.Tensor&gt; , shape [N, nx]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#zonopy.zonotope.n_generators" title="zonopy.zonotope.n_generators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_generators</span></code></a></p></td>
+<td><p>The number of generators of a zonotope return &lt;int&gt;, N</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.zonotope.shape" title="zonopy.zonotope.shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code></a></p></td>
+<td><p>The shape of vector elements (ex.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.zonotope.center">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">center</span></span><a class="headerlink" href="#zonopy.zonotope.center" title="Permalink to this definition">#</a></dt>
+<dd><p>The center of a zonotope
+return &lt;torch.Tensor&gt;
+, shape [nx]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.cpu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.cpu" title="Permalink to this definition">#</a></dt>
+<dd><p>Change the device of a zonotope to CPU</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.deleteZerosGenerators">
+<span class="sig-name descname"><span class="pre">deleteZerosGenerators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.deleteZerosGenerators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.deleteZerosGenerators" title="Permalink to this definition">#</a></dt>
+<dd><p>Delete zero vector generators
+return &lt;zonotope&gt;</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.zonotope.device">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#zonopy.zonotope.device" title="Permalink to this definition">#</a></dt>
+<dd><p>The device of a zonotope properties
+return ‘cpu’, ‘cuda:0’, or …</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.zonotope.dimension">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimension</span></span><a class="headerlink" href="#zonopy.zonotope.dimension" title="Permalink to this definition">#</a></dt>
+<dd><p>The dimension of a zonotope
+return &lt;int&gt;, nx</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.zonotope.dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#zonopy.zonotope.dtype" title="Permalink to this definition">#</a></dt>
+<dd><p>The data type of a zonotope properties
+return torch.float or torch.double</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.zonotope.generators">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generators</span></span><a class="headerlink" href="#zonopy.zonotope.generators" title="Permalink to this definition">#</a></dt>
+<dd><p>Generators of a zonotope
+return &lt;torch.Tensor&gt;
+, shape [N, nx]</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.zonotope.n_generators">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_generators</span></span><a class="headerlink" href="#zonopy.zonotope.n_generators" title="Permalink to this definition">#</a></dt>
+<dd><p>The number of generators of a zonotope
+return &lt;int&gt;, N</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.plot">
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'green'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">1]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.plot" title="Permalink to this definition">#</a></dt>
+<dd><p>plot 2 dimensional projection of a zonotope
+self: &lt;zonotope&gt;
+ax: &lt;Axes&gt; axes oject of a figure to plot
+facecolor: &lt;string&gt; color of face
+edgecolor: &lt;string&gt; color of edges</p>
+<p>ex.
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.gca()
+zono.plot(ax)
+plt.show()</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.polygon">
+<span class="sig-name descname"><span class="pre">polygon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.polygon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.polygon" title="Permalink to this definition">#</a></dt>
+<dd><p>Vertice representation as a polygon from a 2-dimensional zonotope</p>
+<p>return &lt;torch.Tensor&gt;, &lt;torch.float&gt; or &lt;torch.double&gt;
+, shape [P,2], where P is the number of vertices</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.polygon_patch">
+<span class="sig-name descname"><span class="pre">polygon_patch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'green'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">1]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.polygon_patch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.polygon_patch" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.polyhedron">
+<span class="sig-name descname"><span class="pre">polyhedron</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.polyhedron"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.polyhedron" title="Permalink to this definition">#</a></dt>
+<dd><p>Vertice representation as a polygon from a 3-dimensional zonotope</p>
+<p>return &lt;torch.Tensor&gt;, &lt;torch.float&gt; or &lt;torch.double&gt;
+, shape [P,3], where P is the number of vertices</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.polyhedron_patch">
+<span class="sig-name descname"><span class="pre">polyhedron_patch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'green'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.polyhedron_patch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.polyhedron_patch" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.polytope">
+<span class="sig-name descname"><span class="pre">polytope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">combs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.polytope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.polytope" title="Permalink to this definition">#</a></dt>
+<dd><p>Half-plane representation of zonotope
+return,
+A: &lt;torch.tensor&gt;,
+shape [<em>,nx]
+b: &lt;torch.tensor&gt;,
+shape [</em>]</p>
+<p>A point, x (torch.Tensor, shape (nx,)), is at outside of a zonotope
+&lt;-&gt; max(<a class="reference external" href="mailto:A&#37;&#52;&#48;x-b)">A<span>&#64;</span>x-b)</a>&gt;=0 (you might wanna use 1e-6 as a threshold instead for numerical stability)</p>
+<p>A point, x, is inside of a zonotope
+&lt;-&gt; max(<a class="reference external" href="mailto:A&#37;&#52;&#48;x-b">A<span>&#64;</span>x-b</a>)&lt;0</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.project">
+<span class="sig-name descname"><span class="pre">project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">1]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.project"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.project" title="Permalink to this definition">#</a></dt>
+<dd><p>The projection of a zonotope onto the specified dimensions
+self: &lt;zonotope&gt;
+dim: &lt;int&gt; or &lt;list&gt; or &lt;torch.Tensor&gt; dimensions for prjection</p>
+<p>return &lt;zonotope&gt;</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.reduce">
+<span class="sig-name descname"><span class="pre">reduce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'girard'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.reduce"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.reduce" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zonopy.zonotope.shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#zonopy.zonotope.shape" title="Permalink to this definition">#</a></dt>
+<dd><p>The shape of vector elements (ex. center) of a zonotope
+return &lt;tuple&gt;, (nx,)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.slice">
+<span class="sig-name descname"><span class="pre">slice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slice_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slice_pt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.slice"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.slice" title="Permalink to this definition">#</a></dt>
+<dd><p>slice zonotope on specified point in a certain dimension
+self: &lt;zonotope&gt;
+slice_dim: &lt;torch.Tensor&gt; or &lt;list&gt; or &lt;int&gt;
+, shape  []
+slice_pt: &lt;torch.Tensor&gt; or &lt;list&gt; or &lt;float&gt; or &lt;int&gt;
+, shape  []
+return &lt;zonotope&gt;</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.to" title="Permalink to this definition">#</a></dt>
+<dd><p>Change the device and data type of a zonotope
+dtype: torch.float or torch.double
+device: ‘cpu’, ‘gpu’, ‘cuda:0’, …</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.to_interval">
+<span class="sig-name descname"><span class="pre">to_interval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.to_interval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.to_interval" title="Permalink to this definition">#</a></dt>
+<dd><p>Convert zonotope to interval
+return &lt;interval&gt;</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zonopy.zonotope.to_polyZonotope">
+<span class="sig-name descname"><span class="pre">to_polyZonotope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/zonotope/zono.html#zonotope.to_polyZonotope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.zonotope.to_polyZonotope" title="Permalink to this definition">#</a></dt>
+<dd><p>Convert zonotope to polynomial zonotope
+self: &lt;zonotope&gt;
+dim: &lt;int&gt;, dimension to take as sliceable
+return &lt;polyZonotope&gt;</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="zonopy.interval.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">zonopy.interval</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="zonopy.batchZonotope.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">zonopy.batchZonotope</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope"><code class="docutils literal notranslate"><span class="pre">zonotope</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.__init__"><code class="docutils literal notranslate"><span class="pre">zonotope.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.center"><code class="docutils literal notranslate"><span class="pre">zonotope.center</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.cpu"><code class="docutils literal notranslate"><span class="pre">zonotope.cpu()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.deleteZerosGenerators"><code class="docutils literal notranslate"><span class="pre">zonotope.deleteZerosGenerators()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.device"><code class="docutils literal notranslate"><span class="pre">zonotope.device</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.dimension"><code class="docutils literal notranslate"><span class="pre">zonotope.dimension</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.dtype"><code class="docutils literal notranslate"><span class="pre">zonotope.dtype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.generators"><code class="docutils literal notranslate"><span class="pre">zonotope.generators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.n_generators"><code class="docutils literal notranslate"><span class="pre">zonotope.n_generators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.plot"><code class="docutils literal notranslate"><span class="pre">zonotope.plot()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polygon"><code class="docutils literal notranslate"><span class="pre">zonotope.polygon()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polygon_patch"><code class="docutils literal notranslate"><span class="pre">zonotope.polygon_patch()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polyhedron"><code class="docutils literal notranslate"><span class="pre">zonotope.polyhedron()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polyhedron_patch"><code class="docutils literal notranslate"><span class="pre">zonotope.polyhedron_patch()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.polytope"><code class="docutils literal notranslate"><span class="pre">zonotope.polytope()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.project"><code class="docutils literal notranslate"><span class="pre">zonotope.project()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.reduce"><code class="docutils literal notranslate"><span class="pre">zonotope.reduce()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.shape"><code class="docutils literal notranslate"><span class="pre">zonotope.shape</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.slice"><code class="docutils literal notranslate"><span class="pre">zonotope.slice()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.to"><code class="docutils literal notranslate"><span class="pre">zonotope.to()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.to_interval"><code class="docutils literal notranslate"><span class="pre">zonotope.to_interval()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.zonotope.to_polyZonotope"><code class="docutils literal notranslate"><span class="pre">zonotope.to_polyZonotope()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By ROAHM Lab
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

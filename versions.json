@@ -5,7 +5,9 @@
         "url": "https://roahmlab.github.io/zonopy/dev/"
     },
     {
-        "version": "latest",
-        "url": "https://roahmlab.github.io/zonopy/latest/"
+        "name": "latest (v0.1.0)",
+        "version": "v0.1.0",
+        "url": "https://roahmlab.github.io/zonopy/v0.1.0/",
+        "preferred": true
     }
 ]
