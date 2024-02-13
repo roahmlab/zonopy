@@ -19,7 +19,7 @@ class matZonotope():
     In this case, it is a set of the form:
 
     .. math::
-        \mathcal{Z} = \{ C + \sum_{i=1}^{N} a_i G_i \mid a_i \in [0,1] \}
+        \mathcal{Z} := \left\{ C + \sum_{i=1}^{N} a_i G_i \; \middle\vert \; a_i \in [0,1] \right\}
 
     where :math:`C` is the center matrix and :math:`G_i` are the generator matrices.
 

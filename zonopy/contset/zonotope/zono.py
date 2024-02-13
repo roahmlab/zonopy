@@ -22,7 +22,7 @@ class zonotope:
     A Zonotope is a set of the form
 
     .. math::
-        \mathcal{Z} = \left\{c + \sum_{i=1}^{N} a_i g_i \; \middle\vert \; a_i \in [-1,1]\right\}
+        \mathcal{Z} := \left\{c + \sum_{i=1}^{N} a_i g_i \; \middle\vert \; a_i \in [-1,1]\right\}
 
     where :math:`c` is the center and :math:`g_i` are the generators, each of which is a vector in the same space as :math:`c`.
 

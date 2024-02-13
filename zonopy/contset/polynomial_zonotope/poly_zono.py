@@ -17,37 +17,50 @@ from ..gen_ops import (
 import zonopy.internal as zpi
 
 class polyZonotope:
-    '''
-    pZ: <polyZonotope>
-    
-    Z: <torch.Tensor> center vector and generators matrix Z = [[c],[G],[Grest]]
-    , shape [B1, B2, .. , Bb, N+M+1, nx]
-    c: <torch.Tensor> center vector of the polyonmial zonotope
-    , shape: [nx] 
-    G: <torch.Tensor> generator matrix containing the dependent generators
-    , shape: [N, nx]
-    Grest: <torch.Tensor> generator matrix containing the independent generators
-    , shape: [M, nx]
-    expMat: <troch.Tensor> matrix containing the exponents for the dependent generators
-    , shape: [N, p]
-    id: <torch.Tensor> vector containing the integer identifiers for the dependent factors
-    , shape: [p]
-    compress: <int> level for compress operation on dependent generators with exponent matrix
-    , 0: no compress, 1: remove zero dependent generators, 2: remove zero dependent generators and remove redundant expodent
+    r""" 1D Polynomial Zonotopes
 
-    Eq. 
-    G = [[gd1],[gd2],...,[gdN]]
-    Grest = [[gi1],[gi2],...,[giM]]
-    expMat = [[i11,i12,...,i1N],[i21,i22,...,i2N],...,[ip1,ip2,...,ipN]]
-    id = [0,1,2,...,p-1]
+    The Polynomial Zonotope (similar to Talyor model) is a non-convex set representation of a summation over multivariate polynomials multiplied with intervals.
 
-    pZ = {
-        c + a1*gi1 + a2*gi2 + ... + aN*giN + b1^i11*b2^i21*...*bp^ip1*gd1 + b1^i12*b2^i22*...*bp^ip2*gd2 + ...
-        + b1^i1M*b2^i2M*...*bp^ipM*gdM
-        | coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1]
-    }
-    '''
+    It is defined as a set of the following form:
+
+    .. math::
+        \mathcal{PZ} := \left\{
+            c + \sum_{i=1}^{N} \left( \prod_{k=1}^{p}\alpha_{k}^{E_{(k,i)}}\right) G_{(\cdot,i)}+\sum_{j=1}^{M}\beta_{j}G_{rest(\cdot,j)}
+            \; \middle\vert \;
+            \begin{array}{l}
+                \alpha_k, \beta_j \in [-1,1] \\
+                \forall k = 1,...,p \\
+                \forall j=1,...,M
+            \end{array}
+            \right\}
+
+    where
+
+    * :math:`c\in\mathbb{R}^d` is the center vector,
+    * :math:`G\in\mathbb{R}^{d\times N}` is the dependent generator matrix,
+    * :math:`G_{rest}\in\mathbb{R}^{d\times M}` is the independent generator matrix,
+    * :math:`E\in\mathbb{R}^{p\times N}` is the exponent matrix,
+    * :math:`N` is the number of dependent generators,
+    * :math:`M` is the number of independent generators, and
+    * :math:`p` is the number of indeterminants.
+    """
     def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True, dtype=None, device=None):
+        r''' Initialize the polynomial zonotope
+
+        Args:
+            Z (torch.Tensor): The center and generator matrix of the polynomial zonotope :math:`\mathbf{Z} = [c, G, G_{rest}]^T`
+            n_dep_gens (int, optional): The number of dependent generators. Default: 0
+            expMat (torch.Tensor, optional): The exponent matrix of the dependent generators. If ``None``, it will be the identity matrix. Default: None
+            id (torch.Tensor, optional): The integer identifiers for the dependent generators. If ``None``, it will be the range of the number of dependent generators. Default: None
+            copy_Z (bool, optional): If ``True``, it will copy the input ``Z`` value. Default: ``True``
+            dtype (torch.dtype, optional): The data type of the polynomial zonotope. If ``None``, it will be inferred. Default: ``None``
+            device (torch.device, optional): The device of the polynomial zonotope. If ``None``, it will be inferred. Default: ``None``
+        
+        Raises:
+            AssertionError: If the exponent matrix does not seem to be valid for the given dependent generators or ids.
+            AssertionError: If the number of dependent generators does not match the number of ids.
+            AssertionError: If the exponent matrix is not a non-negative integer matrix.
+        '''
         # If compress=2, it will always copy.
 
         # Make sure Z is a tensor

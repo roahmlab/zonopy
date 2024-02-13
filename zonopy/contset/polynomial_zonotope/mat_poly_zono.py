@@ -13,33 +13,50 @@ from ..gen_ops import (
     )
 
 class matPolyZonotope():
-    '''
-    <matPolyZonotope>
+    r""" 2D Matrix Polynomial Zonotopes
 
-    c: <torch.Tensor> center maxtrix of the matrix polyonmial zonotope
-    , shape: [nx,ny] 
-    G: <torch.tensor> generator tensor containing the dependent generators 
-    , shape: [N, nx, ny] 
-    Grest: <torch.Tensor> generator tensor containing the independent generators
-    , shape: [M, nx, ny]
-    expMat: <troch.Tensor> matrix containing the exponents for the dependent generators
-    , shape: [N, p]
-    id: <torch.Tensor> vector containing the integer identifiers for the dependent factors
-    , shape: [p]
-    compress: <int> level for compressing dependent generators with expodent
-    0: no compress, 1: compress zero dependent generators, 2: compress zero dependent generators and remove redundant expodent
+    The matrix polynomial zonotope is analogous to the polynomial zonotope like the matrix zonotope is to the zonotope.
 
-    Eq. (coeff. a1,a2,...,aN; b1,b2,...,bp \in [0,1])
-    G = [[Gd1],[Gd2],...,[GdN]]
-    Grest = [[Gi1],[Gi2],...,[GiM]]
-    (Gd1,Gd2,...,GdN,Gi1,Gi2,...,GiM \in R^(nx,ny), matrix)
-    expMat = [[i11,i12,...,i1p],[i21,i22,...,i2p],...,[iN1,iN2,...,iNp]]
-    id = [0,1,2,...,p-1]
+    It is defined as a set of the following form:
 
-    pZ = c + a1*Gi1 + a2*Gi2 + ... + aN*GiN + b1^i11*b2^i21*...*bp^ip1*Gd1 + b1^i12*b2^i22*...*bp^ip2*Gd2 + ... 
-    + b1^i1M*b2^i2M*...*bp^ipM*GdM
-    '''
+    .. math::
+        \mathcal{PZ} := \left\{
+            C + \sum_{i=1}^{N} \left( \prod_{k=1}^{p}\alpha_{k}^{E_{(k,i)}}\right) \mathbf{G}_{(i)}+\sum_{j=1}^{M}\beta_{j}\mathbf{G}_{rest(j)}
+            \; \middle\vert \;
+            \begin{array}{l}
+                \alpha_k, \beta_j \in [-1,1] \\
+                \forall k = 1,...,p \\
+                \forall j=1,...,M
+            \end{array}
+            \right\}
+    
+    where
+
+    * :math:`C\in\mathbb{R}^{dx\times dy}` is the center matrix,
+    * :math:`\mathbf{G}_{(i)}\in\mathbb{R}^{dx\times dy}` is a single dependent generator, with :math:`\mathbf{G} = [\mathbf{G}_{(1)},...,\mathbf{G}_{(N)}]`,
+    * :math:`\mathbf{G}_{rest(j))}\in\mathbb{R}^{dx\times dy}` is a single independent generator, with :math:`\mathbf{G}_{rest} = [\mathbf{G}_{rest(1)},...,\mathbf{G}_{rest(M)}]`,
+    * :math:`E\in\mathbb{R}^{p\times N}` is the exponent matrix,
+    * :math:`N` is the number of dependent generators,
+    * :math:`M` is the number of independent generators, and
+    * :math:`p` is the number of indeterminants.
+    """
     def __init__(self,Z,n_dep_gens=0,expMat=None,id=None,copy_Z=True, dtype=None, device=None):
+        r''' Initialize the matrix polynomial zonotope
+
+        Args:
+            Z (torch.Tensor): The center and generator tensor of the matrix polynomial zonotope :math:`\mathbf{Z} = [C, \mathbf{G}_{(1)}, \ldots, \mathbf{G}_{(N)}, \mathbf{G}_{rest(1)}, \ldots, \mathbf{G}_{rest(M)}]`
+            n_dep_gens (int, optional): The number of dependent generators. Default: 0
+            expMat (torch.Tensor, optional): The exponent matrix. Default: None
+            id (np.ndarray, optional): The id array. Default: None
+            copy_Z (bool, optional): If ``True``, it will copy the input Z. Default: ``True``
+            dtype (torch.dtype, optional): The data type of the matrix polynomial zonotope. If ``None``, it will be inferred. Default: ``None``
+            device (torch.device, optional): The device of the matrix polynomial zonotope. If ``None``, it will be inferred. Default: ``None``
+
+        Raises:
+            AssertionError: If the exponent matrix does not seem to be valid for the given dependent generators or ids.
+            AssertionError: If the number of dependent generators does not match the number of ids.
+            AssertionError: If the exponent matrix is not a non-negative integer matrix.
+        '''
         # If compress=2, it will always copy.
 
         # Make sure Z is a tensor
