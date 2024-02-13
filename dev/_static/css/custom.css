@@ -1,0 +1,25 @@
+/* force a centered display math */
+span.katex-display {
+    width: 100%;
+}
+
+/* fix the version dropdown button */
+.version-switcher__button {
+    margin-bottom: unset !important;
+}
+
+/* fix dropdown menu position */
+.bd-header-article .dropdown-menu {
+    position: absolute;
+    inset: 0px auto auto 0px;
+    margin: 0px;
+    transform: translate3d(0px, 28px, 0px);
+}
+
+/* fix dropdown menu hover */
+.bd-header-article .dropdown-source-buttons:hover + .btn + .dropdown-menu {
+    display: block;
+}
+.bd-header-article .btn {
+    display: block;
+}

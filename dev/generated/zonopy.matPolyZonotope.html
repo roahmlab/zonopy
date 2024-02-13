@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>zonopy.matPolyZonotope &#8212; zonopy (development)</title>
+    <title>zonopy.matPolyZonotope &#8212; zonopy (development) v0.1.0-dev</title>
   
   
   
@@ -29,21 +29,24 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=384b581d" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
     <link rel="stylesheet" type="text/css" href="../_static/katex-math.css?v=91adb8b6" />
     <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=64fd42a1" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3939e066"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=ea2b4dd5"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
     <script src="../_static/design-tabs.js?v=36754332"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/zonopy.matPolyZonotope';</script>
     <script>
@@ -98,8 +101,8 @@
          class="form-control"
          name="q"
          id="search-input"
-         placeholder="Search the docs ..."
-         aria-label="Search the docs ..."
+         placeholder="Search..."
+         aria-label="Search..."
          autocomplete="off"
          autocorrect="off"
          autocapitalize="off"
@@ -109,113 +112,6 @@
   </div>
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar">
-<div class="bd-header__inner bd-page-width">
-  <label class="sidebar-toggle primary-toggle" for="__primary">
-    <span class="fa-solid fa-bars"></span>
-  </label>
-  
-  
-  <div class="col-lg-3 navbar-header-items__start">
-    
-      <div class="navbar-item">
-
-  
-
-<a class="navbar-brand logo" href="../index.html">
-  
-  
-  
-  
-  
-  
-    <p class="title logo__title">zonopy (development)</p>
-  
-</a></div>
-    
-  </div>
-  
-  <div class="col-lg-9 navbar-header-items">
-    
-    <div class="me-auto navbar-header-items__center">
-      
-        <div class="navbar-item">
-<nav class="navbar-nav">
-  <ul class="bd-navbar-elements navbar-nav">
-    
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../zonopy.html">
-                        Continuous Set Types
-                      </a>
-                    </li>
-                
-
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../flags.html">
-                        Internal Flags
-                      </a>
-                    </li>
-                
-  </ul>
-</nav></div>
-      
-    </div>
-    
-    
-    <div class="navbar-header-items__end">
-      
-        <div class="navbar-item navbar-persistent--container">
-          
-
- <script>
- document.write(`
-   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
-        </div>
-      
-      
-        <div class="navbar-item">
-
-<script>
-document.write(`
-  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
-  </button>
-`);
-</script></div>
-      
-    </div>
-    
-  </div>
-  
-  
-    <div class="navbar-persistent--mobile">
-
- <script>
- document.write(`
-   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
-    </div>
-  
-
-  
-    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
-      <span class="fa-solid fa-outdent"></span>
-    </label>
-  
-</div>
-
     </header>
   
 
@@ -231,71 +127,56 @@ document.write(`
   <div class="sidebar-header-items sidebar-primary__section">
     
     
-      <div class="sidebar-header-items__center">
-        
-          <div class="navbar-item">
-<nav class="navbar-nav">
-  <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../zonopy.html">
-                        Continuous Set Types
-                      </a>
-                    </li>
-                
-
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../flags.html">
-                        Internal Flags
-                      </a>
-                    </li>
-                
-  </ul>
-</nav></div>
-        
-      </div>
-    
-    
-    
-      <div class="sidebar-header-items__end">
-        
-          <div class="navbar-item">
-
-<script>
-document.write(`
-  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
-  </button>
-`);
-</script></div>
-        
-      </div>
     
   </div>
   
     <div class="sidebar-primary-items__start sidebar-primary__section">
         <div class="sidebar-primary-item">
-<nav class="bd-docs-nav bd-links"
-     aria-label="Section Navigation">
-  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="zonopy.interval.html">zonopy.interval</a></li>
-</ul>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="zonopy.zonotope.html">zonopy.zonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.matZonotope.html">zonopy.matZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
-</ul>
+
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy (development) v0.1.0-dev</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">zonopy.matPolyZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../zonopy.html">Continuous Set Types</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="zonopy.interval.html">zonopy.interval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.zonotope.html">zonopy.zonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.matZonotope.html">zonopy.matZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">zonopy.matPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
 </ul>
-</div>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../flags.html">Internal Flags</a></li>
+</ul>
+
+    </div>
 </nav></div>
     </div>
   
@@ -311,6 +192,9 @@ document.write(`
       <main id="main-content" class="bd-main">
         
         
+
+<div class="sbt-scroll-pixel-helper"></div>
+
           <div class="bd-content">
             <div class="bd-article-container">
               
@@ -319,33 +203,196 @@ document.write(`
   
     <div class="header-article-items__start">
       
-        <div class="header-article-item">
-
-
-
-<nav aria-label="Breadcrumb">
-  <ul class="bd-breadcrumbs">
-    
-    <li class="breadcrumb-item breadcrumb-home">
-      <a href="../index.html" class="nav-link" aria-label="Home">
-        <i class="fa-solid fa-home"></i>
-      </a>
-    </li>
-    
-    <li class="breadcrumb-item"><a href="../zonopy.html" class="nav-link">Continuous Set Types</a></li>
-    
-    <li class="breadcrumb-item active" aria-current="page">zonopy.matPo...</li>
-  </ul>
-</nav>
-</div>
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
       
     </div>
   
   
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/roahmlab/zonopy" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/generated/zonopy.matPolyZonotope.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
 </div>
 </div>
               
               
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>zonopy.matPolyZonotope</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.__init__"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.C"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.C</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.G"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.G</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.Grest"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.Grest</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.T"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.T</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.compress"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.compress()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.cpu"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.cpu()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.device"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.device</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.dtype"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.dtype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.eye"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.eye()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.input_pairs"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.input_pairs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.itype"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.itype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.n_cols"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.n_cols</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.n_generators"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.n_generators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.n_indep_gens"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.n_indep_gens</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.n_rows"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.n_rows</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.ones"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.ones()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.reduce"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.reduce()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.reduce_indep"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.reduce_indep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.shape"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.shape</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.to"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.to()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.to_matZonotope"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.to_matZonotope()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.zeros"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.zeros()</span></code></a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
               
                 
 <div id="searchbox"></div>
@@ -356,38 +403,64 @@ document.write(`
 <dl class="py class">
 <dt class="sig sig-object py" id="zonopy.matPolyZonotope">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zonopy.</span></span><span class="sig-name descname"><span class="pre">matPolyZonotope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dep_gens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expMat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_Z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/mat_poly_zono.html#matPolyZonotope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.matPolyZonotope" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>&lt;matPolyZonotope&gt;</p>
-<p>c: &lt;torch.Tensor&gt; center maxtrix of the matrix polyonmial zonotope
-, shape: [nx,ny]
-G: &lt;torch.tensor&gt; generator tensor containing the dependent generators
-, shape: [N, nx, ny]
-Grest: &lt;torch.Tensor&gt; generator tensor containing the independent generators
-, shape: [M, nx, ny]
-expMat: &lt;troch.Tensor&gt; matrix containing the exponents for the dependent generators
-, shape: [N, p]
-id: &lt;torch.Tensor&gt; vector containing the integer identifiers for the dependent factors
-, shape: [p]
-compress: &lt;int&gt; level for compressing dependent generators with expodent
-0: no compress, 1: compress zero dependent generators, 2: compress zero dependent generators and remove redundant expodent</p>
-<p>Eq. (coeff. a1,a2,…,aN; b1,b2,…,bp in [0,1])
-G = [[Gd1],[Gd2],…,[GdN]]
-Grest = [[Gi1],[Gi2],…,[GiM]]
-(Gd1,Gd2,…,GdN,Gi1,Gi2,…,GiM in R^(nx,ny), matrix)
-expMat = [[i11,i12,…,i1p],[i21,i22,…,i2p],…,[iN1,iN2,…,iNp]]
-id = [0,1,2,…,p-1]</p>
-<p>pZ = c + a1*Gi1 + a2*Gi2 + … + aN*GiN + b1^i11*b2^i21*…*bp^ip1*Gd1 + b1^i12*b2^i22*…*bp^ip2*Gd2 + …
-+ b1^i1M*b2^i2M*…*bp^ipM*GdM</p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>2D Matrix Polynomial Zonotopes</p>
+<p>The matrix polynomial zonotope is analogous to the polynomial zonotope like the matrix zonotope is to the zonotope.</p>
+<p>It is defined as a set of the following form:</p>
+<div class="math">
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mrow><mi mathvariant="script">P</mi><mi mathvariant="script">Z</mi></mrow><mo>:</mo><mo>=</mo><mrow><mo fence="true">{</mo><mi>C</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><mrow><mo fence="true">(</mo><munderover><mo>∏</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>p</mi></munderover><msubsup><mi>α</mi><mi>k</mi><msub><mi>E</mi><mrow><mo stretchy="false">(</mo><mi>k</mi><mo separator="true">,</mo><mi>i</mi><mo stretchy="false">)</mo></mrow></msub></msubsup><mo fence="true">)</mo></mrow><msub><mi mathvariant="bold">G</mi><mrow><mo stretchy="false">(</mo><mi>i</mi><mo stretchy="false">)</mo></mrow></msub><mo>+</mo><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><mi>M</mi></munderover><msub><mi>β</mi><mi>j</mi></msub><msub><mi mathvariant="bold">G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi><mo stretchy="false">(</mo><mi>j</mi><mo stretchy="false">)</mo></mrow></msub><mtext>  </mtext><mo fence="true" lspace="0.05em" rspace="0.05em">|</mo><mtext>  </mtext><mtable rowspacing="0.16em" columnalign="left" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><msub><mi>α</mi><mi>k</mi></msub><mo separator="true">,</mo><msub><mi>β</mi><mi>j</mi></msub><mo>∈</mo><mo stretchy="false">[</mo><mo>−</mo><mn>1</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi mathvariant="normal">∀</mi><mi>k</mi><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><mi>p</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi mathvariant="normal">∀</mi><mi>j</mi><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><mi>M</mi></mrow></mstyle></mtd></mtr></mtable><mo fence="true">}</mo></mrow></mrow><annotation encoding="application/x-tex">\mathcal{PZ} := \left\{
+    C + \sum_{i=1}^{N} \left( \prod_{k=1}^{p}\alpha_{k}^{E_{(k,i)}}\right) \mathbf{G}_{(i)}+\sum_{j=1}^{M}\beta_{j}\mathbf{G}_{rest(j)}
+    \; \middle\vert \;
+    \begin{array}{l}
+        \alpha_k, \beta_j \in [-1,1] \\
+        \forall k = 1,...,p \\
+        \forall j=1,...,M
+    \end{array}
+    \right\}
+
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord"><span class="mord mathcal" style="margin-right:0.08222em;">P</span><span class="mord mathcal" style="margin-right:0.07944em;">Z</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:3.6em;vertical-align:-1.55em;"></span><span class="minner"><span class="mopen"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-2.5em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎩</span></span></span><span style="top:-2.492em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-3.15em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎨</span></span></span><span style="top:-4.292em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-4.3em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎧</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8283em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.2777em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size4">(</span></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.6985em;"><span style="top:-1.8479em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∏</span></span></span><span style="top:-4.3471em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.3021em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0818em;"><span style="top:-2.3987em;margin-left:-0.0037em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span style="top:-3.3034em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05764em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3448em;margin-left:-0.0576em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5357em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3695em;"><span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013em;"><span></span></span></span></span></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size4">)</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight">i</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8283em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4138em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.05278em;">β</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0528em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-4.05em;"><span class="pstrut" style="height:5.6em;"></span><span style="width:0.333em;height:3.600em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.333em' height='3.600em' viewBox='0 0 333 3600'><path d='M145 15 v585 v2400 v585 c2.667,10,9.667,15,21,15
+c10,0,16.667,-5,20,-15 v-585 v-2400 v-585 c-2.667,-10,-9.667,-15,-21,-15
+c-10,0,-16.667,5,-20,15z M188 15 H145 v585 v2400 v585 h43z'/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord"><span class="mtable"><span class="arraycolsep" style="width:0.5em;"></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-4.21em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0037em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.05278em;">β</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0528em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mopen">[</span><span class="mord">−</span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span><span style="top:-3.01em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">∀</span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">...</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span></span></span><span style="top:-1.81em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">∀</span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">...</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">M</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:0.5em;"></span></span></span><span class="mclose"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.05em;"><span style="top:-2.5em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎭</span></span></span><span style="top:-2.492em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-3.15em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎬</span></span></span><span style="top:-4.292em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.016em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width='0.8889em' height='0.016em' style='width:0.8889em' viewBox='0 0 888.89 16' preserveAspectRatio='xMinYMin'><path d='M384 0 H504 V16 H384z M384 0 H504 V16 H384z'/></svg></span></span><span style="top:-4.3em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎫</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.55em;"><span></span></span></span></span></span></span></span></span></span></span></span></div><p>where</p>
+<ul class="simple">
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>d</mi><mi>x</mi><mo>×</mo><mi>d</mi><mi>y</mi></mrow></msup></mrow><annotation encoding="application/x-tex">C\in\mathbb{R}^{dx\times dy}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7224em;vertical-align:-0.0391em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">x</span><span class="mbin mtight">×</span><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span></span></span></span></span></span></span></span></span></span> is the center matrix,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">G</mi><mrow><mo stretchy="false">(</mo><mi>i</mi><mo stretchy="false">)</mo></mrow></msub><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>d</mi><mi>x</mi><mo>×</mo><mi>d</mi><mi>y</mi></mrow></msup></mrow><annotation encoding="application/x-tex">\mathbf{G}_{(i)}\in\mathbb{R}^{dx\times dy}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0413em;vertical-align:-0.3552em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight">i</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">x</span><span class="mbin mtight">×</span><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span></span></span></span></span></span></span></span></span></span> is a single dependent generator, with <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">G</mi><mo>=</mo><mo stretchy="false">[</mo><msub><mi mathvariant="bold">G</mi><mrow><mo stretchy="false">(</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></msub><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><msub><mi mathvariant="bold">G</mi><mrow><mo stretchy="false">(</mo><mi>N</mi><mo stretchy="false">)</mo></mrow></msub><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\mathbf{G} = [\mathbf{G}_{(1)},...,\mathbf{G}_{(N)}]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">G</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.1052em;vertical-align:-0.3552em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mtight">1</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">...</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span>,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi><mo stretchy="false">(</mo><mi>j</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></msub><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>d</mi><mi>x</mi><mo>×</mo><mi>d</mi><mi>y</mi></mrow></msup></mrow><annotation encoding="application/x-tex">\mathbf{G}_{rest(j))}\in\mathbb{R}^{dx\times dy}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0413em;vertical-align:-0.3552em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mclose mtight">))</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8491em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">x</span><span class="mbin mtight">×</span><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span></span></span></span></span></span></span></span></span></span> is a single independent generator, with <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi></mrow></msub><mo>=</mo><mo stretchy="false">[</mo><msub><mi mathvariant="bold">G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi><mo stretchy="false">(</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></msub><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><msub><mi mathvariant="bold">G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi><mo stretchy="false">(</mo><mi>M</mi><mo stretchy="false">)</mo></mrow></msub><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\mathbf{G}_{rest} = [\mathbf{G}_{rest(1)},...,\mathbf{G}_{rest(M)}]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8361em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.1052em;vertical-align:-0.3552em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span><span class="mopen mtight">(</span><span class="mord mtight">1</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">...</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span>,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>∈</mo><msup><mi mathvariant="double-struck">R</mi><mrow><mi>p</mi><mo>×</mo><mi>N</mi></mrow></msup></mrow><annotation encoding="application/x-tex">E\in\mathbb{R}^{p\times N}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7224em;vertical-align:-0.0391em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8413em;"></span><span class="mord"><span class="mord mathbb">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mbin mtight">×</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span></span></span></span></span></span></span></span></span></span></span></span></span> is the exponent matrix,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span></span></span></span></span> is the number of dependent generators,</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi></mrow><annotation encoding="application/x-tex">M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">M</span></span></span></span></span> is the number of independent generators, and</p></li>
+<li><p><span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span></span> is the number of indeterminants.</p></li>
+</ul>
 <dl class="py method">
 <dt class="sig sig-object py" id="zonopy.matPolyZonotope.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dep_gens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expMat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_Z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/polynomial_zonotope/mat_poly_zono.html#matPolyZonotope.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.matPolyZonotope.__init__" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Initialize the matrix polynomial zonotope</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a>) – The center and generator tensor of the matrix polynomial zonotope <span class="math"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">Z</mi><mo>=</mo><mo stretchy="false">[</mo><mi>C</mi><mo separator="true">,</mo><msub><mi mathvariant="bold">G</mi><mrow><mo stretchy="false">(</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi mathvariant="bold">G</mi><mrow><mo stretchy="false">(</mo><mi>N</mi><mo stretchy="false">)</mo></mrow></msub><mo separator="true">,</mo><msub><mi mathvariant="bold">G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi><mo stretchy="false">(</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi mathvariant="bold">G</mi><mrow><mi>r</mi><mi>e</mi><mi>s</mi><mi>t</mi><mo stretchy="false">(</mo><mi>M</mi><mo stretchy="false">)</mo></mrow></msub><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\mathbf{Z} = [C, \mathbf{G}_{(1)}, \ldots, \mathbf{G}_{(N)}, \mathbf{G}_{rest(1)}, \ldots, \mathbf{G}_{rest(M)}]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.1052em;vertical-align:-0.3552em;"></span><span class="mopen">[</span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mtight">1</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">N</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span><span class="mopen mtight">(</span><span class="mord mtight">1</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">res</span><span class="mord mathnormal mtight">t</span><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span></p></li>
+<li><p><strong>n_dep_gens</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>optional</em>) – The number of dependent generators. Default: 0</p></li>
+<li><p><strong>expMat</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a><em>, </em><em>optional</em>) – The exponent matrix. Default: None</p></li>
+<li><p><strong>id</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – The id array. Default: None</p></li>
+<li><p><strong>copy_Z</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, it will copy the input Z. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensor_attributes.html#torch.dtype" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.dtype</em></a><em>, </em><em>optional</em>) – The data type of the matrix polynomial zonotope. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, it will be inferred. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensor_attributes.html#torch.device" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.device</em></a><em>, </em><em>optional</em>) – The device of the matrix polynomial zonotope. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, it will be inferred. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the exponent matrix does not seem to be valid for the given dependent generators or ids.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the number of dependent generators does not match the number of ids.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the exponent matrix is not a non-negative integer matrix.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#zonopy.matPolyZonotope.__init__" title="zonopy.matPolyZonotope.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(Z[, n_dep_gens, expMat, id, ...])</p></td>
-<td><p></p></td>
+<td><p>Initialize the matrix polynomial zonotope</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#zonopy.matPolyZonotope.compress" title="zonopy.matPolyZonotope.compress"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compress</span></code></a>(compression_level)</p></td>
 <td><p></p></td>
@@ -579,6 +652,7 @@ id = [0,1,2,…,p-1]</p>
 
                 </article>
               
+
               
               
               
@@ -615,12 +689,10 @@ id = [0,1,2,…,p-1]</p>
 
 
   <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
   </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+  <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.matPolyZonotope.__init__"><code class="docutils literal notranslate"><span class="pre">matPolyZonotope.__init__()</span></code></a></li>
@@ -651,23 +723,46 @@ id = [0,1,2,…,p-1]</p>
 </ul>
   </nav></div>
 
-  <div class="sidebar-secondary-item">
-
-  <div class="tocsection sourcelink">
-    <a href="../_sources/generated/zonopy.matPolyZonotope.rst.txt">
-      <i class="fa-solid fa-file-lines"></i> Show Source
-    </a>
-  </div>
-</div>
-
 </div></div>
               
             
           </div>
           <footer class="bd-footer-content">
             
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By ROAHM Lab
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
           </footer>
         
+
       </main>
     </div>
   </div>
@@ -677,43 +772,6 @@ id = [0,1,2,…,p-1]</p>
 <script src="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
 
   <footer class="bd-footer">
-<div class="bd-footer__inner bd-page-width">
-  
-    <div class="footer-items__start">
-      
-        <div class="footer-item">
-
-  <p class="copyright">
-    
-      © Copyright 2024, ROAHM Lab.
-      <br/>
-    
-  </p>
-</div>
-      
-        <div class="footer-item">
-
-  <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
-    <br/>
-  </p>
-</div>
-      
-    </div>
-  
-  
-  
-    <div class="footer-items__end">
-      
-        <div class="footer-item">
-<p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
-</p></div>
-      
-    </div>
-  
-</div>
-
   </footer>
   </body>
 </html>

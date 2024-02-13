@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>zonopy.interval &#8212; zonopy (development)</title>
+    <title>zonopy.interval &#8212; zonopy (development) v0.1.0-dev</title>
   
   
   
@@ -29,21 +29,24 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=384b581d" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
     <link rel="stylesheet" type="text/css" href="../_static/katex-math.css?v=91adb8b6" />
     <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=64fd42a1" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3939e066"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=ea2b4dd5"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
     <script src="../_static/design-tabs.js?v=36754332"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/zonopy.interval';</script>
     <script>
@@ -98,8 +101,8 @@
          class="form-control"
          name="q"
          id="search-input"
-         placeholder="Search the docs ..."
-         aria-label="Search the docs ..."
+         placeholder="Search..."
+         aria-label="Search..."
          autocomplete="off"
          autocorrect="off"
          autocapitalize="off"
@@ -109,113 +112,6 @@
   </div>
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar">
-<div class="bd-header__inner bd-page-width">
-  <label class="sidebar-toggle primary-toggle" for="__primary">
-    <span class="fa-solid fa-bars"></span>
-  </label>
-  
-  
-  <div class="col-lg-3 navbar-header-items__start">
-    
-      <div class="navbar-item">
-
-  
-
-<a class="navbar-brand logo" href="../index.html">
-  
-  
-  
-  
-  
-  
-    <p class="title logo__title">zonopy (development)</p>
-  
-</a></div>
-    
-  </div>
-  
-  <div class="col-lg-9 navbar-header-items">
-    
-    <div class="me-auto navbar-header-items__center">
-      
-        <div class="navbar-item">
-<nav class="navbar-nav">
-  <ul class="bd-navbar-elements navbar-nav">
-    
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../zonopy.html">
-                        Continuous Set Types
-                      </a>
-                    </li>
-                
-
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../flags.html">
-                        Internal Flags
-                      </a>
-                    </li>
-                
-  </ul>
-</nav></div>
-      
-    </div>
-    
-    
-    <div class="navbar-header-items__end">
-      
-        <div class="navbar-item navbar-persistent--container">
-          
-
- <script>
- document.write(`
-   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
-        </div>
-      
-      
-        <div class="navbar-item">
-
-<script>
-document.write(`
-  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
-  </button>
-`);
-</script></div>
-      
-    </div>
-    
-  </div>
-  
-  
-    <div class="navbar-persistent--mobile">
-
- <script>
- document.write(`
-   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
-    </div>
-  
-
-  
-    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
-      <span class="fa-solid fa-outdent"></span>
-    </label>
-  
-</div>
-
     </header>
   
 
@@ -231,71 +127,56 @@ document.write(`
   <div class="sidebar-header-items sidebar-primary__section">
     
     
-      <div class="sidebar-header-items__center">
-        
-          <div class="navbar-item">
-<nav class="navbar-nav">
-  <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../zonopy.html">
-                        Continuous Set Types
-                      </a>
-                    </li>
-                
-
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../flags.html">
-                        Internal Flags
-                      </a>
-                    </li>
-                
-  </ul>
-</nav></div>
-        
-      </div>
-    
-    
-    
-      <div class="sidebar-header-items__end">
-        
-          <div class="navbar-item">
-
-<script>
-document.write(`
-  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
-  </button>
-`);
-</script></div>
-        
-      </div>
     
   </div>
   
     <div class="sidebar-primary-items__start sidebar-primary__section">
         <div class="sidebar-primary-item">
-<nav class="bd-docs-nav bd-links"
-     aria-label="Section Navigation">
-  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">zonopy.interval</a></li>
+
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy (development) v0.1.0-dev</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../zonopy.html">Continuous Set Types</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">zonopy.interval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.zonotope.html">zonopy.zonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.matZonotope.html">zonopy.matZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.matPolyZonotope.html">zonopy.matPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
 </ul>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="zonopy.zonotope.html">zonopy.zonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.matZonotope.html">zonopy.matZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../flags.html">Internal Flags</a></li>
 </ul>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.matPolyZonotope.html">zonopy.matPolyZonotope</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
-</ul>
-</div>
+
+    </div>
 </nav></div>
     </div>
   
@@ -311,6 +192,9 @@ document.write(`
       <main id="main-content" class="bd-main">
         
         
+
+<div class="sbt-scroll-pixel-helper"></div>
+
           <div class="bd-content">
             <div class="bd-article-container">
               
@@ -319,33 +203,186 @@ document.write(`
   
     <div class="header-article-items__start">
       
-        <div class="header-article-item">
-
-
-
-<nav aria-label="Breadcrumb">
-  <ul class="bd-breadcrumbs">
-    
-    <li class="breadcrumb-item breadcrumb-home">
-      <a href="../index.html" class="nav-link" aria-label="Home">
-        <i class="fa-solid fa-home"></i>
-      </a>
-    </li>
-    
-    <li class="breadcrumb-item"><a href="../zonopy.html" class="nav-link">Continuous Set Types</a></li>
-    
-    <li class="breadcrumb-item active" aria-current="page">zonopy.interval</li>
-  </ul>
-</nav>
-</div>
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
       
     </div>
   
   
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/roahmlab/zonopy" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/generated/zonopy.interval.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
 </div>
 </div>
               
               
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>zonopy.interval</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval"><code class="docutils literal notranslate"><span class="pre">interval</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.__init__"><code class="docutils literal notranslate"><span class="pre">interval.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.center"><code class="docutils literal notranslate"><span class="pre">interval.center()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.cpu"><code class="docutils literal notranslate"><span class="pre">interval.cpu()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.device"><code class="docutils literal notranslate"><span class="pre">interval.device</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.dim"><code class="docutils literal notranslate"><span class="pre">interval.dim()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.dtype"><code class="docutils literal notranslate"><span class="pre">interval.dtype</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.inf"><code class="docutils literal notranslate"><span class="pre">interval.inf</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.numel"><code class="docutils literal notranslate"><span class="pre">interval.numel()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.rad"><code class="docutils literal notranslate"><span class="pre">interval.rad()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.shape"><code class="docutils literal notranslate"><span class="pre">interval.shape</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.sup"><code class="docutils literal notranslate"><span class="pre">interval.sup</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.t"><code class="docutils literal notranslate"><span class="pre">interval.t()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.to"><code class="docutils literal notranslate"><span class="pre">interval.to()</span></code></a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
               
                 
 <div id="searchbox"></div>
@@ -356,7 +393,7 @@ document.write(`
 <dl class="py class">
 <dt class="sig sig-object py" id="zonopy.interval">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zonopy.</span></span><span class="sig-name descname"><span class="pre">interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>N-rank tensor intervals</p>
 <p>An interval is a set of real numbers that includes all numbers between two given numbers.
 Here, we define an interval as a set of real numbers given infinum and supremum tensors
@@ -383,17 +420,17 @@ If only one of <code class="docutils literal notranslate"><span class="pre">inf<
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inf</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – infimum of the interval. Defaults to None.</p></li>
-<li><p><strong>sup</strong> (<em>torch.Tensor</em><em>, </em><em>optional</em>) – supremum of the interval. Defaults to None.</p></li>
-<li><p><strong>dtype</strong> (<em>torch.dtype</em><em>, </em><em>optional</em>) – data type of the interval. If None, the data type is inferred from the input tensors. Defaults to None.</p></li>
-<li><p><strong>device</strong> (<em>torch.device</em><em>, </em><em>optional</em>) – device of the interval. If None, the device is inferred from the input tensors. Defaults to None.</p></li>
+<li><p><strong>inf</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a><em>, </em><em>optional</em>) – infimum of the interval. Defaults to None.</p></li>
+<li><p><strong>sup</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.Tensor</em></a><em>, </em><em>optional</em>) – supremum of the interval. Defaults to None.</p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensor_attributes.html#torch.dtype" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.dtype</em></a><em>, </em><em>optional</em>) – data type of the interval. If None, the data type is inferred from the input tensors. Defaults to None.</p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://pytorch.org/docs/master/tensor_attributes.html#torch.device" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><em>torch.device</em></a><em>, </em><em>optional</em>) – device of the interval. If None, the device is inferred from the input tensors. Defaults to None.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>AssertionError</strong> – If the shapes of <code class="docutils literal notranslate"><span class="pre">inf</span></code> and <code class="docutils literal notranslate"><span class="pre">sup</span></code> do not match.</p></li>
-<li><p><strong>AssertionError</strong> – If the devices of <code class="docutils literal notranslate"><span class="pre">inf</span></code> and <code class="docutils literal notranslate"><span class="pre">sup</span></code> do not match.</p></li>
-<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">inf</span></code> is not less than or equal to <code class="docutils literal notranslate"><span class="pre">sup</span></code> entry-wise and <a class="reference internal" href="../flags.html#zonopy.internal.__debug_extra__" title="zonopy.internal.__debug_extra__"><code class="xref py py-const docutils literal notranslate"><span class="pre">zonopy.internal.__debug_extra__</span></code></a> is True.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the shapes of <code class="docutils literal notranslate"><span class="pre">inf</span></code> and <code class="docutils literal notranslate"><span class="pre">sup</span></code> do not match.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If the devices of <code class="docutils literal notranslate"><span class="pre">inf</span></code> and <code class="docutils literal notranslate"><span class="pre">sup</span></code> do not match.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.12)"><strong>AssertionError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">inf</span></code> is not less than or equal to <code class="docutils literal notranslate"><span class="pre">sup</span></code> entry-wise and <a class="reference internal" href="../flags.html#zonopy.internal.__debug_extra__" title="zonopy.internal.__debug_extra__"><code class="xref py py-const docutils literal notranslate"><span class="pre">zonopy.internal.__debug_extra__</span></code></a> is True.</p></li>
 </ul>
 </dd>
 </dl>
@@ -450,7 +487,7 @@ If only one of <code class="docutils literal notranslate"><span class="pre">inf<
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="zonopy.interval.center">
-<span class="sig-name descname"><span class="pre">center</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.center"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.center" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">center</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><span class="pre">torch.Tensor</span></a></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.center"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.center" title="Permalink to this definition">#</a></dt>
 <dd><p>Compute the center of the interval</p>
 <p>The center of the interval is the midpoint of the infimum and supremum.</p>
 <dl class="field-list simple">
@@ -458,7 +495,7 @@ If only one of <code class="docutils literal notranslate"><span class="pre">inf<
 <dd class="field-odd"><p>center of the interval</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>torch.Tensor</p>
+<dd class="field-even"><p><a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))">torch.Tensor</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -478,14 +515,14 @@ return ‘cpu’, ‘cuda:0’, or …</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zonopy.interval.dim">
-<span class="sig-name descname"><span class="pre">dim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.dim" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">dim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.dim" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the number of dimensions of the interval</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>number of dimensions of the interval</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>int</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -507,21 +544,21 @@ return &lt;torch.Tensor&gt;
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zonopy.interval.numel">
-<span class="sig-name descname"><span class="pre">numel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.numel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.numel" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">numel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.numel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.numel" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the total number of elements in the interval</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>number of elements in the interval</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>int</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)">int</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zonopy.interval.rad">
-<span class="sig-name descname"><span class="pre">rad</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.rad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.rad" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">rad</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))"><span class="pre">torch.Tensor</span></a></span></span><a class="reference internal" href="../_modules/zonopy/contset/interval/interval.html#interval.rad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zonopy.interval.rad" title="Permalink to this definition">#</a></dt>
 <dd><p>Compute the radius of the interval</p>
 <p>The radius of the interval is half of the difference between the supremum and infimum.
 It can be viewed as the distance from the center to the infimum or supremum.</p>
@@ -530,7 +567,7 @@ It can be viewed as the distance from the center to the infimum or supremum.</p>
 <dd class="field-odd"><p>radius of the interval</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>torch.Tensor</p>
+<dd class="field-even"><p><a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (2.1.0a0+gitbe0b12e ))">torch.Tensor</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -578,6 +615,7 @@ device: ‘cpu’, ‘gpu’, ‘cuda:0’, …</p>
 
                 </article>
               
+
               
               
               
@@ -614,12 +652,10 @@ device: ‘cpu’, ‘gpu’, ‘cuda:0’, …</p>
 
 
   <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
   </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+  <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval"><code class="docutils literal notranslate"><span class="pre">interval</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#zonopy.interval.__init__"><code class="docutils literal notranslate"><span class="pre">interval.__init__()</span></code></a></li>
@@ -640,23 +676,46 @@ device: ‘cpu’, ‘gpu’, ‘cuda:0’, …</p>
 </ul>
   </nav></div>
 
-  <div class="sidebar-secondary-item">
-
-  <div class="tocsection sourcelink">
-    <a href="../_sources/generated/zonopy.interval.rst.txt">
-      <i class="fa-solid fa-file-lines"></i> Show Source
-    </a>
-  </div>
-</div>
-
 </div></div>
               
             
           </div>
           <footer class="bd-footer-content">
             
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By ROAHM Lab
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
           </footer>
         
+
       </main>
     </div>
   </div>
@@ -666,43 +725,6 @@ device: ‘cpu’, ‘gpu’, ‘cuda:0’, …</p>
 <script src="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
 
   <footer class="bd-footer">
-<div class="bd-footer__inner bd-page-width">
-  
-    <div class="footer-items__start">
-      
-        <div class="footer-item">
-
-  <p class="copyright">
-    
-      © Copyright 2024, ROAHM Lab.
-      <br/>
-    
-  </p>
-</div>
-      
-        <div class="footer-item">
-
-  <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
-    <br/>
-  </p>
-</div>
-      
-    </div>
-  
-  
-  
-    <div class="footer-items__end">
-      
-        <div class="footer-item">
-<p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
-</p></div>
-      
-    </div>
-  
-</div>
-
   </footer>
   </body>
 </html>
