@@ -1,0 +1,11 @@
+[
+    {
+        "name": "devel",
+        "version": "dev",
+        "url": "https://roahmlab.github.io/zonopy/dev/"
+    },
+    {
+        "version": "latest",
+        "url": "https://roahmlab.github.io/zonopy/latest/"
+    }
+]
