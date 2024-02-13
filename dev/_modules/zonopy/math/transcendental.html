@@ -1,0 +1,775 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zonopy.math.transcendental &#8212; zonopy (development) v0.1.0-dev</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/katex-math.css?v=91adb8b6" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=64fd42a1" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=ea2b4dd5"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script src="../../../_static/design-tabs.js?v=36754332"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/zonopy/math/transcendental';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://roahmlab.github.io/zonopy/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">zonopy (development) v0.1.0-dev</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../zonopy.html">Continuous Set Types</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.interval.html">zonopy.interval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.zonotope.html">zonopy.zonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchZonotope.html">zonopy.batchZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.matZonotope.html">zonopy.matZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchMatZonotope.html">zonopy.batchMatZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.polyZonotope.html">zonopy.polyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchPolyZonotope.html">zonopy.batchPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.matPolyZonotope.html">zonopy.matPolyZonotope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.batchMatPolyZonotope.html">zonopy.batchMatPolyZonotope</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../math.html">Math Operations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.cross.html">zonopy.cross</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.cos.html">zonopy.cos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.sin.html">zonopy.sin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.cos_sin_cartprod.html">zonopy.cos_sin_cartprod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.rot_mat.html">zonopy.rot_mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.dot.html">zonopy.dot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.close.html">zonopy.close</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.gen_batch_rotatotope_from_jrs_trig.html">zonopy.gen_batch_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.gen_rotatotope_from_jrs_trig.html">zonopy.gen_rotatotope_from_jrs_trig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.get_pz_rotations_from_q.html">zonopy.get_pz_rotations_from_q</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils.html">Utility Functions</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.remove_dependence_and_compress.html">zonopy.remove_dependence_and_compress</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.stack.html">zonopy.stack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_JRSs.html">zonopy.plot_JRSs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_polyzonos_xy.html">zonopy.plot_polyzonos_xy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_polyzonos.html">zonopy.plot_polyzonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.plot_zonos.html">zonopy.plot_zonos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.config_safety_check.html">zonopy.config_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.traj_safety_check.html">zonopy.traj_safety_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/zonopy.obstacle_collison_free_check.html">zonopy.obstacle_collison_free_check</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flags.html">Internal Flags</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/roahmlab/zonopy" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for zonopy.math.transcendental</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Transcendental functions for zonopy.</span>
+
+<span class="sd">This module contains transcendental functions for zonopy. Dispatching is done</span>
+<span class="sd">based on the type of the input. For example, if the input is a zonotope, then</span>
+<span class="sd">the output will be a zonotope. If the input is a polynomial zonotope, then the</span>
+<span class="sd">output will be a polynomial zonotope. These functions currently don&#39;t consider</span>
+<span class="sd">precision errors into account.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">zonopy.internal</span> <span class="k">as</span> <span class="nn">zpi</span>
+<span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">interval</span><span class="p">,</span>
+    <span class="n">zonotope</span><span class="p">,</span>
+    <span class="n">matZonotope</span><span class="p">,</span>
+    <span class="n">polyZonotope</span><span class="p">,</span>
+    <span class="n">matPolyZonotope</span><span class="p">,</span>
+    <span class="n">batchPolyZonotope</span><span class="p">,</span>
+    <span class="n">batchMatPolyZonotope</span><span class="p">,</span>
+    <span class="n">batchMatZonotope</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+    <span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="n">interval</span> <span class="k">as</span> <span class="n">IType</span>
+    <span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="n">zonotope</span> <span class="k">as</span> <span class="n">ZType</span>
+    <span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="n">matZonotope</span> <span class="k">as</span> <span class="n">MZType</span>
+    <span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="n">polyZonotope</span> <span class="k">as</span> <span class="n">PZType</span>
+    <span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="n">batchPolyZonotope</span> <span class="k">as</span> <span class="n">BPZType</span>
+    <span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="n">matPolyZonotope</span> <span class="k">as</span> <span class="n">MPZType</span>
+    <span class="kn">from</span> <span class="nn">zonopy</span> <span class="kn">import</span> <span class="n">batchMatPolyZonotope</span> <span class="k">as</span> <span class="n">BMPZType</span>
+
+
+<span class="n">SIGN_COS</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">SIGN_SIN</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="sin"><a class="viewcode-back" href="../../../generated/zonopy.sin.html#zonopy.sin">[docs]</a><span class="k">def</span> <span class="nf">sin</span><span class="p">(</span><span class="n">zpset</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">IType</span><span class="p">,</span> <span class="n">PZType</span><span class="p">,</span> <span class="n">BPZType</span><span class="p">],</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">IType</span><span class="p">,</span> <span class="n">PZType</span><span class="p">,</span> <span class="n">BPZType</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sine function</span>
+
+<span class="sd">    This function computes the sine function for zonopy continuous set types.</span>
+<span class="sd">    The order of the Taylor expansion can be specified. The default is 6.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        zpset: The set to compute the sine function for.</span>
+<span class="sd">        order: The order of the Taylor expansion.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        The result of the sine function for the set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zpset</span><span class="p">,</span><span class="n">interval</span><span class="p">):</span>
+        <span class="n">half_pi</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">res_inf</span><span class="p">,</span> <span class="n">res_sup</span> <span class="o">=</span> <span class="n">_int_cos_script</span><span class="p">(</span><span class="n">zpset</span><span class="o">.</span><span class="n">inf</span> <span class="o">-</span> <span class="n">half_pi</span><span class="p">,</span> <span class="n">zpset</span><span class="o">.</span><span class="n">sup</span> <span class="o">-</span> <span class="n">half_pi</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">interval</span><span class="p">(</span><span class="n">res_inf</span><span class="p">,</span><span class="n">res_sup</span><span class="p">,</span><span class="n">zpset</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">zpset</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zpset</span><span class="p">,(</span><span class="n">polyZonotope</span><span class="p">,</span><span class="n">batchPolyZonotope</span><span class="p">)):</span>
+        <span class="n">pz</span> <span class="o">=</span> <span class="n">zpset</span>
+        <span class="c1"># Make sure we&#39;re only using 1D pz&#39;s</span>
+        <span class="k">assert</span> <span class="n">pz</span><span class="o">.</span><span class="n">dimension</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Operation only valid for a 1D PZ&quot;</span>
+        <span class="n">pz_c</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">pz_c</span>
+
+        <span class="n">cs_cf</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">sn_cf</span> <span class="o">=</span> <span class="n">pz_c</span>
+
+        <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">T_factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">pz_neighbor</span> <span class="o">=</span> <span class="n">pz</span> <span class="o">-</span> <span class="n">pz</span><span class="o">.</span><span class="n">c</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">T_factor</span> <span class="o">=</span> <span class="n">T_factor</span> <span class="o">*</span> <span class="n">pz_neighbor</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_SIN</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">cs_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_SIN</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">sn_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+
+        <span class="c1"># add lagrange remainder interval to Grest</span>
+        <span class="n">rem</span> <span class="o">=</span> <span class="n">pz_neighbor</span><span class="o">.</span><span class="n">to_interval</span><span class="p">()</span>
+        <span class="n">rem_pow</span> <span class="o">=</span> <span class="p">(</span><span class="n">T_factor</span> <span class="o">*</span> <span class="n">pz_neighbor</span><span class="p">)</span><span class="o">.</span><span class="n">to_interval</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">J</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">J</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">J</span> <span class="o">=</span> <span class="o">-</span><span class="n">J</span>
+
+        <span class="n">remainder</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">rem_pow</span> <span class="o">*</span> <span class="n">J</span>
+
+        <span class="c1"># Assumes a 1D pz</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">remainder</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">G</span>
+        <span class="n">Grest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">Grest</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">remainder</span><span class="o">.</span><span class="n">rad</span><span class="p">()</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span> <span class="n">G</span><span class="p">,</span> <span class="n">Grest</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+    
+        <span class="c1"># TODO: test this implementation</span>
+        <span class="c1"># Not validated, but something like this</span>
+        <span class="c1"># c_shape = pz_c.shape[:-1]</span>
+        <span class="c1"># rounded_order = (order + 1) % 2</span>
+        <span class="c1"># factors = torch.empty(order + rounded_order + 1)</span>
+        <span class="c1"># factors[0] = 0</span>
+        <span class="c1"># factors[1:] = torch.arange(1,order+rounded_order+1).cumprod(0)</span>
+        <span class="c1"># factors = factors.reshape((-1,2,)+(1,)*len(c_shape)).expand((-1,-1,)+c_shape)</span>
+        <span class="c1"># factors[1::2] *= -1</span>
+        <span class="c1"># factors[1:,0] = sn_cf/factors[1:,0]</span>
+        <span class="c1"># factors[:factors.shape[0]-round_order,1] = cs_cf/factors[:,1]</span>
+        <span class="c1"># factors = factors.flatten(0,1)[1:]</span>
+        <span class="c1"># for i in range(order):</span>
+        <span class="c1">#     T_factor = T_factor * pz_neighbor</span>
+        <span class="c1">#     out += factors[i] * T_factor</span>
+
+    <span class="k">return</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="cos"><a class="viewcode-back" href="../../../generated/zonopy.cos.html#zonopy.cos">[docs]</a><span class="k">def</span> <span class="nf">cos</span><span class="p">(</span><span class="n">zpset</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">IType</span><span class="p">,</span> <span class="n">PZType</span><span class="p">,</span> <span class="n">BPZType</span><span class="p">],</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">IType</span><span class="p">,</span> <span class="n">PZType</span><span class="p">,</span> <span class="n">BPZType</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cosine function</span>
+
+<span class="sd">    This function computes the cosine function for zonopy continuous set types.</span>
+<span class="sd">    The order of the Taylor expansion can be specified. The default is 6.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        zpset: The set to compute the cosine function for.</span>
+<span class="sd">        order: The order of the Taylor expansion.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        The result of the cosine function for the set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zpset</span><span class="p">,</span><span class="n">interval</span><span class="p">):</span>
+        <span class="n">res_inf</span><span class="p">,</span> <span class="n">res_sup</span> <span class="o">=</span> <span class="n">_int_cos_script</span><span class="p">(</span><span class="n">zpset</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">zpset</span><span class="o">.</span><span class="n">sup</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">interval</span><span class="p">(</span><span class="n">res_inf</span><span class="p">,</span><span class="n">res_sup</span><span class="p">,</span><span class="n">zpset</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">zpset</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zpset</span><span class="p">,(</span><span class="n">polyZonotope</span><span class="p">,</span><span class="n">batchPolyZonotope</span><span class="p">)):</span>
+        <span class="n">pz</span> <span class="o">=</span> <span class="n">zpset</span>
+        <span class="c1"># Make sure we&#39;re only using 1D pz&#39;s</span>
+        <span class="k">assert</span> <span class="n">pz</span><span class="o">.</span><span class="n">dimension</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Operation only valid for a 1D PZ&quot;</span>
+        <span class="n">pz_c</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">pz_c</span>
+
+        <span class="n">cs_cf</span> <span class="o">=</span> <span class="n">pz_c</span>
+        <span class="n">sn_cf</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+            
+        <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">T_factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">pz_neighbor</span> <span class="o">=</span> <span class="n">pz</span> <span class="o">-</span> <span class="n">pz</span><span class="o">.</span><span class="n">c</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">T_factor</span> <span class="o">=</span> <span class="n">T_factor</span> <span class="o">*</span> <span class="n">pz_neighbor</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_COS</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">cs_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_COS</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">sn_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+
+        <span class="c1"># add lagrange remainder interval to Grest</span>
+        <span class="n">rem</span> <span class="o">=</span> <span class="n">pz_neighbor</span><span class="o">.</span><span class="n">to_interval</span><span class="p">()</span>
+        <span class="n">rem_pow</span> <span class="o">=</span> <span class="p">(</span><span class="n">T_factor</span> <span class="o">*</span> <span class="n">pz_neighbor</span><span class="p">)</span><span class="o">.</span><span class="n">to_interval</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">J</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">J</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">J</span> <span class="o">=</span> <span class="o">-</span><span class="n">J</span>
+
+        <span class="n">remainder</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">rem_pow</span> <span class="o">*</span> <span class="n">J</span>
+
+        <span class="c1"># Assumes a 1D pz</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">remainder</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">G</span>
+        <span class="n">Grest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">Grest</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">remainder</span><span class="o">.</span><span class="n">rad</span><span class="p">()</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span> <span class="n">G</span><span class="p">,</span> <span class="n">Grest</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+    
+        <span class="c1"># TODO: test this implementation</span>
+        <span class="c1"># Not validated, but something like this</span>
+        <span class="c1"># c_shape = pz_c.shape[:-1]</span>
+        <span class="c1"># round_order = order % 2</span>
+        <span class="c1"># factors = torch.arange(1,order+round_order+1).cumprod(0)</span>
+        <span class="c1"># factors = factors.reshape((-1,2,)+(1,)*len(c_shape)).expand((-1,-1,)+c_shape)</span>
+        <span class="c1"># factors[0::2] *= -1</span>
+        <span class="c1"># factors[:,0] = sn_cf/factors[:,0]</span>
+        <span class="c1"># factors[:factors.shape[0]-round_order,1] = cs_cf/factors[:,1]</span>
+        <span class="c1"># factors = factors.flatten(0,1)[:order]</span>
+        <span class="c1"># for i in range(order):</span>
+        <span class="c1">#     T_factor = T_factor * pz_neighbor</span>
+        <span class="c1">#     out += factors[i] * T_factor</span>
+    
+    <span class="k">return</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="cos_sin_cartprod"><a class="viewcode-back" href="../../../generated/zonopy.cos_sin_cartprod.html#zonopy.cos_sin_cartprod">[docs]</a><span class="k">def</span> <span class="nf">cos_sin_cartprod</span><span class="p">(</span>
+        <span class="n">pz</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PZType</span><span class="p">,</span> <span class="n">BPZType</span><span class="p">],</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">PZType</span><span class="p">,</span> <span class="n">BPZType</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cosine and sine cartesian product</span>
+<span class="sd">    </span>
+<span class="sd">    This function computes the cartesian product of the cosine and sine</span>
+<span class="sd">    functions for zonopy continuous set types. The order of the Taylor</span>
+<span class="sd">    expansion can be specified. The default is 6. Currently only works for</span>
+<span class="sd">    1D polyZonotopes.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        pz: The set to compute the cosine and sine cartesian product for.</span>
+<span class="sd">        order: The order of the Taylor expansion.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        The result of the cosine and sine cartesian product for the set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Do both cos and sin at the same time</span>
+
+    <span class="n">cs_cf</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+    <span class="n">sn_cf</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+    <span class="n">out_cos</span> <span class="o">=</span> <span class="n">cs_cf</span>
+    <span class="n">out_sin</span> <span class="o">=</span> <span class="n">sn_cf</span>
+
+    <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">T_factor</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">pz_neighbor</span> <span class="o">=</span> <span class="n">pz</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+        <span class="n">factor</span> <span class="o">=</span> <span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">T_factor</span> <span class="o">=</span> <span class="n">T_factor</span> <span class="o">*</span> <span class="n">pz_neighbor</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">out_cos</span> <span class="o">=</span> <span class="n">out_cos</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_COS</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">cs_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+            <span class="n">out_sin</span> <span class="o">=</span> <span class="n">out_sin</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_SIN</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">sn_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out_cos</span> <span class="o">=</span> <span class="n">out_cos</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_COS</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">sn_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+            <span class="n">out_sin</span> <span class="o">=</span> <span class="n">out_sin</span> <span class="o">+</span> <span class="p">(</span><span class="n">SIGN_SIN</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">4</span><span class="p">]</span> <span class="o">*</span> <span class="n">cs_cf</span> <span class="o">/</span> <span class="n">factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_factor</span>
+    
+    <span class="c1"># add lagrange remainder interval to Grest</span>
+    <span class="n">rem</span> <span class="o">=</span> <span class="n">pz_neighbor</span><span class="o">.</span><span class="n">to_interval</span><span class="p">()</span>
+    <span class="n">rem_pow</span> <span class="o">=</span> <span class="p">(</span><span class="n">T_factor</span> <span class="o">*</span> <span class="n">pz_neighbor</span><span class="p">)</span><span class="o">.</span><span class="n">to_interval</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">Jcos</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+        <span class="n">Jsin</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Jcos</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+        <span class="n">Jsin</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">pz</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">interval</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">rem</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">Jcos</span> <span class="o">=</span> <span class="o">-</span><span class="n">Jcos</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">order</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">Jsin</span> <span class="o">=</span> <span class="o">-</span><span class="n">Jsin</span>
+    <span class="n">remainder_sin</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">rem_pow</span> <span class="o">*</span> <span class="n">Jsin</span>
+    <span class="n">remainder_cos</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">rem_pow</span> <span class="o">*</span> <span class="n">Jcos</span>
+
+    <span class="c1"># Assumes a 1D pz</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">remainder_cos</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">G</span>
+    <span class="n">Grest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out_cos</span><span class="o">.</span><span class="n">Grest</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">remainder_cos</span><span class="o">.</span><span class="n">rad</span><span class="p">()</span>
+    <span class="n">Zcos</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span> <span class="n">G</span><span class="p">,</span> <span class="n">Grest</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">c</span> <span class="o">+</span> <span class="n">remainder_sin</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">G</span>
+    <span class="n">Grest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out_sin</span><span class="o">.</span><span class="n">Grest</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">remainder_sin</span><span class="o">.</span><span class="n">rad</span><span class="p">()</span>
+    <span class="n">Zsin</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">),</span> <span class="n">G</span><span class="p">,</span> <span class="n">Grest</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pz</span><span class="p">,</span> <span class="n">polyZonotope</span><span class="p">):</span>
+        <span class="n">out_cos</span> <span class="o">=</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">Zcos</span><span class="p">,</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">out_sin</span> <span class="o">=</span> <span class="n">polyZonotope</span><span class="p">(</span><span class="n">Zsin</span><span class="p">,</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">out_cos</span> <span class="o">=</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Zcos</span><span class="p">,</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">out_sin</span> <span class="o">=</span> <span class="n">batchPolyZonotope</span><span class="p">(</span><span class="n">Zsin</span><span class="p">,</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">n_dep_gens</span><span class="p">,</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">expMat</span><span class="p">,</span> <span class="n">out_sin</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">copy_Z</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out_cos</span><span class="o">.</span><span class="n">exactCartProd</span><span class="p">(</span><span class="n">out_sin</span><span class="p">)</span></div>
+
+
+<span class="c1">######################</span>
+<span class="c1"># INTERNAL FUNCTIONS #</span>
+<span class="c1">######################</span>
+
+<span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">script</span>
+<span class="k">def</span> <span class="nf">_int_cos_script</span><span class="p">(</span><span class="n">inf</span><span class="p">,</span> <span class="n">sup</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interval cos function.</span>
+<span class="sd">    </span>
+<span class="sd">    This function is used to compute the interval cos function. It is used</span>
+<span class="sd">    internally by the cos and sin functions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inf: Lower bound of the interval.</span>
+<span class="sd">        sup: Upper bound of the interval.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The lower and upper bounds of the interval cos function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Expand out the interval cos function then jit it.</span>
+    <span class="c1"># End reduction seems to be slightly faster than inline reduction</span>
+    <span class="n">pi_twice</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">inf</span> <span class="o">/</span> <span class="n">pi_twice</span><span class="p">)</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="n">inf</span> <span class="o">-</span> <span class="n">n</span> <span class="o">*</span> <span class="n">pi_twice</span>
+    <span class="n">upper</span> <span class="o">=</span> <span class="n">sup</span> <span class="o">-</span> <span class="n">n</span> <span class="o">*</span> <span class="n">pi_twice</span>
+
+    <span class="c1"># Allocate for full check</span>
+    <span class="n">out_low</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(((</span><span class="mi">6</span><span class="p">,)</span> <span class="o">+</span> <span class="n">inf</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">inf</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">inf</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">out_high</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(((</span><span class="mi">6</span><span class="p">,)</span> <span class="o">+</span> <span class="n">inf</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">inf</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">inf</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="c1"># full period</span>
+    <span class="n">not_full_period</span> <span class="o">=</span> <span class="n">upper</span> <span class="o">-</span> <span class="n">lower</span> <span class="o">&lt;</span> <span class="n">pi_twice</span>
+    <span class="n">out_high</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="o">~</span><span class="n">not_full_period</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="n">out_low</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">out_high</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># 180 rotated</span>
+    <span class="n">rot_180</span> <span class="o">=</span> <span class="n">lower</span> <span class="o">&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">nom</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">not_full_period</span><span class="p">,</span> <span class="o">~</span><span class="n">rot_180</span><span class="p">)</span>
+    <span class="n">nom_180</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">not_full_period</span><span class="p">,</span> <span class="n">rot_180</span><span class="p">)</span>
+
+    <span class="c1"># Region 1, upper &lt; 180</span>
+    <span class="n">reg1</span> <span class="o">=</span> <span class="n">upper</span> <span class="o">&lt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">reg1_nom</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">reg1</span><span class="p">,</span> <span class="n">nom</span><span class="p">)</span>
+    <span class="n">reg1_nom_num</span> <span class="o">=</span> <span class="n">reg1_nom</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="n">out_low</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg1_nom_num</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">upper</span><span class="p">)</span>
+    <span class="n">out_high</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg1_nom_num</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lower</span><span class="p">)</span>
+
+    <span class="c1"># Region 2, 180 &lt;= upper &lt; 360</span>
+    <span class="n">reg2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">upper</span> <span class="o">&lt;</span> <span class="n">pi_twice</span><span class="p">,</span> <span class="o">~</span><span class="n">reg1</span><span class="p">)</span>
+    <span class="n">reg2_nom</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">reg2</span><span class="p">,</span> <span class="n">nom</span><span class="p">)</span>
+    <span class="n">reg2_nom_num</span> <span class="o">=</span> <span class="n">reg2_nom</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="n">out_low</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">reg2_nom_num</span>
+    <span class="n">out_high</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg2_nom_num</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">pi_twice</span><span class="o">-</span><span class="n">upper</span><span class="p">,</span> <span class="n">lower</span><span class="p">))</span>
+
+    <span class="c1"># Flip the 180 (flip upper&amp;lower and negate)</span>
+    <span class="c1"># 180 - 360 (shifted by 180)</span>
+    <span class="n">reg2_180</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">reg2</span><span class="p">,</span> <span class="n">nom_180</span><span class="p">)</span>
+    <span class="n">reg2_180_num</span> <span class="o">=</span> <span class="n">reg2_180</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="n">out_low</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg2_180_num</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lower</span><span class="p">)</span>
+    <span class="n">out_high</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg2_180_num</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">upper</span><span class="p">)</span>
+
+    <span class="c1"># Flip the 180 (flip upper&amp;lower and negate)</span>
+    <span class="c1"># we know that nom_180 requires a shift of pi, so reg3_180</span>
+    <span class="c1"># is 360 - 540 (shifted by 180)</span>
+    <span class="n">reg3</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">upper</span> <span class="o">&lt;</span> <span class="n">pi_twice</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="o">~</span><span class="n">reg2</span><span class="p">)</span>
+    <span class="n">reg3_180</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">reg3</span><span class="p">,</span> <span class="n">nom_180</span><span class="p">)</span>
+    <span class="n">reg3_180_num</span> <span class="o">=</span> <span class="n">reg3_180</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="n">out_low</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg3_180_num</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">pi_twice</span><span class="o">-</span><span class="n">upper</span><span class="p">,</span> <span class="n">lower</span><span class="p">))</span>
+    <span class="n">out_high</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg3_180_num</span>
+    
+    <span class="c1"># Region 4, 360 &lt; upper, lower &lt; 180</span>
+    <span class="n">reg4</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">reg1</span><span class="p">,</span> <span class="n">reg2</span><span class="p">)</span>
+    <span class="n">reg4</span> <span class="o">=</span> <span class="o">~</span><span class="n">torch</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">reg4</span><span class="p">,</span> <span class="n">reg3_180</span><span class="p">)</span>
+    <span class="n">reg4_num</span> <span class="o">=</span> <span class="n">reg4</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="n">out_low</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">reg4_num</span>
+    <span class="n">out_high</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg4_num</span>
+    
+    <span class="c1"># Reduce and return</span>
+    <span class="k">return</span> <span class="n">out_low</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">out_high</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By ROAHM Lab
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, ROAHM Lab.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
