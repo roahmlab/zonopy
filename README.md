@@ -30,16 +30,16 @@ scipy >= 1.9.0
 
 If you use zonopy or zonopy-robots in your research, please cite one or more of the following papers:
 
-<!-- Safe Planning for Articulated Robots Using Reachability-based Obstacle Avoidance With Spheres. J. Michaux, A. Li, Q. Chen, C. Chen, B. Zhang, and R. Vasudevan. ArXiv, 2024. ()
+Safe Planning for Articulated Robots Using Reachability-based Obstacle Avoidance With Spheres. J. Michaux, A. Li, Q. Chen, C. Chen, B. Zhang, and R. Vasudevan. ArXiv, 2024. (https://arxiv.org/abs/2402.08857)
 ```bibtex
 @article{michaux2024sparrows,
   title={Safe Planning for Articulated Robots Using Reachability-based Obstacle Avoidance With Spheres},
   author={Jonathan Michaux and Adam Li and Qingyi Chen and Che Chen and Bohao Zhang and Ram Vasudevan},
   journal={ArXiv},
   year={2024},
-  volume={},
-}
-``` -->
+  volume={abs/2402.08857},
+  url={https://arxiv.org/abs/2402.08857}}
+```
 
 Reachability-based Trajectory Design with Neural Implicit Safety Constraints. J. B. Michaux, Y. S. Kwon, Q. Chen, and R. Vasudevan. Robotics: Science and Systems, 2023. (https://www.roboticsproceedings.org/rss19/p062.pdf)
 ```bibtex
@@ -49,6 +49,5 @@ Reachability-based Trajectory Design with Neural Implicit Safety Constraints. J.
   booktitle={Proceedings of Robotics: Science and Systems},
   year={2023},
   address={Daegu, Republic of Korea},
-  doi={10.15607/RSS.2023.XIX.062}
-}
+  doi={10.15607/RSS.2023.XIX.062}}
 ```
