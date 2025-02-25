@@ -154,6 +154,17 @@ class interval:
         intv_repr = intv_repr1.replace('tensor(','   inf(') + intv_repr2.replace('tensor(','   sup(')
         intv_repr = intv_repr.replace('    ','    ')
         return intv_repr+"\n   )"
+    
+    def __abs__(self):
+        '''
+        Overloaded unary operator for absolute value of an interval
+        self: <interval>
+        return <interval>
+        '''   
+        inf = torch.max(torch.stack([torch.zeros_like(self.__inf), self.__inf, -self.__sup]), dim=0).values
+        sup = torch.max(torch.stack([self.__sup, -self.__inf, torch.zeros_like(self.__sup)]), dim=0).values
+        return interval(inf,sup)
+
     def __add__(self, other):
         '''
         Overloaded '+' operator for addition or Minkowski sum
