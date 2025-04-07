@@ -11,7 +11,7 @@ A collection of internal properties for zonopy.
     A fun little logo for zonopy.
 
 """
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __logo__ = """
 *** ZONO-PY ***
   _____
