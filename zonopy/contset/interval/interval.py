@@ -274,6 +274,66 @@ class interval:
 
     __rmul__ = __mul__
 
+    def __truediv__(self, other):
+        if isinstance(other,(int,float)):
+            if other > 0:
+                return interval(self.__inf / other, self.__sup / other)
+            else:
+                return interval(self.__sup / other, self.__inf / other)
+
+        elif isinstance(other, torch.Tensor):
+            candidates = torch.empty((2,) + self.shape, dtype=self.inf.dtype, device=self.inf.device)
+            candidates[0] = self.__inf / other
+            candidates[1] = self.__sup / other
+
+            new_inf = torch.min(candidates,dim=0).values
+            new_sup = torch.max(candidates,dim=0).values
+            return interval(new_inf, new_sup)
+
+        elif isinstance(other, interval):
+            y = 1 / other
+            return self * y
+        
+        else:
+            return NotImplemented
+
+    def __rtruediv__(self, other):
+        if isinstance(other,(int,float,torch.Tensor)):
+            if isinstance(other, torch.Tensor) and len(other.shape) > 0:
+                assert other.shape == self.shape, "other should be a scalar or have the same shape as self"
+            else:
+                other = torch.as_tensor(other, dtype=self.inf.dtype, device=self.inf.device).expand(self.shape)
+            new_inf = torch.empty_like(self.__inf)
+            new_sup = torch.empty_like(self.__sup)
+
+            # if sup is 0, then inf is -inf or nan
+            neg_infty_inf = self.__sup == 0
+            # if both inf and sup are 0, then make nans
+            make_nans = torch.logical_and(self.__inf == 0, neg_infty_inf)
+            # we have intervals that cross zero, then make infinities
+            zero_crossings = torch.logical_and(self.__inf < 0, self.__sup > 0)
+            # rest of the intervals are safe
+            safe_mask = torch.logical_not(zero_crossings | neg_infty_inf | make_nans)
+
+
+            # Special cases
+            new_inf[zero_crossings | neg_infty_inf] = -torch.inf
+            new_sup[zero_crossings] = torch.inf
+            new_sup[neg_infty_inf] = other[neg_infty_inf] / self.__inf[neg_infty_inf]
+            new_inf[make_nans] = torch.nan
+            new_sup[make_nans] = torch.nan
+            
+            # Compute the candidates for the regular case
+            candidates = torch.empty((2,) + self.__inf[safe_mask].shape, dtype=self.inf.dtype, device=self.inf.device)
+            candidates[0] = other[safe_mask] / self.__inf[safe_mask]
+            candidates[1] = other[safe_mask] / self.__sup[safe_mask]
+
+            new_inf[safe_mask] = torch.min(candidates,dim=0).values
+            new_sup[safe_mask] = torch.max(candidates,dim=0).values
+            return interval(new_inf, new_sup)
+        # Flip division if not here
+        return NotImplemented
+
     def __getitem__(self, pos):
         inf = self.__inf[pos]
         sup = self.__sup[pos]
