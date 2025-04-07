@@ -348,12 +348,13 @@ def _int_cos_script(inf, sup):
     reg3 = torch.logical_and(upper < pi_twice + torch.pi, ~reg2)
     reg3_180 = torch.logical_and(reg3, nom_180)
     reg3_180_num = reg3_180.long()
-    out_low[4] = reg3_180_num * torch.cos(torch.minimum(pi_twice-upper, lower))
+    out_low[4] = reg3_180_num * torch.cos(torch.minimum(pi_twice-upper, lower-pi_twice))
     out_high[4] = reg3_180_num
     
     # Region 4, 360 < upper, lower < 180
     reg4 = torch.logical_or(reg1, reg2)
     reg4 = ~torch.logical_or(reg4, reg3_180)
+    reg4 = torch.logical_and(reg4, not_full_period)
     reg4_num = reg4.long()
     out_low[5] = -reg4_num
     out_high[5] = reg4_num
