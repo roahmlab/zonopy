@@ -16,4 +16,6 @@ from .compress import (
 )
 from .batching import (
     stack,
+    cat,
+    expand,
 )
