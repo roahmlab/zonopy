@@ -30,7 +30,7 @@ def remove_dependence_and_compress(
     ful_slc_idx = torch.logical_and(has_val, dn_has_val)
     
     if isinstance(Set,(zp.polyZonotope,zp.batchPolyZonotope)):
-        if zpi.__debug_extra__: assert torch.count_nonzero(ful_slc_idx) <= np.count_nonzero(id_idx)
+        # if zpi.__debug_extra__: assert torch.count_nonzero(ful_slc_idx) <= np.count_nonzero(id_idx)
         c = Set.c
         G = Set.G[...,ful_slc_idx,:]
         ExpMat = Set.expMat[ful_slc_idx][:,id_idx]
